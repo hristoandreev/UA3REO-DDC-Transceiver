@@ -342,17 +342,17 @@ void EXTI1_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles EXTI line2 interrupt.
+  * @brief This function handles EXTI line3 interrupt.
   */
-void EXTI2_IRQHandler(void)
+void EXTI3_IRQHandler(void)
 {
-  /* USER CODE BEGIN EXTI2_IRQn 0 */
-  CPULOAD_WakeUp();
-  /* USER CODE END EXTI2_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(ENC_CLK_Pin);
-  /* USER CODE BEGIN EXTI2_IRQn 1 */
+  /* USER CODE BEGIN EXTI3_IRQn 0 */
+	CPULOAD_WakeUp();
+  /* USER CODE END EXTI3_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(PWR_ON_Pin);
+  /* USER CODE BEGIN EXTI3_IRQn 1 */
 
-  /* USER CODE END EXTI2_IRQn 1 */
+  /* USER CODE END EXTI3_IRQn 1 */
 }
 
 /**
@@ -363,7 +363,7 @@ void EXTI4_IRQHandler(void)
   /* USER CODE BEGIN EXTI4_IRQn 0 */
   CPULOAD_WakeUp();
   /* USER CODE END EXTI4_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(PTT_IN_Pin);
+  HAL_GPIO_EXTI_IRQHandler(AUDIO_48K_CLOCK_Pin);
   /* USER CODE BEGIN EXTI4_IRQn 1 */
 
   /* USER CODE END EXTI4_IRQn 1 */
@@ -409,6 +409,20 @@ void DMA1_Stream3_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
 
   /* USER CODE END DMA1_Stream3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles EXTI line[9:5] interrupts.
+  */
+void EXTI9_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+	CPULOAD_WakeUp();
+  /* USER CODE END EXTI9_5_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(PTT_IN_Pin);
+  /* USER CODE BEGIN EXTI9_5_IRQn 1 */
+
+  /* USER CODE END EXTI9_5_IRQn 1 */
 }
 
 /**
@@ -499,8 +513,7 @@ void EXTI15_10_IRQHandler(void)
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
   CPULOAD_WakeUp();
   /* USER CODE END EXTI15_10_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(AUDIO_48K_CLOCK_Pin);
-  HAL_GPIO_EXTI_IRQHandler(PWR_ON_Pin);
+  HAL_GPIO_EXTI_IRQHandler(ENC_CLK_Pin);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
   /* USER CODE END EXTI15_10_IRQn 1 */
@@ -1076,26 +1089,26 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if (GPIO_Pin == GPIO_PIN_10) //FPGA BUS
+  if (GPIO_Pin == AUDIO_48K_CLOCK_Pin) //FPGA BUS
   {
     FPGA_fpgadata_iqclock();    // IQ data
     FPGA_fpgadata_stuffclock(); // parameters and other services
   }
-  else if (GPIO_Pin == GPIO_PIN_2) //Main encoder
+  else if (GPIO_Pin == ENC_CLK_Pin) //Main encoder
   {
     if (TRX_Inited)
       FRONTPANEL_ENCODER_checkRotate();
   }
-  else if (GPIO_Pin == GPIO_PIN_4) //PTT
+  else if (GPIO_Pin == PTT_IN_Pin) //PTT
   {
     if (TRX_Inited)
       TRX_ptt_change();
   }
-  else if (GPIO_Pin == GPIO_PIN_1) //KEY DOT
+  else if (GPIO_Pin == KEY_IN_DOT_Pin) //KEY DOT
   {
     CW_key_change();
   }
-  else if (GPIO_Pin == GPIO_PIN_0) //KEY DASH
+  else if (GPIO_Pin == KEY_IN_DASH_Pin) //KEY DASH
   {
     CW_key_change();
   }
