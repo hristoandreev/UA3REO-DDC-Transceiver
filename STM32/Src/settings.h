@@ -8,8 +8,8 @@
 #include "functions.h"
 #include "bands.h"
 
-#define SETT_VERSION 47						  // Settings config version
-#define CALIB_VERSION 43					  // Calibration config version
+#define SETT_VERSION 50						  // Settings config version
+#define CALIB_VERSION 45					  // Calibration config version
 #define ADC_CLOCK 122880000					  // ADC generator frequency
 #define DAC_CLOCK 188160000					  // DAC generator frequency
 #define MAX_RX_FREQ_HZ 750000000			  // Maximum receive frequency (from the ADC datasheet)
@@ -40,7 +40,6 @@
 #define IDLE_LCD_BRIGHTNESS 5				  // Low brightness for IDLE mode (dimmer)
 #define CW_ADD_GAIN_IF 35.0f				  // additional IF gain in CW
 #define CW_ADD_GAIN_AF 6.0f					  // additional AF gain in CW
-#define STATIC_TRANSVERTER_OFFSET 144000000	  // static transverter IF
 #define TX_LPF_TIMEOUT (180 * 1000)			  // TX LPF On Timeout, millisec (3 min)
 // FRONT-PANEL, LCD AND TANGENT types moved to KEIL TARGETS
 
@@ -307,7 +306,7 @@ typedef enum
 // Save settings by band
 typedef struct
 {
-    uint64_t Freq;
+  uint64_t Freq;
 	float32_t ATT_DB;
 	uint8_t Mode;
 	uint8_t DNR_Type;
@@ -316,7 +315,8 @@ typedef struct
 	int8_t FM_SQL_threshold_dbm;
 	bool LNA;
 	bool ATT;
-	bool ANT;
+	bool ANT_selected;
+	bool ANT_mode;
 	bool ADC_Driver;
 	bool ADC_PGA;
 	bool AGC;
@@ -337,8 +337,8 @@ extern struct TRX_SETTINGS
 	uint32_t FRQ_ENC_FAST_STEP;
 	VFO VFO_A;
 	VFO VFO_B;
-	uint16_t SHIFT_INTERVAL;
-	uint16_t SPLIT_INTERVAL;
+	uint16_t RIT_INTERVAL;
+	uint16_t XIT_INTERVAL;
 	uint16_t Transverter_Offset_Mhz;
 	uint8_t ATT_STEP;
 	uint8_t RF_Power;
@@ -356,19 +356,20 @@ extern struct TRX_SETTINGS
 	bool LNA;
 	bool ATT;
 	bool RF_Filters;
-	bool ANT;
+	bool ANT_selected; // false - 1, true - 2
+	bool ANT_mode; // false - RX=TX, true - 1RX 2TX
 	bool ChannelMode;
-	bool ShiftEnabled;
-	bool SplitEnabled;
+	bool RIT_Enabled;
+	bool XIT_Enabled;
+	bool SPLIT_Enabled;
 	bool FineRITTune;
 	bool TWO_SIGNAL_TUNE;
 	bool BandMapEnabled;
 	bool AutoGain;
 	bool Locked;
-	bool CLAR;
 	bool Dual_RX;
 	bool Encoder_Accelerate;
-	bool Transverter_Enabled;
+	bool Custom_Transverter_Enabled;
 	bool TUNER_Enabled;
 	bool ATU_Enabled;
 	bool ATU_T;
@@ -401,6 +402,7 @@ extern struct TRX_SETTINGS
 	uint8_t DNR2_SNR_THRESHOLD;
 	uint8_t DNR_AVERAGE;
 	uint8_t DNR_MINIMAL;
+	uint8_t VAD_THRESHOLD;
 	uint8_t RX_AGC_SSB_speed;
 	uint8_t RX_AGC_CW_speed;
 	uint8_t RX_AGC_Max_gain;
@@ -424,6 +426,7 @@ extern struct TRX_SETTINGS
 	bool NOISE_BLANKER;
 	bool Beeper;
 	bool FM_Stereo;
+	bool AGC_Spectral;
 	// CW
 	float32_t CW_DotToDashRate;
 	uint16_t CW_Pitch;
@@ -622,6 +625,7 @@ extern struct TRX_CALIBRATE
 	uint8_t EXT_TRANSV_6cm;
 	uint8_t EXT_TRANSV_3cm;
 	uint8_t ATU_AVERAGING;
+	uint8_t TwoSignalTune_Balance;
 	int8_t VCXO_correction;
 	int8_t LNA_compensation;
 	TRX_RF_UNIT_TYPE RF_unit_type;
@@ -652,6 +656,7 @@ extern struct TRX_CALIBRATE
 	bool OTA_update;
 	bool LCD_Rotate;
 	bool INA226_EN; // Tisho
+	bool LinearPowerControl;
 	BAND_SAVED_SETTINGS_TYPE MEMORY_CHANNELS[MEMORY_CHANNELS_COUNT];
 	uint32_t BAND_MEMORIES[BANDS_COUNT][BANDS_MEMORIES_COUNT];
 

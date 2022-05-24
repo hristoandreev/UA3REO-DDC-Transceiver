@@ -347,7 +347,7 @@ void ua3reo_dev_cat_parseCommand(void)
 	{
 		if (!has_args)
 		{
-			if (!TRX.CLAR)
+			if (!TRX.SPLIT_Enabled)
 				CAT_Transmit("FT0;");
 			else
 				CAT_Transmit("FT1;");
@@ -356,11 +356,11 @@ void ua3reo_dev_cat_parseCommand(void)
 		{
 			if (strcmp(arguments, "0") == 0)
 			{
-				TRX.CLAR = false;
+				TRX.SPLIT_Enabled = false;
 			}
 			else if (strcmp(arguments, "1") == 0)
 			{
-				TRX.CLAR = true;
+				TRX.SPLIT_Enabled = true;
 			}
 			else
 				println("Unknown CAT arguments: ", _command);
@@ -451,7 +451,7 @@ void ua3reo_dev_cat_parseCommand(void)
 				strcat(answer, "0");	  // 0: XIT OFF, 1: XIT ON
 				strcat(answer, "0");	  // 0: Always 0 for the TS-480 (Memory channel bank number).
 				strcat(answer, "00");	  // Memory channel number (00 ~ 99).
-				if (TRX_on_TX())		  // 0: RX, 1: TX
+				if (TRX_on_TX)		  // 0: RX, 1: TX
 					strcat(answer, "1");
 				else
 					strcat(answer, "0");
@@ -926,7 +926,8 @@ void ua3reo_dev_cat_parseCommand(void)
 				}
 				TRX.LNA = TRX.BANDS_SAVED_SETTINGS[band].LNA;
 				TRX.ATT = TRX.BANDS_SAVED_SETTINGS[band].ATT;
-				TRX.ANT = TRX.BANDS_SAVED_SETTINGS[band].ANT;
+				TRX.ANT_selected = TRX.BANDS_SAVED_SETTINGS[band].ANT_selected;
+				TRX.ANT_mode = TRX.BANDS_SAVED_SETTINGS[band].ANT_mode;
 				TRX.ATT_DB = TRX.BANDS_SAVED_SETTINGS[band].ATT_DB;
 				TRX.ADC_Driver = TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver;
 				TRX.ADC_PGA = TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA;

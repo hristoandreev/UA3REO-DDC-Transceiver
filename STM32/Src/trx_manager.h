@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "settings.h"
 
+#define TRX_on_TX (TRX_ptt_hard || TRX_ptt_soft || TRX_Tune || CurrentVFO->Mode == TRX_MODE_LOOPBACK || (TRX.CW_PTT_Type == KEY_PTT && CW_Key_Timeout_est > 0))
 #define TRX_SLOW_SETFREQ_MIN_STEPSIZE 100 // step in hz for slowly touchpad tuning
 #define TRX_GetSamplerateByENUM(rate) (((rate) == TRX_SAMPLERATE_K48) ? 48000 : ((rate) == TRX_SAMPLERATE_K96) ? 96000  \
                                                                           : ((rate) == TRX_SAMPLERATE_K192)  ? 192000 \
@@ -19,7 +20,6 @@ extern void TRX_setFrequency(uint64_t _freq, VFO *vfo);
 extern void TRX_setTXFrequencyFloat(float64_t _freq, VFO *vfo); // for WSPR and other
 extern void TRX_setMode(uint_fast8_t _mode, VFO *vfo);
 extern void TRX_ptt_change(void);
-extern bool TRX_on_TX(void);
 extern void TRX_DoAutoGain(void);
 extern void TRX_Restart_Mode(void);
 extern void TRX_DBMCalculate(void);
@@ -48,8 +48,8 @@ volatile extern int16_t TRX_ADC_MINAMPLITUDE;
 volatile extern int16_t TRX_ADC_MAXAMPLITUDE;
 volatile extern int32_t TRX_VCXO_ERROR;
 volatile extern uint32_t TRX_SNTP_Synced;
-volatile extern int_fast16_t TRX_SHIFT;
-volatile extern int_fast16_t TRX_SPLIT;
+volatile extern int_fast16_t TRX_RIT;
+volatile extern int_fast16_t TRX_XIT;
 volatile extern float32_t TRX_MAX_TX_Amplitude;
 volatile extern float32_t TRX_PWR_Forward;
 volatile extern float32_t TRX_PWR_Backward;
@@ -61,6 +61,7 @@ volatile extern float32_t TRX_VLT_forward;  // Tisho
 volatile extern float32_t TRX_VLT_backward; // Tisho
 volatile extern float32_t TRX_ALC_IN;
 volatile extern float32_t TRX_ALC_OUT;
+volatile extern bool TRX_SWR_PROTECTOR;
 volatile extern bool TRX_DAC_DIV0;
 volatile extern bool TRX_DAC_DIV1;
 volatile extern bool TRX_DAC_HP1;
@@ -89,5 +90,6 @@ extern uint32_t TRX_DXCluster_UpdateTime;
 volatile extern float32_t TRX_PWR_Voltage;
 volatile extern float32_t TRX_RF_Current;
 extern uint32_t TRX_Inactive_Time;
+volatile extern uint_fast16_t CW_Key_Timeout_est;
 
 #endif

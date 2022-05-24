@@ -38,7 +38,8 @@ typedef struct // description of the region in the band
 
 typedef struct // description of the region in the band
 {
-	const char *name;
+	const char *subname;
+	const uint8_t number;
 	const uint32_t rxFreq;
 	const uint32_t txFreq;
 } CHANNEL_MAP;
@@ -61,5 +62,5 @@ extern BAND_MAP BANDS[BANDS_COUNT];
 // Public methods
 extern uint_fast8_t getModeFromFreq(uint64_t freq);			// mod from frequency
 extern int8_t getBandFromFreq(uint64_t freq, bool nearest); // band number from frequency
-extern int8_t getChannelbyFreq(uint64_t freq, bool txfreq); // get channel by frequency
+extern int16_t getChannelbyFreq(uint64_t freq, bool txfreq); // get channel by frequency
 #endif

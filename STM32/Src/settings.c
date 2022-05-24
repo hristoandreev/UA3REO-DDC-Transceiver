@@ -11,7 +11,7 @@
 #include "bands.h"
 #include "front_unit.h"
 
-char version_string[19] = "4.0.3";
+char version_string[19] = "4.1.0";
 
 // W25Q16
 IRAM2 static uint8_t Write_Enable = W25Q16_COMMAND_Write_Enable;
@@ -108,8 +108,8 @@ void LoadSettings(bool clear)
 		TRX.selected_vfo = false;			  // current VFO (false - A)
 		TRX.VFO_A.Freq = 7100000;			  // stored VFO-A frequency
 		TRX.VFO_A.Mode = TRX_MODE_LSB;		  // saved VFO-A mode
-		TRX.VFO_A.LPF_RX_Filter_Width = 2700; // saved bandwidth for VFO-A
-		TRX.VFO_A.LPF_TX_Filter_Width = 2700; // saved bandwidth for VFO-A
+		TRX.VFO_A.LPF_RX_Filter_Width = 3000; // saved bandwidth for VFO-A
+		TRX.VFO_A.LPF_TX_Filter_Width = 3000; // saved bandwidth for VFO-A
 		TRX.VFO_A.HPF_RX_Filter_Width = 60;	  // saved bandwidth for VFO-A
 		TRX.VFO_A.HPF_TX_Filter_Width = 60;	  // saved bandwidth for VFO-A
 		TRX.VFO_A.ManualNotchFilter = false;  // notch filter to cut out noise
@@ -121,8 +121,8 @@ void LoadSettings(bool clear)
 		TRX.VFO_A.FM_SQL_threshold_dbm = -90; // FM noise squelch
 		TRX.VFO_B.Freq = 14150000;			  // stored VFO-B frequency
 		TRX.VFO_B.Mode = TRX_MODE_USB;		  // saved VFO-B mode
-		TRX.VFO_B.LPF_RX_Filter_Width = 2700; // saved bandwidth for VFO-B
-		TRX.VFO_B.LPF_TX_Filter_Width = 2700; // saved bandwidth for VFO-B
+		TRX.VFO_B.LPF_RX_Filter_Width = 3000; // saved bandwidth for VFO-B
+		TRX.VFO_B.LPF_TX_Filter_Width = 3000; // saved bandwidth for VFO-B
 		TRX.VFO_B.HPF_RX_Filter_Width = 60;	  // saved bandwidth for VFO-B
 		TRX.VFO_B.HPF_TX_Filter_Width = 60;	  // saved bandwidth for VFO-B
 		TRX.VFO_B.ManualNotchFilter = false;  // notch filter to cut out noise
@@ -138,13 +138,14 @@ void LoadSettings(bool clear)
 		TRX.ATT_DB = 12.0f;					  // suppress the attenuator
 		TRX.ATT_STEP = 6.0f;				  // step of tuning the attenuator
 		TRX.RF_Filters = true;				  // LPF / HPF / BPF
-		TRX.ANT = false;					  // ANT-1
+		TRX.ANT_selected = false;					  // ANT-1
+		TRX.ANT_mode = false;					  // RX=TX
 		TRX.RF_Power = 20;					  // output power (%)
 		TRX.ChannelMode = false;			  // enable channel mode on VFO
-		TRX.ShiftEnabled = false;			  // activate the SHIFT mode
-		TRX.SplitEnabled = false;			  // activate the SPLIT mode
-		TRX.SHIFT_INTERVAL = 1000;			  // Detune range with the SHIFT knob (5000 = -5000hz / + 5000hz)
-		TRX.SPLIT_INTERVAL = 1000;			  // Detune range with the SPLIT knob (5000 = -5000hz / + 5000hz)
+		TRX.RIT_Enabled = false;			  // activate the SHIFT mode
+		TRX.XIT_Enabled = false;			  // activate the SPLIT mode
+		TRX.RIT_INTERVAL = 1000;			  // Detune range with the SHIFT knob (5000 = -5000hz / + 5000hz)
+		TRX.XIT_INTERVAL = 1000;			  // Detune range with the SPLIT knob (5000 = -5000hz / + 5000hz)
 		TRX.TWO_SIGNAL_TUNE = false;		  // Two-signal generator in TUNE mode (1 + 2kHz)
 #ifdef LAY_160x128
 		TRX.SAMPLERATE_MAIN = TRX_SAMPLERATE_K48; // Samplerate for ssb/cw/digi/nfm/etc modes
@@ -173,14 +174,14 @@ void LoadSettings(bool clear)
 		TRX.AutoGain = false;			  // auto-control preamp and attenuator
 #endif
 		TRX.Locked = false;				  // Lock control
-		TRX.CLAR = false;				  // Split frequency mode (receive one VFO, transmit another)
+		TRX.SPLIT_Enabled = false;				  // Split frequency mode (receive one VFO, transmit another)
 		TRX.Dual_RX = false;			  // Dual RX feature
 		TRX.Dual_RX_Type = VFO_A_PLUS_B;  // dual receiver mode
 		TRX.Encoder_Accelerate = true;	  // Accelerate Encoder on fast rate
 		strcpy(TRX.CALLSIGN, "HamRad");	  // Callsign
 		strcpy(TRX.LOCATOR, "LO02RR");	  // Locator
-		TRX.Transverter_Enabled = false;  // Enable transverter mode
-		TRX.Transverter_Offset_Mhz = 120; // Offset from VFO
+		TRX.Custom_Transverter_Enabled = false;  // Enable transverter mode
+		TRX.Transverter_Offset_Mhz = 144; // Offset from VFO
 		TRX.ATU_I = 0;					  // ATU default state
 		TRX.ATU_C = 0;					  // ATU default state
 		TRX.ATU_T = false;				  // ATU default state
@@ -197,7 +198,7 @@ void LoadSettings(bool clear)
 		TRX.Volume = 25;					 // AF Volume
 		TRX.IF_Gain = 15;					 // IF gain, dB (before all processing and AGC)
 		TRX.AGC_GAIN_TARGET = -30;			 // Maximum (target) AGC gain
-		TRX.MIC_GAIN = 1;					 // Microphone gain
+		TRX.MIC_GAIN = 3;					 // Microphone gain
 		TRX.MIC_Boost = true;				 // +20db mic amplifier
 		TRX.MIC_NOISE_GATE = -120;			 // Mic noise gate
 		TRX.RX_EQ_LOW = 0;					 // Receiver Equalizer (Low)
@@ -237,6 +238,8 @@ void LoadSettings(bool clear)
 		TRX.CTCSS_Freq = 0;					 // CTCSS FM Frequency
 		TRX.SELFHEAR_Volume = 50;			 // Selfhearing volume
 		TRX.FM_Stereo = false;				 // Stereo FM Mode
+		TRX.AGC_Spectral = true;			//Spectral AGC mode
+		TRX.VAD_THRESHOLD = 150;				//Threshold of SSB/SCAN squelch
 		// CW
 		TRX.CW_Pitch = 600;			   // LO offset in CW mode
 		TRX.CW_Key_timeout = 200;	   // time of releasing transmission after the last character on the key
@@ -274,7 +277,7 @@ void LoadSettings(bool clear)
 		TRX.FFT_Averaging = 8;	   // averaging the FFT to make it smoother
 		TRX.FFT_Window = 1;		   // FFT Window
 		TRX.FFT_Style = 1;		   // FFT style
-		TRX.FFT_BW_Style = 1;	   // FFT BW style
+		TRX.FFT_BW_Style = 2;	   // FFT BW style
 		TRX.FFT_Color = 1;		   // FFT display color
 		TRX.WTF_Color = 2;		   // WTF display color
 		TRX.FFT_Compressor = true; // Compress FFT Peaks
@@ -353,7 +356,8 @@ void LoadSettings(bool clear)
 			TRX.BANDS_SAVED_SETTINGS[i].LNA = TRX.LNA;
 			TRX.BANDS_SAVED_SETTINGS[i].ATT = TRX.ATT;
 			TRX.BANDS_SAVED_SETTINGS[i].ATT_DB = TRX.ATT_DB;
-			TRX.BANDS_SAVED_SETTINGS[i].ANT = TRX.ANT;
+			TRX.BANDS_SAVED_SETTINGS[i].ANT_selected = TRX.ANT_selected;
+			TRX.BANDS_SAVED_SETTINGS[i].ANT_mode = TRX.ANT_mode;
 			TRX.BANDS_SAVED_SETTINGS[i].ADC_Driver = TRX.ADC_Driver;
 			if (TRX.BANDS_SAVED_SETTINGS[i].Freq < 70000000)
 				TRX.BANDS_SAVED_SETTINGS[i].SQL = false;
@@ -491,15 +495,15 @@ void LoadCalibration(bool clear)
 #elif defined(FRONTPANEL_WF_100D)
 		CALIBRATE.ENCODER2_INVERT = true; // invert left-right rotation of the optional encoder
 		CALIBRATE.RF_unit_type = RF_UNIT_WF_100D;
-		CALIBRATE.rf_out_power_2200m = 40;			   // 2200m
-		CALIBRATE.rf_out_power_160m = 40;			   // 160m
-		CALIBRATE.rf_out_power_80m = 40;			   // 80m
-		CALIBRATE.rf_out_power_40m = 40;			   // 40m
-		CALIBRATE.rf_out_power_30m = 40;			   // 30m
-		CALIBRATE.rf_out_power_20m = 40;			   // 20m
-		CALIBRATE.rf_out_power_17m = 40;			   // 17m
-		CALIBRATE.rf_out_power_15m = 40;			   // 15m
-		CALIBRATE.rf_out_power_12m = 40;			   // 12m
+		CALIBRATE.rf_out_power_2200m = 17;			   // 2200m
+		CALIBRATE.rf_out_power_160m = 17;			   // 160m
+		CALIBRATE.rf_out_power_80m = 20;			   // 80m
+		CALIBRATE.rf_out_power_40m = 22;			   // 40m
+		CALIBRATE.rf_out_power_30m = 24;			   // 30m
+		CALIBRATE.rf_out_power_20m = 25;			   // 20m
+		CALIBRATE.rf_out_power_17m = 30;			   // 17m
+		CALIBRATE.rf_out_power_15m = 35;			   // 15m
+		CALIBRATE.rf_out_power_12m = 38;			   // 12m
 		CALIBRATE.rf_out_power_cb = 40;				   // 27mhz
 		CALIBRATE.rf_out_power_10m = 40;			   // 10m
 		CALIBRATE.rf_out_power_6m = 40;				   // 6m
@@ -530,7 +534,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.SWR_REF_Calibration_6M = 19.0f;	   // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_VHF = 10.0f;	   // SWR Transormator rate forward
 		CALIBRATE.SWR_REF_Calibration_VHF = 10.0f;	   // SWR Transormator rate return
-		CALIBRATE.TUNE_MAX_POWER = 10;				   // Maximum RF power in Tune mode
+		CALIBRATE.TUNE_MAX_POWER = 15;				   // Maximum RF power in Tune mode
 		CALIBRATE.MAX_RF_POWER = 100;				   // Max TRX Power for indication
 #else
 		CALIBRATE.RFU_LPF_END = 60000 * 1000;		   // LPF
@@ -617,6 +621,8 @@ void LoadCalibration(bool clear)
 		CALIBRATE.ATU_AVERAGING = 3;			 // Tuner averaging stages
 		CALIBRATE.CAT_Type = CAT_FT450;
 		CALIBRATE.LNA_compensation = 0; // Compensation for LNA, db
+		CALIBRATE.TwoSignalTune_Balance = 50; //balance of signals on twosignal-tune
+		CALIBRATE.LinearPowerControl = false; //linear or logrithmic power control
 
 		// Default memory channels
 		for (uint8_t i = 0; i < MEMORY_CHANNELS_COUNT; i++)
@@ -626,7 +632,8 @@ void LoadCalibration(bool clear)
 			CALIBRATE.MEMORY_CHANNELS[i].LNA = TRX.LNA;
 			CALIBRATE.MEMORY_CHANNELS[i].ATT = TRX.ATT;
 			CALIBRATE.MEMORY_CHANNELS[i].ATT_DB = TRX.ATT_DB;
-			CALIBRATE.MEMORY_CHANNELS[i].ANT = TRX.ANT;
+			CALIBRATE.MEMORY_CHANNELS[i].ANT_selected = TRX.ANT_selected;
+			CALIBRATE.MEMORY_CHANNELS[i].ANT_mode = TRX.ANT_mode;
 			CALIBRATE.MEMORY_CHANNELS[i].ADC_Driver = TRX.ADC_Driver;
 			CALIBRATE.MEMORY_CHANNELS[i].SQL = false;
 			CALIBRATE.MEMORY_CHANNELS[i].FM_SQL_threshold_dbm = TRX.VFO_A.FM_SQL_threshold_dbm;

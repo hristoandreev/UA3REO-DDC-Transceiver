@@ -85,7 +85,7 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 ## Management
 
 * **AF GAIN** - Volume
-* **SHIFT / GAIN** - When the SHIFT function is active - smooth offset from the selected transceiver frequency. Inactive - IF gain control
+* **RIT / GAIN** - When the RIT function is active - smooth offset from the selected transceiver frequency. Inactive - IF gain control
 * **ENC MAIN** - Main encoder for frequency control and menu settings
 * **ENC 2** - Auxiliary encoder for menu operation. In normal mode, quickly switches the frequency, in CW fast change WPM
 * **ENC 2[click]** - In CW mode, toggles between fast step and WPM selection, in other modes it opens the bandwidth properties.
@@ -118,16 +118,16 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **DNR [clamp]** - Turn on the impulse noise suppressor (NB)
 * **NOTCH** - Turn on the automatic Notch filter to eliminate narrowband interference
 * **NOTCH [clamp]** - Turn on the manual Notch filter to eliminate narrowband interference
-* **CLAR** - Allows you to split transmission and reception to different VFO banks
-* **CLAR [clamp]** - Enables SHIFT control from the front panel
+* **SPLIT** - Allows you to split transmission and reception to different VFO banks
+* **RIT [clamp]** - Enables RIT control from the front panel
 * **WPM** - Switch to key speed selection menu (WPM)
 * **WPM [clamp]** - Automatic key enable
 * **MENU** - Go to the menu
 * **MENU [clamp]** - Enable key lock LOCK
 * **MENU [at power on]** - Reset transceiver settings
 * **MENU [at power on+PRE]** - Reset transceiver settings and calibration
-* **SHIFT** - Offset of the receiving frequency relative to the current frequency (TX without offset)
-* **SPLIT** - Offset of the transmission frequency relative to the current frequency (RX without offset)
+* **RIT** - Offset of the receiving frequency relative to the current frequency (TX without offset)
+* **XIT** - Offset of the transmission frequency relative to the current frequency (RX without offset)
 
 ## Settings
 
@@ -139,9 +139,9 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **AutoGainer** - Automatic ATT / PREAMP control depending on the signal level on the ADC
 * **RF Filters** - Hardware filter management (LPF / HPF / BPF)
 * **Two Signal tune** - Two-signal generator in TUNE mode (1 + 2kHz)
-* **Shift Interval** - Offset range SHIFT (+ -)
-* **Split Interval** - Offset range SPLIT (+ -)
-* **Fine RIT Tune** - Fine or coarse tuning for SPLIT/SHIFT (encoder or resistor)
+* **RIT Interval** - Offset range RIT (+ -)
+* **XIT Interval** - Offset range XIT (+ -)
+* **Fine RIT Tune** - Fine or coarse tuning for RIT/XIT (encoder or resistor)
 * **TRX Samplerate** - Max FFT/samplerate on CW/SSB/NFM/DIGI/etc modes
 * **FM Samplerate** - Max FFT/samplerate on NFM/WFM mode
 * **Freq Step** - Frequency step by the main encoder
@@ -156,14 +156,14 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **Input Type** - Select audio input (microphone, line in, USB)
 * **Callsign** - User callsign
 * **Locator** - User QTH locator
-* **Transverter Enable** - Enable external transverter
-* **Transverter Offset, mHz** - External transverter frequency offset, mHz
 * **TUNER Enabled** - Turning on the antenna tuner
 * **ATU Enabled** - Turning on the automatic antenna tuner
 * **ATU Ind** - Combination of tuner inductances
 * **ATU Cap** - Tuner Capacitance Combination
 * **ATU T** - Tuner capacitive arm position
-* **Transverter XXcm** - Enable external transverter support with IF 144mhz
+* **Transverter XXcm** - Enable external ham band transverter support
+* **Custom Transverter** - Enable external transverter on non-ham band (just offset display frequency)
+* **Transverter Offset, mHz** - External transverter frequency offset, mHz
 
 ### AUDIO Settings
 
@@ -192,6 +192,8 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **CTCSS Frequency** - Transmit FM CTCSS sub-tone frequency
 * **SelfHear Volume** - Self Hearing (CW/DIGI) volume relative to the overall transceiver volume
 * **WFM Stereo** - select WFM stereo or mono decoder
+* **AGC Spectral** - Enable experimental FFT-based AGC
+* **VAD Threshold** - VAD voice detector threshold (noise suppressor for SSB mode and SCAN mode)
 
 ### CW Settings
 
@@ -318,6 +320,8 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **ATU Averaging** - The number of steps of averaging SWR values during measurements in the operation of an automatic tuner
 * **CAT Type** - Type of CAT subsystem (FT-450 / TS-2000)
 * **LNA Compensation** - Compensates the S-meter value when the LNA is turned on, dBm
+* **TSignal Balance** - Sets the power balance between signals in Two signal tune mode
+* **Linear Pwr Control** - Sets a linear way to change the signal amplitude when adjusting the power (if disabled - logarithmic)
 
 ### Set Clock Time
 

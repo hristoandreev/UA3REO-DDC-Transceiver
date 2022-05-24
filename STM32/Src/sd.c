@@ -126,12 +126,15 @@ void SD_Process(void)
 	// Mount volume
 	if (SD_Present && !SD_Mounted)
 	{
-		if (f_mount(&SDFatFs, (TCHAR const *)USERPath, 0) != FR_OK)
+		uint8_t res = f_mount(&SDFatFs, (TCHAR const *)USERPath, 1);
+		if (res != FR_OK)
 		{
+			println("[ERR] SD cannot be mounted: code ", res);
 			SD_Present = false;
 		}
 		else
 		{
+			//println("[OK] SD mounted");
 			SD_Mounted = true;
 		}
 	}
@@ -298,10 +301,11 @@ static void SDCOMM_CHECKSD_handler(void)
 {
 	if (f_mount(&SDFatFs, (TCHAR const *)USERPath, 1) == FR_OK)
 	{
-		// sendToDebug_str("sd chk ok");
+		//println("[OK] Check SD");
 	}
 	else
 	{
+		//println("[ERR] Check SD");
 		SD_RecordInProcess = false;
 		SD_Present = false;
 		LCD_UpdateQuery.StatusInfoGUI = true;
@@ -914,15 +918,16 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.ATT_STEP", (uint32_t *)&TRX.ATT_STEP, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.Fast", (uint32_t *)&TRX.Fast, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.ADC_PGA", (uint32_t *)&TRX.ADC_PGA, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.ANT", (uint32_t *)&TRX.ANT, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.ANT_selected", (uint32_t *)&TRX.ANT_selected, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.ANT_mode", (uint32_t *)&TRX.ANT_mode, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.RF_Filters", (uint32_t *)&TRX.RF_Filters, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.RF_Power", (uint32_t *)&TRX.RF_Power, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.ChannelMode", (uint32_t *)&TRX.ChannelMode, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.ShiftEnabled", (uint32_t *)&TRX.ShiftEnabled, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.SplitEnabled", (uint32_t *)&TRX.SplitEnabled, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.RIT_Enabled", (uint32_t *)&TRX.RIT_Enabled, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.XIT_Enabled", (uint32_t *)&TRX.XIT_Enabled, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.FineRITTune", (uint32_t *)&TRX.FineRITTune, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.SHIFT_INTERVAL", (uint32_t *)&TRX.SHIFT_INTERVAL, SYSMENU_UINT16);
-			SD_WRITE_SETT_LINE("TRX.SPLIT_INTERVAL", (uint32_t *)&TRX.SPLIT_INTERVAL, SYSMENU_UINT16);
+			SD_WRITE_SETT_LINE("TRX.RIT_INTERVAL", (uint32_t *)&TRX.RIT_INTERVAL, SYSMENU_UINT16);
+			SD_WRITE_SETT_LINE("TRX.XIT_INTERVAL", (uint32_t *)&TRX.XIT_INTERVAL, SYSMENU_UINT16);
 			SD_WRITE_SETT_LINE("TRX.TWO_SIGNAL_TUNE", (uint32_t *)&TRX.TWO_SIGNAL_TUNE, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.SAMPLERATE_MAIN", (uint32_t *)&TRX.SAMPLERATE_MAIN, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.SAMPLERATE_FM", (uint32_t *)&TRX.SAMPLERATE_FM, SYSMENU_UINT8);
@@ -936,13 +941,13 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.InputType_MAIN", (uint32_t *)&TRX.InputType_MAIN, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.InputType_DIGI", (uint32_t *)&TRX.InputType_DIGI, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.AutoGain", (uint32_t *)&TRX.AutoGain, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.CLAR", (uint32_t *)&TRX.CLAR, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.SPLIT_Enabled", (uint32_t *)&TRX.SPLIT_Enabled, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Dual_RX", (uint32_t *)&TRX.Dual_RX, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Encoder_Accelerate", (uint32_t *)&TRX.Encoder_Accelerate, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Dual_RX_Type", (uint32_t *)&TRX.Dual_RX_Type, SYSMENU_UINT8);
 			SD_WRITE_SETT_STRING("TRX.CALLSIGN", TRX.CALLSIGN);
 			SD_WRITE_SETT_STRING("TRX.LOCATOR", TRX.LOCATOR);
-			SD_WRITE_SETT_LINE("TRX.Transverter_Enabled", (uint32_t *)&TRX.Transverter_Enabled, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.Custom_Transverter_Enabled", (uint32_t *)&TRX.Custom_Transverter_Enabled, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Transverter_Offset_Mhz", (uint32_t *)&TRX.Transverter_Offset_Mhz, SYSMENU_UINT16);
 			SD_WRITE_SETT_LINE("TRX.ATU_Enabled", (uint32_t *)&TRX.ATU_Enabled, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.TUNER_Enabled", (uint32_t *)&TRX.TUNER_Enabled, SYSMENU_BOOLEAN);
@@ -995,6 +1000,8 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.CTCSS_Freq", (uint32_t *)&TRX.CTCSS_Freq, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("TRX.SELFHEAR_Volume", (uint32_t *)&TRX.SELFHEAR_Volume, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.FM_Stereo", (uint32_t *)&TRX.FM_Stereo, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.AGC_Spectral", (uint32_t *)&TRX.AGC_Spectral, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.VAD_THRESHOLD", (uint32_t *)&TRX.VAD_THRESHOLD, SYSMENU_UINT8);
 			// CW
 			SD_WRITE_SETT_LINE("TRX.CW_Pitch", (uint32_t *)&TRX.CW_Pitch, SYSMENU_UINT16);
 			SD_WRITE_SETT_LINE("TRX.CW_Key_timeout", (uint32_t *)&TRX.CW_Key_timeout, SYSMENU_UINT16);
@@ -1203,6 +1210,8 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.ATU_AVERAGING", (uint32_t *)&CALIBRATE.ATU_AVERAGING, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.LNA_compensation", (uint32_t *)&CALIBRATE.LNA_compensation, SYSMENU_INT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.CAT_Type", (uint32_t *)&CALIBRATE.CAT_Type, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.TwoSignalTune_Balance", (uint32_t *)&CALIBRATE.TwoSignalTune_Balance, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.LinearPowerControl", (uint32_t *)&CALIBRATE.LinearPowerControl, SYSMENU_BOOLEAN);
 			// Bands settings
 			char buff[64] = {0};
 			for (uint8_t i = 0; i < BANDS_COUNT; i++)
@@ -1217,8 +1226,10 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.BANDS_SAVED_SETTINGS[i].ATT, SYSMENU_BOOLEAN);
 				sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ATT_DB", i);
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.BANDS_SAVED_SETTINGS[i].ATT_DB, SYSMENU_FLOAT32);
-				sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ANT", i);
-				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.BANDS_SAVED_SETTINGS[i].ANT, SYSMENU_BOOLEAN);
+				sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ANT_selected", i);
+				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.BANDS_SAVED_SETTINGS[i].ANT_selected, SYSMENU_BOOLEAN);
+				sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ANT_mode", i);
+				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.BANDS_SAVED_SETTINGS[i].ANT_mode, SYSMENU_BOOLEAN);
 				sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ADC_Driver", i);
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.BANDS_SAVED_SETTINGS[i].ADC_Driver, SYSMENU_BOOLEAN);
 				sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].SQL", i);
@@ -1248,8 +1259,10 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].ATT, SYSMENU_BOOLEAN);
 				sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ATT_DB", i);
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].ATT_DB, SYSMENU_FLOAT32);
-				sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ANT", i);
-				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].ANT, SYSMENU_BOOLEAN);
+				sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ANT_selected", i);
+				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].ANT_selected, SYSMENU_BOOLEAN);
+				sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ANT_mode", i);
+				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].ANT_mode, SYSMENU_BOOLEAN);
 				sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ADC_Driver", i);
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].ADC_Driver, SYSMENU_BOOLEAN);
 				sprintf(buff, "TRX.MEMORY_CHANNELS[%d].SQL", i);
@@ -1378,24 +1391,26 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.ATT_STEP = (uint8_t)uintval;
 	if (strcmp(name, "TRX.Fast") == 0)
 		TRX.Fast = bval;
-	if (strcmp(name, "TRX.ANT") == 0)
-		TRX.ANT = bval;
+	if (strcmp(name, "TRX.ANT_selected") == 0)
+		TRX.ANT_selected = bval;
+	if (strcmp(name, "TRX.ANT_mode") == 0)
+		TRX.ANT_mode = bval;
 	if (strcmp(name, "TRX.RF_Filters") == 0)
 		TRX.RF_Filters = bval;
 	if (strcmp(name, "TRX.ChannelMode") == 0)
 		TRX.ChannelMode = bval;
 	if (strcmp(name, "TRX.RF_Power") == 0)
 		TRX.RF_Power = (uint8_t)uintval;
-	if (strcmp(name, "TRX.ShiftEnabled") == 0)
-		TRX.ShiftEnabled = bval;
-	if (strcmp(name, "TRX.SplitEnabled") == 0)
-		TRX.SplitEnabled = bval;
+	if (strcmp(name, "TRX.RIT_Enabled") == 0)
+		TRX.RIT_Enabled = bval;
+	if (strcmp(name, "TRX.XIT_Enabled") == 0)
+		TRX.XIT_Enabled = bval;
 	if (strcmp(name, "TRX.FineRITTune") == 0)
 		TRX.FineRITTune = bval;
-	if (strcmp(name, "TRX.SHIFT_INTERVAL") == 0)
-		TRX.SHIFT_INTERVAL = (uint16_t)uintval;
-	if (strcmp(name, "TRX.SPLIT_INTERVAL") == 0)
-		TRX.SPLIT_INTERVAL = (uint16_t)uintval;
+	if (strcmp(name, "TRX.RIT_INTERVAL") == 0)
+		TRX.RIT_INTERVAL = (uint16_t)uintval;
+	if (strcmp(name, "TRX.XIT_INTERVAL") == 0)
+		TRX.XIT_INTERVAL = (uint16_t)uintval;
 	if (strcmp(name, "TRX.TWO_SIGNAL_TUNE") == 0)
 		TRX.TWO_SIGNAL_TUNE = bval;
 	if (strcmp(name, "TRX.SAMPLERATE_MAIN") == 0)
@@ -1422,8 +1437,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.InputType_DIGI = (uint8_t)uintval;
 	if (strcmp(name, "TRX.AutoGain") == 0)
 		TRX.AutoGain = bval;
-	if (strcmp(name, "TRX.CLAR") == 0)
-		TRX.CLAR = bval;
+	if (strcmp(name, "TRX.SPLIT_Enabled") == 0)
+		TRX.SPLIT_Enabled = bval;
 	if (strcmp(name, "TRX.Dual_RX") == 0)
 		TRX.Dual_RX = bval;
 	if (strcmp(name, "TRX.Encoder_Accelerate") == 0)
@@ -1446,8 +1461,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 			lens = sizeof(TRX.LOCATOR);
 		strncpy(TRX.LOCATOR, value, lens);
 	}
-	if (strcmp(name, "TRX.Transverter_Enabled") == 0)
-		TRX.Transverter_Enabled = bval;
+	if (strcmp(name, "TRX.Custom_Transverter_Enabled") == 0)
+		TRX.Custom_Transverter_Enabled = bval;
 	if (strcmp(name, "TRX.Transverter_Offset_Mhz") == 0)
 		TRX.Transverter_Offset_Mhz = (uint16_t)uintval;
 	if (strcmp(name, "TRX.ATU_Enabled") == 0)
@@ -1551,6 +1566,10 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.SELFHEAR_Volume = (uint8_t)uintval;
 	if (strcmp(name, "TRX.FM_Stereo") == 0)
 		TRX.FM_Stereo = bval;
+	if (strcmp(name, "TRX.AGC_Spectral") == 0)
+		TRX.AGC_Spectral = bval;
+	if (strcmp(name, "TRX.VAD_THRESHOLD") == 0)
+		TRX.VAD_THRESHOLD = (uint8_t)uintval;
 	// CW
 	if (strcmp(name, "TRX.CW_Pitch") == 0)
 		TRX.CW_Pitch = (uint16_t)uintval;
@@ -1995,6 +2014,10 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.LNA_compensation = (int8_t)intval;
 	if (strcmp(name, "CALIBRATE.CAT_Type") == 0)
 		CALIBRATE.CAT_Type = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.TwoSignalTune_Balance") == 0)
+		CALIBRATE.TwoSignalTune_Balance = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.LinearPowerControl") == 0)
+		CALIBRATE.LinearPowerControl = bval;
 
 	// Bands settings
 	char buff[64] = {0};
@@ -2015,9 +2038,12 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ATT_DB", i);
 		if (strcmp(name, buff) == 0)
 			TRX.BANDS_SAVED_SETTINGS[i].ATT_DB = floatval;
-		sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ANT", i);
+		sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ANT_selected", i);
 		if (strcmp(name, buff) == 0)
-			TRX.BANDS_SAVED_SETTINGS[i].ANT = bval;
+			TRX.BANDS_SAVED_SETTINGS[i].ANT_selected = bval;
+		sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ANT_mode", i);
+		if (strcmp(name, buff) == 0)
+			TRX.BANDS_SAVED_SETTINGS[i].ANT_mode = bval;
 		sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].ADC_Driver", i);
 		if (strcmp(name, buff) == 0)
 			TRX.BANDS_SAVED_SETTINGS[i].ADC_Driver = bval;
@@ -2059,9 +2085,12 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ATT_DB", i);
 		if (strcmp(name, buff) == 0)
 			CALIBRATE.MEMORY_CHANNELS[i].ATT_DB = floatval;
-		sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ANT", i);
+		sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ANT_selected", i);
 		if (strcmp(name, buff) == 0)
-			CALIBRATE.MEMORY_CHANNELS[i].ANT = bval;
+			CALIBRATE.MEMORY_CHANNELS[i].ANT_selected = bval;
+		sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ANT_mode", i);
+		if (strcmp(name, buff) == 0)
+			CALIBRATE.MEMORY_CHANNELS[i].ANT_mode = bval;
 		sprintf(buff, "TRX.MEMORY_CHANNELS[%d].ADC_Driver", i);
 		if (strcmp(name, buff) == 0)
 			CALIBRATE.MEMORY_CHANNELS[i].ADC_Driver = bval;
@@ -2321,6 +2350,7 @@ void SD_PowerOn(void)
 SRAM uint8_t SD_Read_Block_tmp[SD_MAXBLOCK_SIZE] = {0};
 uint8_t SD_Read_Block(uint8_t *buff, uint32_t btr)
 {
+	//println("SD_Read_Block");
 	uint8_t result;
 	uint16_t cnt;
 	SPI_Release(); // FF token
@@ -2367,6 +2397,7 @@ uint8_t SD_Read_Block(uint8_t *buff, uint32_t btr)
 SRAM uint8_t SD_Write_Block_tmp[SD_MAXBLOCK_SIZE] = {0};
 uint8_t SD_Write_Block(uint8_t *buff, uint8_t token, bool dma)
 {
+	//println("SD_Write_Block");
 	uint8_t result;
 	uint16_t cnt;
 	SPI_wait_ready(); /* Wait for card ready */

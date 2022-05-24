@@ -34,10 +34,15 @@ typedef struct
 	float32_t NR_GAIN_old[NOISE_REDUCTION_FFT_SIZE_HALF];
 	float32_t SNR_post[NOISE_REDUCTION_FFT_SIZE_HALF];
 	float32_t SNR_prio[NOISE_REDUCTION_FFT_SIZE_HALF];
+	
+	//AGC
+	float32_t need_gain_db;
+	uint32_t last_agc_peak_time;
+	uint16_t hold_time;
 } NR_Instance;
 
 // Public methods
 extern void InitNoiseReduction(void);															// initialize DNR
-extern void processNoiseReduction(float32_t *buffer, AUDIO_PROC_RX_NUM rx_id, uint8_t nr_type); // run DNR for the data block
+extern void processNoiseReduction(float32_t *buffer, AUDIO_PROC_RX_NUM rx_id, uint8_t nr_type, uint_fast8_t mode, bool do_agc); // run DNR for the data block
 
 #endif

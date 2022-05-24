@@ -1,6 +1,10 @@
 #include "noise_reduction.h"
 #include "arm_const_structs.h"
 #include "settings.h"
+#include "audio_processor.h"
+#include "audio_filters.h"
+#include "trx_manager.h"
+#include "vad.h"
 
 // useful info https://github.com/df8oe/UHSDR/wiki/Noise-reduction
 
@@ -13,12 +17,14 @@ static float32_t von_Hann[NOISE_REDUCTION_FFT_SIZE] = {0}; // coefficients for t
 void InitNoiseReduction(void)
 {
 	dma_memset(&NR_RX1, 0, sizeof(NR_RX1));
-	dma_memset(&NR_RX2, 0, sizeof(NR_RX1));
+	dma_memset(&NR_RX2, 0, sizeof(NR_RX2));
+	
 	NR_RX1.FFT_Inst = NOISE_REDUCTION_FFT_INSTANCE;
 	NR_RX2.FFT_Inst = NOISE_REDUCTION_FFT_INSTANCE;
 
-	for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE; idx++)
-		von_Hann[idx] = sqrtf(0.5f * (1.0f - arm_cos_f32((2.0f * F_PI * idx) / (float32_t)NOISE_REDUCTION_FFT_SIZE)));
+	for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE; idx++) {
+		arm_sqrt_f32(0.5f * (1.0f - arm_cos_f32((2.0f * F_PI * idx) / (float32_t)NOISE_REDUCTION_FFT_SIZE)), &von_Hann[idx]);
+	}
 
 	for (uint16_t bindx = 0; bindx < NOISE_REDUCTION_FFT_SIZE_HALF; bindx++)
 	{
@@ -33,7 +39,7 @@ void InitNoiseReduction(void)
 }
 
 // run DNR for the data block
-void processNoiseReduction(float32_t *buffer, AUDIO_PROC_RX_NUM rx_id, uint8_t nr_type)
+void processNoiseReduction(float32_t *buffer, AUDIO_PROC_RX_NUM rx_id, uint8_t nr_type, uint_fast8_t mode, bool do_agc)
 {
 	NR_Instance *instance = &NR_RX1;
 	if (rx_id == AUDIO_RX2)
@@ -80,8 +86,9 @@ void processNoiseReduction(float32_t *buffer, AUDIO_PROC_RX_NUM rx_id, uint8_t n
 			// do fft
 			arm_cfft_f32(instance->FFT_Inst, instance->FFT_Buffer, 0, 1);
 			// get magnitude
-			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
-				instance->FFT_COMPLEX_MAG[idx] = sqrtf(instance->FFT_Buffer[idx * 2] * instance->FFT_Buffer[idx * 2] + instance->FFT_Buffer[idx * 2 + 1] * instance->FFT_Buffer[idx * 2 + 1]);
+			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++) {
+				arm_sqrt_f32(instance->FFT_Buffer[idx * 2] * instance->FFT_Buffer[idx * 2] + instance->FFT_Buffer[idx * 2 + 1] * instance->FFT_Buffer[idx * 2 + 1], &instance->FFT_COMPLEX_MAG[idx]);
+			}
 			// average magnitude
 			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
 				instance->FFT_AVERAGE_MAG[idx] = instance->FFT_COMPLEX_MAG[idx] * (1.0f - (float32_t)TRX.DNR_AVERAGE / 500.0f) + instance->FFT_AVERAGE_MAG[idx] * ((float32_t)TRX.DNR_AVERAGE / 500.0f);
@@ -150,29 +157,126 @@ void processNoiseReduction(float32_t *buffer, AUDIO_PROC_RX_NUM rx_id, uint8_t n
 				for (int bindx = 0; bindx < NOISE_REDUCTION_FFT_SIZE_HALF; bindx++)
 				{
 					float32_t v = instance->SNR_prio[bindx] / (instance->SNR_prio[bindx] + 1.0) * instance->SNR_post[bindx];
-					instance->NR_GAIN[bindx] = fmax(1.0 / instance->SNR_post[bindx] * sqrtf(0.7212 * v + v * v), 0.001); // limit HK's to 0.001
+					arm_sqrt_f32((0.7212f * v + v * v), &v);
+					instance->NR_GAIN[bindx] = fmax(1.0 / instance->SNR_post[bindx] * v, 0.001); // limit HK's to 0.001
 					instance->NR_GAIN_old[bindx] = instance->SNR_post[bindx] * instance->NR_GAIN[bindx] * instance->NR_GAIN[bindx];
 				}
 			}
-			// smooth gain
-			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
+			
+			if(do_agc) //do spectral AGC
 			{
-#define smooth_gain_alpha 0.9f
-#define smooth_gain_beta (1.0f - smooth_gain_alpha)
-				if ((idx - 1) >= 0)
-					instance->NR_GAIN[idx - 1] = instance->NR_GAIN[idx - 1] * smooth_gain_alpha + instance->NR_GAIN[idx] * smooth_gain_beta;
-				if ((idx + 1) < NOISE_REDUCTION_FFT_SIZE_HALF)
-					instance->NR_GAIN[idx + 1] = instance->NR_GAIN[idx + 1] * smooth_gain_alpha + instance->NR_GAIN[idx] * smooth_gain_beta;
+				float32_t RX_AGC_STEPSIZE_UP = 0.0f;
+				float32_t RX_AGC_STEPSIZE_DOWN = 0.0f;
+				if (mode == TRX_MODE_CW)
+				{
+					RX_AGC_STEPSIZE_UP = 200.0f / (float32_t)TRX.RX_AGC_CW_speed;
+					RX_AGC_STEPSIZE_DOWN = 20.0f / (float32_t)TRX.RX_AGC_CW_speed;
+				}
+				else
+				{
+					RX_AGC_STEPSIZE_UP = 1000.0f / (float32_t)TRX.RX_AGC_SSB_speed;
+					RX_AGC_STEPSIZE_DOWN = 20.0f / (float32_t)TRX.RX_AGC_SSB_speed;
+				}
+				
+				float32_t AGC_RX_magnitude = 0;
+				arm_rms_f32(instance->NR_InputBuffer, NOISE_REDUCTION_FFT_SIZE_HALF, &AGC_RX_magnitude);
+				
+				if (AGC_RX_magnitude == 0.0f)
+					AGC_RX_magnitude = 0.001f;
+				
+				float32_t full_scale_rate = AGC_RX_magnitude / FLOAT_FULL_SCALE_POW;
+				float32_t AGC_RX_dbFS = rate2dbV(full_scale_rate);
+				if (nr_type != 0)
+					AGC_RX_dbFS -= 12.0f; //DNR compensation
+				
+				float32_t gain_target = (float32_t)TRX.AGC_GAIN_TARGET;
+				if (mode == TRX_MODE_CW)
+					gain_target += CW_ADD_GAIN_AF;
+				float32_t diff = (gain_target - (AGC_RX_dbFS + instance->need_gain_db));
+
+				// hold time limiter
+				#define AGC_HOLDTIME_LIMITER_DB 10.0f
+				#define AGC_HOLDTIME_STEP 5
+				if (fabsf(diff) < AGC_HOLDTIME_LIMITER_DB && instance->hold_time < TRX.RX_AGC_Hold)
+				{
+					instance->hold_time += AGC_HOLDTIME_STEP;
+				}
+				
+				// move
+				if (diff > 0)
+				{
+					if ((HAL_GetTick() - instance->last_agc_peak_time) > instance->hold_time)
+					{
+						instance->need_gain_db += diff / RX_AGC_STEPSIZE_UP;
+
+						if (diff > AGC_HOLDTIME_LIMITER_DB && instance->hold_time > 0)
+							instance->hold_time -= AGC_HOLDTIME_STEP;
+					}
+				}
+				else
+				{
+					instance->need_gain_db += diff / RX_AGC_STEPSIZE_DOWN;
+					instance->last_agc_peak_time = HAL_GetTick();
+				}
+				
+				// gain limiter
+				if (instance->need_gain_db > (float32_t)TRX.RX_AGC_Max_gain)
+					instance->need_gain_db = (float32_t)TRX.RX_AGC_Max_gain;
+				if ((AGC_RX_dbFS + instance->need_gain_db) > (gain_target + AGC_CLIPPING))
+				{
+					//instance->need_gain_db = gain_target - AGC_RX_dbFS;
+					instance->need_gain_db -= 20.0f;
+					//println("AGC overload ", diff);
+				}
+								
+				//appy gain
+				float32_t rateV = db2rateV(instance->need_gain_db);
+				
+				// Muting if need
+				bool VAD_Muting = VAD_RX1_Muting;
+				if (rx_id == AUDIO_RX2)
+					VAD_Muting = VAD_RX2_Muting;
+				if (WM8731_Muting || VAD_Muting)
+				{
+					rateV = db2rateV(-200.0f);
+				}
+								
+				//println("[SpectraAGC] Min: ", minValue, " AGC_RX_dbFS: ", AGC_RX_dbFS, " Gain: ", instance->need_gain_db);
+				
+				// apply AGC
+				for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE; idx++)
+				{
+					instance->FFT_Buffer[idx] *= rateV;
+				}
 			}
-			// apply gain weighting
-			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
+			
+			if (nr_type != 0)
 			{
-				instance->FFT_Buffer[idx * 2] *= instance->NR_GAIN[idx];
-				instance->FFT_Buffer[idx * 2 + 1] *= instance->NR_GAIN[idx];
-				// symmetry
-				instance->FFT_Buffer[NOISE_REDUCTION_FFT_SIZE * 2 - idx * 2 - 2] *= instance->NR_GAIN[idx];
-				instance->FFT_Buffer[NOISE_REDUCTION_FFT_SIZE * 2 - idx * 2 - 1] *= instance->NR_GAIN[idx];
+				// smooth gain
+				for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
+				{
+					#define smooth_gain_alpha 0.9f
+					#define smooth_gain_beta (1.0f - smooth_gain_alpha)
+					if ((idx - 1) >= 0) {
+						instance->NR_GAIN[idx - 1] = instance->NR_GAIN[idx - 1] * smooth_gain_alpha + instance->NR_GAIN[idx] * smooth_gain_beta;
+					}
+					if ((idx + 1) < NOISE_REDUCTION_FFT_SIZE_HALF) {
+						instance->NR_GAIN[idx + 1] = instance->NR_GAIN[idx + 1] * smooth_gain_alpha + instance->NR_GAIN[idx] * smooth_gain_beta;
+					}
+				}
+				
+				// apply gain weighting
+				for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
+				{
+					// NR
+					instance->FFT_Buffer[idx * 2] *= instance->NR_GAIN[idx];
+					instance->FFT_Buffer[idx * 2 + 1] *= instance->NR_GAIN[idx];
+					// symmetry
+					instance->FFT_Buffer[NOISE_REDUCTION_FFT_SIZE * 2 - idx * 2 - 2] *= instance->NR_GAIN[idx];
+					instance->FFT_Buffer[NOISE_REDUCTION_FFT_SIZE * 2 - idx * 2 - 1] *= instance->NR_GAIN[idx];
+				}
 			}
+			
 			// do inverse fft
 			arm_cfft_f32(instance->FFT_Inst, instance->FFT_Buffer, 1, 1);
 			// windowing
@@ -182,11 +286,11 @@ void processNoiseReduction(float32_t *buffer, AUDIO_PROC_RX_NUM rx_id, uint8_t n
 				instance->FFT_Buffer[idx * 2 + 1] *= von_Hann[idx];
 			}
 			// return data (do overlap-add: take real part of first half of current iFFT result and add to 2nd half of last frames´ iFFT result)
-			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
+			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++) {
 				instance->NR_OutputBuffer[loop * NOISE_REDUCTION_FFT_SIZE_HALF + idx] = instance->FFT_Buffer[idx * 2] + instance->LAST_IFFT_RESULT[idx];
-			// save 2nd half of ifft result
-			for (uint16_t idx = 0; idx < NOISE_REDUCTION_FFT_SIZE_HALF; idx++)
+				// save 2nd half of ifft result
 				instance->LAST_IFFT_RESULT[idx] = instance->FFT_Buffer[NOISE_REDUCTION_FFT_SIZE_HALF * 2 + idx * 2];
+			}
 		}
 	}
 	if (instance->NR_OutputBuffer_index < (NOISE_REDUCTION_FFT_SIZE / NOISE_REDUCTION_BLOCK_SIZE))
