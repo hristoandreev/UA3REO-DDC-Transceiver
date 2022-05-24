@@ -151,6 +151,14 @@ extern "C"
 		const uint16_t STATUS_LABEL_BW_Y_OFFSET;
 		const uint16_t STATUS_LABEL_RIT_X_OFFSET;
 		const uint16_t STATUS_LABEL_RIT_Y_OFFSET;
+		const uint16_t STATUS_IFGAIN_OFFSET_X;
+		const uint16_t STATUS_IFGAIN_OFFSET_Y;
+		const uint16_t STATUS_IFGAIN_WIDTH;
+		const uint16_t STATUS_IFGAIN_HEIGTH;
+		const uint16_t STATUS_AFGAIN_OFFSET_X;
+		const uint16_t STATUS_AFGAIN_OFFSET_Y;
+		const uint16_t STATUS_AFGAIN_WIDTH;
+		const uint16_t STATUS_AFGAIN_HEIGTH;
 		const uint16_t STATUS_LABEL_THERM_X_OFFSET;
 		const uint16_t STATUS_LABEL_THERM_Y_OFFSET;
 		const uint16_t STATUS_LABEL_NOTCH_X_OFFSET;
@@ -264,7 +272,7 @@ extern "C"
 #define FFT_AND_WTF_HEIGHT 152
 #endif
 #if (defined(LAY_800x480))
-#define LAYOUT_THEMES_COUNT 4
+#define LAYOUT_THEMES_COUNT 5
 #define MAX_FFT_PRINT_SIZE LCD_WIDTH
 #define MAX_FFT_HEIGHT 275
 #define MAX_WTF_HEIGHT 195
