@@ -297,6 +297,10 @@ static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
 		.WINDOWS_BORDER = rgb888torgb565(249, 205, 46),
 		.WINDOWS_BG = COLOR_BLACK,
 		.KEYBOARD_BG = rgb888torgb565(20, 20, 20),
+        .IFGAIN_BG = rgb888torgb565(129, 135, 247),
+        .IFGAIN_FG = rgb888torgb565(255, 0, 0),
+        .AFGAIN_BG = rgb888torgb565(129, 135, 247),
+        .AFGAIN_FG = rgb888torgb565(0, 255, 0),
 	}};
 
 #define COLOR_THEMES_COUNT 3
