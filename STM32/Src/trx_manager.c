@@ -45,6 +45,7 @@ volatile float32_t TRX_SWR = 0;
 volatile float32_t TRX_PWR_Forward_SMOOTHED = 0;
 volatile float32_t TRX_PWR_Backward_SMOOTHED = 0;
 volatile float32_t TRX_SWR_SMOOTHED = 0;
+char TRX_SWR_SMOOTHED_STR[8] = "1.0";
 volatile float32_t TRX_VLT_forward = 0;	 // Tisho
 volatile float32_t TRX_VLT_backward = 0; // Tisho
 volatile float32_t TRX_ALC_OUT = 0;
@@ -76,7 +77,9 @@ uint32_t TRX_TX_EndTime = 0;
 uint32_t TRX_Inactive_Time = 0;
 uint32_t TRX_DXCluster_UpdateTime = 0;
 volatile float32_t TRX_PWR_Voltage = 12.0f;
+volatile float32_t TRX_PWR_Current = 0.0f;
 volatile float32_t TRX_RF_Current = 0.0f;
+volatile float32_t TRX_VBAT_Voltage = 0.0f;
 volatile uint_fast16_t CW_Key_Timeout_est = 0;
 
 static uint_fast8_t TRX_TXRXMode = 0; // 0 - undef, 1 - rx, 2 - tx, 3 - txrx
@@ -95,7 +98,9 @@ void TRX_Init()
 	TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
 	TRX_setMode(saved_mode, CurrentVFO);
 	HAL_ADCEx_InjectedStart(&hadc1); // ADC RF-UNIT'а
-	// HAL_ADCEx_InjectedStart(&hadc2); //ADC Tangent (some versions)
+	#ifdef FRONTPANEL_X1
+	HAL_ADCEx_InjectedStart(&hadc2); //ADC Tangent (some versions)
+	#endif
 	HAL_ADCEx_InjectedStart(&hadc3); // ADC CPU temperature
 }
 
@@ -518,9 +523,13 @@ void TRX_setMode(uint_fast8_t _mode, VFO *vfo)
 	if (TRX.SAMPLERATE_MAIN != TRX.SAMPLERATE_FM && (old_mode == TRX_MODE_WFM || old_mode == TRX_MODE_NFM) && _mode != TRX_MODE_WFM && _mode != TRX_MODE_NFM)
 		NeedFFTReinit = true;
 
-	WM8731_TXRX_mode();
-	if (old_mode != _mode)
+	if (old_mode != _mode) {
+		TRX_TemporaryMute();
 		NeedReinitAudioFiltersClean = true;
+	}
+	
+	WM8731_TXRX_mode();
+	
 	NeedReinitNotch = true;
 	NeedReinitAudioFilters = true;
 	NeedSaveSettings = true;
@@ -583,57 +592,6 @@ void TRX_DoAutoGain(void)
 	}
 }
 
-void TRX_DBMCalculate(void)
-{
-	// RX1
-	if (Processor_RX1_Power_value == 0)
-	{
-		TRX_RX1_dBm = -150.0f;
-	}
-	else
-	{
-		float32_t adc_volts = Processor_RX1_Power_value * (TRX.ADC_PGA ? (ADC_RANGE_PGA / 2.0f) : (ADC_RANGE / 2.0f));
-		if (TRX.ADC_Driver)
-			adc_volts *= db2rateV(-ADC_DRIVER_GAIN_DB);
-		TRX_RX1_dBm = 10.0f * log10f_fast((adc_volts * adc_volts / ADC_INPUT_IMPEDANCE) / 0.001f);
-		if (CurrentVFO->Freq < 70000000)
-			TRX_RX1_dBm += CALIBRATE.smeter_calibration_hf;
-		else
-			TRX_RX1_dBm += CALIBRATE.smeter_calibration_vhf;
-
-		if (TRX.LNA)
-			TRX_RX1_dBm += CALIBRATE.LNA_compensation;
-
-		if (TRX_RX1_dBm < -150.0f)
-			TRX_RX1_dBm = -150.0f;
-		Processor_RX1_Power_value = 0;
-	}
-
-	// RX2
-	if (Processor_RX2_Power_value == 0)
-	{
-		TRX_RX2_dBm = -150.0f;
-	}
-	else
-	{
-		float32_t adc_volts = Processor_RX2_Power_value * (TRX.ADC_PGA ? (ADC_RANGE_PGA / 2.0f) : (ADC_RANGE / 2.0f));
-		if (TRX.ADC_Driver)
-			adc_volts *= db2rateV(-ADC_DRIVER_GAIN_DB);
-		TRX_RX2_dBm = 10.0f * log10f_fast((adc_volts * adc_volts / ADC_INPUT_IMPEDANCE) / 0.001f);
-		if (SecondaryVFO->Freq < 70000000)
-			TRX_RX2_dBm += CALIBRATE.smeter_calibration_hf;
-		else
-			TRX_RX2_dBm += CALIBRATE.smeter_calibration_vhf;
-
-		if (TRX.LNA)
-			TRX_RX2_dBm += CALIBRATE.LNA_compensation;
-
-		if (TRX_RX2_dBm < -150.0f)
-			TRX_RX2_dBm = -150.0f;
-		Processor_RX2_Power_value = 0;
-	}
-}
-
 float32_t TRX_getSTM32H743Temperature(void)
 {
 	uint16_t TS_CAL1 = *((uint16_t *)0x1FF1E820); // TS_CAL1 Temperature sensor raw data acquired value at 30 °C, VDDA=3.3 V //-V566
@@ -666,15 +624,15 @@ void TRX_ProcessScanMode(void)
 
 	if (CurrentVFO->Mode == TRX_MODE_WFM || CurrentVFO->Mode == TRX_MODE_NFM)
 	{
-		if (oldState != DFM_RX1_Squelched)
+		if (oldState != DFM_RX1.squelched)
 		{
-			oldState = DFM_RX1_Squelched;
+			oldState = DFM_RX1.squelched;
 			StateChangeTime = HAL_GetTick();
 		}
 
-		if (DFM_RX1_Squelched && ((HAL_GetTick() - StateChangeTime) > SCANNER_NOSIGNAL_TIME))
+		if (DFM_RX1.squelched && ((HAL_GetTick() - StateChangeTime) > SCANNER_NOSIGNAL_TIME))
 			goSweep = true;
-		if (!DFM_RX1_Squelched && ((HAL_GetTick() - StateChangeTime) > SCANNER_SIGNAL_TIME_FM))
+		if (!DFM_RX1.squelched && ((HAL_GetTick() - StateChangeTime) > SCANNER_SIGNAL_TIME_FM))
 			goSweep = true;
 	}
 	else

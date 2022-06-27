@@ -567,13 +567,16 @@ void WIFI_Process(void)
 													sTime.Minutes = min;
 													sTime.Seconds = sec;
 													RTC_DateTypeDef sDate;
+													uint16_t d = day;
+													uint16_t weekday  = (d += month < 3 ? year-- : year - 2, 23*month/9 + d + 4 + year/4- year/100 + year/400)%7; 
 													sDate.Date = day;
 													sDate.Month = month;
 													sDate.Year = year_short;
+													sDate.WeekDay = weekday;
 													BKPSRAM_Enable();
 													HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 													HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-													println("[RTC] New time set")
+													println("[RTC] New time set", sec, ":", min, ":", hrs, " ", day, "-", month, "-", year_short, " ", weekday);
 												}
 												TRX_SNTP_Synced = HAL_GetTick();
 												println("[WIFI] TIME SYNCED");
@@ -592,7 +595,7 @@ void WIFI_Process(void)
 						}
 					}
 				}
-				TRX_SNTP_Synced = HAL_GetTick();
+				// TRX_SNTP_Synced = HAL_GetTick();
 			}
 			else if (WIFI_ProcessingCommand == WIFI_COMM_GETIP) // GetIP Command process
 			{
@@ -1072,12 +1075,17 @@ bool WIFI_getHTTPpage(char *host, char *url, void (*callback)(void), bool https,
 static void WIFI_printText_callback(void)
 {
 	LCDDriver_Fill(BG_COLOR);
+	#ifdef LCD_SMALL_INTERFACE
 	if (WIFI_HTTP_Response_Status == 200)
-	{
+		LCDDriver_printText(WIFI_HTTResponseHTML, 0, 20, FG_COLOR, BG_COLOR, 1);
+	else
+		LCDDriver_printText("Network error", 10, 20, FG_COLOR, BG_COLOR, 1);
+	#else
+	if (WIFI_HTTP_Response_Status == 200)
 		LCDDriver_printTextFont(WIFI_HTTResponseHTML, 0, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
-	}
 	else
 		LCDDriver_printTextFont("Network error", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+	#endif
 }
 
 static void WIFI_printImage_stream_partial_callback(void)
@@ -1148,17 +1156,29 @@ static void WIFI_printImage_callback(void)
 		}
 	}
 	else
-		LCDDriver_printTextFont("Network error", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+#ifdef LCD_SMALL_INTERFACE
+	LCDDriver_printText("Network error", 10, 20, FG_COLOR, BG_COLOR, 1);
+#else
+	LCDDriver_printTextFont("Network error", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+#endif
 }
 
 void WIFI_getRDA(void)
 {
 	LCDDriver_Fill(BG_COLOR);
-	if (WIFI_connected && WIFI_State == WIFI_READY)
-		LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
-	else
-	{
-		LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+	if (WIFI_connected && WIFI_State == WIFI_READY) {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("Loading...", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+	} else {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("No connection", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+		
 		return;
 	}
 	char url[64] = "/trx_services/rda.php?callsign=";
@@ -1249,11 +1269,19 @@ bool WIFI_getDXCluster_background(void)
 void WIFI_getDXCluster(void)
 {
 	LCDDriver_Fill(BG_COLOR);
-	if (WIFI_connected && WIFI_State == WIFI_READY)
-		LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
-	else
-	{
-		LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+	if (WIFI_connected && WIFI_State == WIFI_READY) {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("Loading...", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+	} else {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("No connection", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+		
 		return;
 	}
 	char url[64] = "/trx_services/cluster.php?band=";
@@ -1266,11 +1294,19 @@ void WIFI_getDXCluster(void)
 void WIFI_getPropagination(void)
 {
 	LCDDriver_Fill(BG_COLOR);
-	if (WIFI_connected && WIFI_State == WIFI_READY)
-		LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
-	else
-	{
-		LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+	if (WIFI_connected && WIFI_State == WIFI_READY) {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("Loading...", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+	} else {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("No connection", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+		
 		return;
 	}
 	WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php", WIFI_printImage_callback, false, false);

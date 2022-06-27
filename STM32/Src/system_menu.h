@@ -53,10 +53,11 @@ struct sysmenu_menu_wrapper
 	uint8_t currentIndex;
 };
 
+extern bool SYSMENU_FT8_DECODER_opened;
 extern bool sysmenu_ota_opened;
 extern uint8_t sysmenu_ota_opened_state;
 
-extern void SYSMENU_drawSystemMenu(bool draw_background);
+extern void SYSMENU_drawSystemMenu(bool draw_background, bool only_infolines);
 extern void SYSMENU_redrawCurrentItem(void);
 extern void SYSMENU_eventRotateSystemMenu(int8_t direction);
 extern void SYSMENU_eventSecEncoderClickSystemMenu(void);
@@ -69,6 +70,7 @@ extern void SYSMENU_TRX_RFPOWER_HOTKEY(void);
 extern void SYSMENU_TRX_STEP_HOTKEY(void);
 extern void SYSMENU_CW_WPM_HOTKEY(void);
 extern void SYSMENU_CW_KEYER_HOTKEY(void);
+extern void SYSMENU_AUDIO_IF_HOTKEY(void);
 extern void SYSMENU_AUDIO_BW_SSB_HOTKEY(void);
 extern void SYSMENU_AUDIO_BW_CW_HOTKEY(void);
 extern void SYSMENU_AUDIO_BW_AM_HOTKEY(void);

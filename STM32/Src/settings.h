@@ -8,7 +8,7 @@
 #include "functions.h"
 #include "bands.h"
 
-#define SETT_VERSION 50						  // Settings config version
+#define SETT_VERSION 51						  // Settings config version
 #define CALIB_VERSION 45					  // Calibration config version
 #define ADC_CLOCK 122880000					  // ADC generator frequency
 #define DAC_CLOCK 188160000					  // DAC generator frequency
@@ -150,10 +150,12 @@ static char ota_config_frontpanel[] = "WF_100D";
 #endif
 
 #ifdef FRONTPANEL_X1
-#define HRDW_MCP3008_1 true
-#define HRDW_HAS_FUNCBUTTONS false
-#define MAX_VOLUME_VALUE 100.0f
-static char ota_config_frontpanel[] = "X1";
+	#define HRDW_MCP3008_1 true
+	#define HRDW_HAS_FUNCBUTTONS true
+	#define MAX_VOLUME_VALUE 100.0f
+	#define FUNCBUTTONS_COUNT 32
+	#define FUNCBUTTONS_ON_PAGE 4
+	static char ota_config_frontpanel[] = "X1";
 #endif
 
 #define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
@@ -185,7 +187,7 @@ static char ota_config_lcd[] = "ST7796S";
 #endif
 #if defined(LCD_ST7735S)
 static char ota_config_lcd[] = "ST7735S";
-#define FT8_SUPPORT true
+#define FT8_SUPPORT false
 #endif
 #if defined(LCD_RA8875)
 static char ota_config_lcd[] = "RA8875";
@@ -395,6 +397,7 @@ extern struct TRX_SETTINGS
 	uint16_t AM_LPF_TX_Filter;
 	uint16_t FM_LPF_RX_Filter;
 	uint16_t FM_LPF_TX_Filter;
+	uint16_t VOX_TIMEOUT;
 	uint8_t IF_Gain;
 	uint8_t MIC_GAIN;
 	uint8_t MIC_REVERBER;
@@ -422,11 +425,13 @@ extern struct TRX_SETTINGS
 	int8_t MIC_EQ_MID_AMFM;
 	int8_t MIC_EQ_HIG_AMFM;
 	int8_t AGC_GAIN_TARGET;
+	int8_t VOX_THRESHOLD;
 	bool MIC_Boost;
 	bool NOISE_BLANKER;
 	bool Beeper;
 	bool FM_Stereo;
 	bool AGC_Spectral;
+	bool VOX;
 	// CW
 	float32_t CW_DotToDashRate;
 	uint16_t CW_Pitch;
@@ -517,10 +522,13 @@ extern struct TRX_SETTINGS
 	bool WSPR_BANDS_6;
 	bool WSPR_BANDS_2;
 	// Shadow variables
+	uint8_t FRONTPANEL_funcbuttons_page;
+	uint8_t ENC2_func_mode_idx;
 	uint8_t DNR_shadow;
 	int8_t FM_SQL_threshold_dbm_shadow;
 	bool SQL_shadow;
 	bool AGC_shadow;
+	bool Notch_on_shadow;
 	// Memory
 	BAND_SAVED_SETTINGS_TYPE BANDS_SAVED_SETTINGS[BANDS_COUNT];
 	//
@@ -544,6 +552,7 @@ extern struct TRX_CALIBRATE
 	float32_t BW_AD8307_OFFS;
 	float32_t INA226_CurCalc; // X_mA/Bit Coeficient is dependant on the used shunt (tolerances and soldering)
 	float32_t PWR_VLT_Calibration;
+	float32_t PWR_CUR_Calibration;
 	uint32_t RFU_LPF_END;
 	uint32_t RFU_HPF_START;
 	uint32_t RFU_BPF_0_START; // UHF

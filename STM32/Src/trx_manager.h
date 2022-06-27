@@ -22,7 +22,6 @@ extern void TRX_setMode(uint_fast8_t _mode, VFO *vfo);
 extern void TRX_ptt_change(void);
 extern void TRX_DoAutoGain(void);
 extern void TRX_Restart_Mode(void);
-extern void TRX_DBMCalculate(void);
 extern float32_t TRX_getSTM32H743Temperature(void);
 extern float32_t TRX_getSTM32H743vref(void);
 extern void TRX_TemporaryMute(void);
@@ -57,6 +56,7 @@ volatile extern float32_t TRX_SWR;
 volatile extern float32_t TRX_PWR_Forward_SMOOTHED;
 volatile extern float32_t TRX_PWR_Backward_SMOOTHED;
 volatile extern float32_t TRX_SWR_SMOOTHED;
+extern char TRX_SWR_SMOOTHED_STR[8];
 volatile extern float32_t TRX_VLT_forward;  // Tisho
 volatile extern float32_t TRX_VLT_backward; // Tisho
 volatile extern float32_t TRX_ALC_IN;
@@ -88,7 +88,9 @@ extern uint32_t TRX_TX_StartTime;
 extern uint32_t TRX_TX_EndTime;
 extern uint32_t TRX_DXCluster_UpdateTime;
 volatile extern float32_t TRX_PWR_Voltage;
+volatile extern float32_t TRX_PWR_Current;
 volatile extern float32_t TRX_RF_Current;
+extern volatile float32_t TRX_VBAT_Voltage;
 extern uint32_t TRX_Inactive_Time;
 volatile extern uint_fast16_t CW_Key_Timeout_est;
 

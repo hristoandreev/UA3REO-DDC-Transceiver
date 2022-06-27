@@ -23,6 +23,7 @@ typedef struct
 	bool SystemMenu;
 	bool SystemMenuRedraw;
 	bool SystemMenuCurrent;
+	bool SystemMenuInfolines;
 	bool TextBar;
 	bool Tooltip;
 } DEF_LCD_UpdateQuery;
@@ -63,7 +64,7 @@ extern void LCD_openWindow(uint16_t w, uint16_t h);
 extern void LCD_closeWindow(void);
 extern void LCD_showRFPowerWindow(void);
 extern void LCD_showManualFreqWindow(bool secondary_vfo);
-extern void LCD_printKeyboard(void (*keyboardHandler)(uint32_t parameter));
+extern void LCD_printKeyboard(void (*keyboardHandler)(uint32_t parameter), bool lowcase);
 extern void LCD_hideKeyboard(void);
 
 volatile extern DEF_LCD_UpdateQuery LCD_UpdateQuery;
@@ -73,5 +74,6 @@ extern uint16_t LCD_bw_trapez_stripe_pos;
 extern WindowType LCD_window;
 extern STRUCT_COLOR_THEME *COLOR;
 extern STRUCT_LAYOUT_THEME *LAYOUT;
+extern bool TRX_X1_VLT_CUR_Mode; //false - VLT, true - CUR
 
 #endif

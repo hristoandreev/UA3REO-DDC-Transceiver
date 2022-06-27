@@ -11,7 +11,7 @@
 #include "bands.h"
 #include "front_unit.h"
 
-char version_string[19] = "4.1.0";
+char version_string[19] = "4.2.0";
 
 // W25Q16
 IRAM2 static uint8_t Write_Enable = W25Q16_COMMAND_Write_Enable;
@@ -232,14 +232,17 @@ void LoadSettings(bool clear)
 		TRX.SSB_HPF_TX_Filter = 200;		 // default value of SSB filter width
 		TRX.AM_LPF_RX_Filter = 6000;		 // default value of AM filter width
 		TRX.AM_LPF_TX_Filter = 6000;		 // default value of AM filter width
-		TRX.FM_LPF_RX_Filter = 10000;		 // default value of the FM filter width
-		TRX.FM_LPF_TX_Filter = 10000;		 // default value of the FM filter width
+		TRX.FM_LPF_RX_Filter = 12000;		 // default value of the FM filter width
+		TRX.FM_LPF_TX_Filter = 12000;		 // default value of the FM filter width
 		TRX.Beeper = true;					 // Keyboard beeper
 		TRX.CTCSS_Freq = 0;					 // CTCSS FM Frequency
 		TRX.SELFHEAR_Volume = 50;			 // Selfhearing volume
 		TRX.FM_Stereo = false;				 // Stereo FM Mode
 		TRX.AGC_Spectral = true;			//Spectral AGC mode
 		TRX.VAD_THRESHOLD = 150;				//Threshold of SSB/SCAN squelch
+		TRX.VOX = false;							//TX by voice activation
+		TRX.VOX_TIMEOUT = 300;				//VOX timeout in ms
+		TRX.VOX_THRESHOLD = -27;			//VOX threshold in dbFS
 		// CW
 		TRX.CW_Pitch = 600;			   // LO offset in CW mode
 		TRX.CW_Key_timeout = 200;	   // time of releasing transmission after the last character on the key
@@ -313,7 +316,7 @@ void LoadSettings(bool clear)
 		// ADC
 		TRX.ADC_Driver = true; // preamplifier (ADC driver)
 		TRX.ADC_PGA = true;	   // ADC preamp
-		TRX.ADC_RAND = true;   // ADC encryption (xor randomizer)
+		TRX.ADC_RAND = false;   // ADC encryption (xor randomizer)
 		TRX.ADC_SHDN = false;  // ADC disable
 		TRX.ADC_DITH = false;  // ADC dither
 		// WIFI
@@ -353,7 +356,10 @@ void LoadSettings(bool clear)
 		{
 			TRX.BANDS_SAVED_SETTINGS[i].Freq = BANDS[i].startFreq + (BANDS[i].endFreq - BANDS[i].startFreq) / 2; // saved frequencies by bands
 			TRX.BANDS_SAVED_SETTINGS[i].Mode = (uint8_t)getModeFromFreq(TRX.BANDS_SAVED_SETTINGS[i].Freq);
-			TRX.BANDS_SAVED_SETTINGS[i].LNA = TRX.LNA;
+			if(TRX.BANDS_SAVED_SETTINGS[i].Freq > 30000000)
+				TRX.BANDS_SAVED_SETTINGS[i].LNA = true;
+			else
+				TRX.BANDS_SAVED_SETTINGS[i].LNA = false;
 			TRX.BANDS_SAVED_SETTINGS[i].ATT = TRX.ATT;
 			TRX.BANDS_SAVED_SETTINGS[i].ATT_DB = TRX.ATT_DB;
 			TRX.BANDS_SAVED_SETTINGS[i].ANT_selected = TRX.ANT_selected;
@@ -377,7 +383,10 @@ void LoadSettings(bool clear)
 		TRX.SQL_shadow = TRX.VFO_A.SQL;
 		TRX.AGC_shadow = TRX.VFO_A.AGC;
 		TRX.DNR_shadow = TRX.VFO_A.DNR_Type;
+		TRX.Notch_on_shadow = false;
 		TRX.FM_SQL_threshold_dbm_shadow = TRX.VFO_A.FM_SQL_threshold_dbm;
+		TRX.FRONTPANEL_funcbuttons_page = 0;
+		TRX.ENC2_func_mode_idx = 0; // 0 - fast-step, 1 - WPM, 2 - RIT/XIT, 3 - NOTCH, 4 - LPF, 5 - SQL
 
 		LCD_showError("Loaded default settings", true);
 		SaveSettings();
@@ -475,23 +484,31 @@ void LoadCalibration(bool clear)
 		CALIBRATE.TUNE_MAX_POWER = 2;			  // Maximum RF power in Tune mode
 		CALIBRATE.MAX_RF_POWER = 7;				  // Max TRX Power for indication
 #if defined(FRONTPANEL_X1)
-		CALIBRATE.RFU_HPF_START = 60000 * 1000;	   // HPF
-		CALIBRATE.RFU_BPF_1_START = 1500 * 1000;   // 160m
-		CALIBRATE.RFU_BPF_1_END = 2400 * 1000;	   // 160m
-		CALIBRATE.RFU_BPF_2_START = 2400 * 1000;   // 80m
-		CALIBRATE.RFU_BPF_2_END = 4500 * 1000;	   // 80m
-		CALIBRATE.RFU_BPF_3_START = 4500 * 1000;   // 40m
-		CALIBRATE.RFU_BPF_3_END = 7500 * 1000;	   // 40m
-		CALIBRATE.RFU_BPF_4_START = 7500 * 1000;   // 30m
-		CALIBRATE.RFU_BPF_4_END = 11500 * 1000;	   // 30m
-		CALIBRATE.RFU_BPF_5_START = 11500 * 1000;  // 20m
-		CALIBRATE.RFU_BPF_5_END = 14800 * 1000;	   // 20m
-		CALIBRATE.RFU_BPF_6_START = 14800 * 1000;  // 17,15m
-		CALIBRATE.RFU_BPF_6_END = 22000 * 1000;	   // 17,15m
-		CALIBRATE.RFU_BPF_7_START = 22000 * 1000;  // 12,10m
-		CALIBRATE.RFU_BPF_7_END = 32000 * 1000;	   // 12,10m
-		CALIBRATE.RFU_BPF_8_START = 135000 * 1000; // 2m
-		CALIBRATE.RFU_BPF_8_END = 150000 * 1000;   // 2m
+		CALIBRATE.ENCODER_INVERT = true;	   // invert left-right rotation of the main encoder
+		CALIBRATE.ENCODER_ON_FALLING = true;  // encoder only triggers when level A falls
+		CALIBRATE.RFU_HPF_START = 32000 * 1000;		   //HPF
+		CALIBRATE.RFU_BPF_0_START = 1500 * 1000;
+		CALIBRATE.RFU_BPF_0_END = 2500 * 1000;
+		CALIBRATE.RFU_BPF_1_START = 2500 * 1000;	
+		CALIBRATE.RFU_BPF_1_END = 4700 * 1000;
+		CALIBRATE.RFU_BPF_2_START = 4700 * 1000;	
+		CALIBRATE.RFU_BPF_2_END = 8000 * 1000;
+		CALIBRATE.RFU_BPF_3_START = 8000 * 1000;	
+		CALIBRATE.RFU_BPF_3_END = 14700 * 1000;	
+		CALIBRATE.RFU_BPF_4_START = 14700 * 1000;
+		CALIBRATE.RFU_BPF_4_END = 22100 * 1000;	
+		CALIBRATE.RFU_BPF_5_START = 22100 * 1000;
+		CALIBRATE.RFU_BPF_5_END = 32000 * 1000;	
+		CALIBRATE.RFU_BPF_6_START = 135000 * 1000;
+		CALIBRATE.RFU_BPF_6_END = 150000 * 1000;
+		CALIBRATE.SWR_FWD_Calibration_HF = 10.0f;	   //SWR Transormator rate forward
+		CALIBRATE.SWR_REF_Calibration_HF = 10.0f;	   //SWR Transormator rate return
+		CALIBRATE.SWR_FWD_Calibration_6M = 10.0f;	   //SWR Transormator rate forward
+		CALIBRATE.SWR_REF_Calibration_6M = 10.0f;	   //SWR Transormator rate return
+		CALIBRATE.SWR_FWD_Calibration_VHF = 8.5f;	   //SWR Transormator rate forward
+		CALIBRATE.SWR_REF_Calibration_VHF = 8.5f;	   //SWR Transormator rate return
+		CALIBRATE.TUNE_MAX_POWER = 5;			   // Maximum RF power in Tune mode
+		CALIBRATE.MAX_RF_POWER = 15;				//Max TRX Power for indication
 #elif defined(FRONTPANEL_WF_100D)
 		CALIBRATE.ENCODER2_INVERT = true; // invert left-right rotation of the optional encoder
 		CALIBRATE.RF_unit_type = RF_UNIT_WF_100D;
@@ -507,7 +524,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.rf_out_power_cb = 40;				   // 27mhz
 		CALIBRATE.rf_out_power_10m = 40;			   // 10m
 		CALIBRATE.rf_out_power_6m = 40;				   // 6m
-		CALIBRATE.rf_out_power_2m = 50;				   // 2m
+		CALIBRATE.rf_out_power_2m = 270;				   // 2m
 		CALIBRATE.RFU_LPF_END = 53 * 1000 * 1000;	   // LPF
 		CALIBRATE.RFU_HPF_START = 60 * 1000 * 1000;	   // HPF
 		CALIBRATE.RFU_BPF_0_START = 1600 * 1000;	   // 1.6-2.5mH
@@ -532,8 +549,8 @@ void LoadCalibration(bool clear)
 		CALIBRATE.SWR_REF_Calibration_HF = 17.5f;	   // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_6M = 19.0f;	   // SWR Transormator rate forward
 		CALIBRATE.SWR_REF_Calibration_6M = 19.0f;	   // SWR Transormator rate return
-		CALIBRATE.SWR_FWD_Calibration_VHF = 10.0f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_VHF = 10.0f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_FWD_Calibration_VHF = 21.0f;	   // SWR Transormator rate forward
+		CALIBRATE.SWR_REF_Calibration_VHF = 9.5f;	   // SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 15;				   // Maximum RF power in Tune mode
 		CALIBRATE.MAX_RF_POWER = 100;				   // Max TRX Power for indication
 #else
@@ -618,6 +635,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.INA226_EN = false;			 // INA226 is not used				//Tisho
 		CALIBRATE.INA226_CurCalc = 0.4f;		 // 0,4mA/Bit - INA226 current calculation coeficient - dependant on the used shunt (tolerances and soldering) - Tisho
 		CALIBRATE.PWR_VLT_Calibration = 1000.0f; // VLT meter calibration
+		CALIBRATE.PWR_CUR_Calibration = 2.5f;	// CUR meter calibration
 		CALIBRATE.ATU_AVERAGING = 3;			 // Tuner averaging stages
 		CALIBRATE.CAT_Type = CAT_FT450;
 		CALIBRATE.LNA_compensation = 0; // Compensation for LNA, db

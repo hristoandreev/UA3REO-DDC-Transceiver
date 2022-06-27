@@ -4,6 +4,7 @@
 #include "agc.h"
 #include "settings.h"
 #include "usbd_audio_if.h"
+#include "usbd_iq_if.h"
 #include "noise_reduction.h"
 #include "noise_blanker.h"
 #include "auto_notch.h"
@@ -17,6 +18,7 @@
 #include "FT8/FT8_main.h"
 #include "FT8/decode_ft8.h"
 #include "wifi.h"
+#include "system_menu.h"
 
 // Public variables
 volatile uint32_t AUDIOPROC_samples = 0;	  // audio samples processed in the processor
@@ -38,8 +40,6 @@ float32_t APROC_Audio_Buffer_TX_I[FPGA_TX_IQ_BUFFER_HALF_SIZE] = {0};
 volatile float32_t Processor_RX1_Power_value;	   // RX signal magnitude
 volatile float32_t Processor_RX2_Power_value;	   // RX signal magnitude
 volatile float32_t Processor_TX_MAX_amplitude_OUT; // TX uplift after ALC
-float32_t stereo_fm_pilot_out[FPGA_RX_IQ_BUFFER_HALF_SIZE] = {0};
-float32_t stereo_fm_audio_out[FPGA_RX_IQ_BUFFER_HALF_SIZE] = {0};
 
 bool NeedReinitReverber = false;
 bool APROC_IFGain_Overflow = false;
@@ -53,9 +53,8 @@ static q15_t APROC_AudioBuffer_FT8_out[AUDIO_BUFFER_SIZE / 2] = {0};
 //static uint8_t APROC_AudioBuffer_WIFI_out[2050] = {0};
 static int32_t APROC_AudioBuffer_out[AUDIO_BUFFER_SIZE] = {0};																				   // output buffer of the audio processor
 
-static float32_t DFM_RX1_i_prev = 0, DFM_RX1_q_prev = 0, DFM_RX2_i_prev = 0, DFM_RX2_q_prev = 0, DFM_RX1_emph_prev = 0, DFM_RX2_emph_prev = 0; // used in FM detection and low / high pass processing
-bool DFM_RX1_Squelched = false, DFM_RX2_Squelched = false;
-static float32_t DFM_RX1_SquelchRate = 1.0f, DFM_RX2_SquelchRate = 1.0f;
+demod_fm_instance DFM_RX1 = {.squelchRate = 1.0f};
+demod_fm_instance DFM_RX2 = {.squelchRate = 1.0f};
 static float32_t current_if_gain = 0.0f;
 static float32_t volume_gain = 0.0f;
 IRAM2 static float32_t Processor_Reverber_Buffer[AUDIO_BUFFER_HALF_SIZE * AUDIO_MAX_REVERBER_TAPS] = {0};
@@ -204,6 +203,29 @@ void processRxAudio(void)
 	if (CurrentVFO->Mode != TRX_MODE_IQ)
 		doRX_IFGain(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 
+	// Send to USB IQ
+	if (USB_IQ_need_rx_buffer && TRX_Inited)
+	{
+		uint8_t *USB_IQ_rx_buffer_current = USB_IQ_rx_buffer_b;
+		if (!USB_IQ_current_rx_buffer)
+			USB_IQ_rx_buffer_current = USB_IQ_rx_buffer_a;
+
+		// drop LSB 32b->24b
+		for (uint_fast16_t i = 0; i < (USB_AUDIO_RX_BUFFER_SIZE / BYTES_IN_SAMPLE_AUDIO_OUT_PACKET / 2); i++ )
+		{
+			int32_t iq_i = APROC_Audio_Buffer_RX1_I[i] * 2147483648;
+			int32_t iq_q = APROC_Audio_Buffer_RX1_Q[i] * 2147483648;
+			USB_IQ_rx_buffer_current[i * BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2 + 0] = (iq_i >> 8) & 0xFF;
+			USB_IQ_rx_buffer_current[i * BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2 + 1] = (iq_i >> 16) & 0xFF;
+			USB_IQ_rx_buffer_current[i * BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2 + 2] = (iq_i >> 24) & 0xFF;
+			
+			USB_IQ_rx_buffer_current[i * BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2 + 3] = (iq_q >> 8) & 0xFF;
+			USB_IQ_rx_buffer_current[i * BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2 + 4] = (iq_q >> 16) & 0xFF;
+			USB_IQ_rx_buffer_current[i * BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2 + 5] = (iq_q >> 24) & 0xFF;
+		}
+		USB_IQ_need_rx_buffer = false;
+	}
+	
 	switch (CurrentVFO->Mode) // first receiver
 	{
 	case TRX_MODE_CW:
@@ -223,10 +245,10 @@ void processRxAudio(void)
 	case TRX_MODE_LSB:
 		doRX_HILBERT(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		arm_sub_f32(APROC_Audio_Buffer_RX1_I, APROC_Audio_Buffer_RX1_Q, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE); // difference of I and Q - LSB
+		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_HPF_I(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_LPF_I(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_NOTCH(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
-		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_SMETER(AUDIO_RX1, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 		DECODER_PutSamples(APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doVAD(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
@@ -247,10 +269,10 @@ void processRxAudio(void)
 	case TRX_MODE_USB:
 		doRX_HILBERT(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		arm_add_f32(APROC_Audio_Buffer_RX1_I, APROC_Audio_Buffer_RX1_Q, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE); // sum of I and Q - USB
+		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_HPF_I(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_LPF_I(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_NOTCH(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
-		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_SMETER(AUDIO_RX1, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 		DECODER_PutSamples(APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doVAD(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
@@ -277,10 +299,10 @@ void processRxAudio(void)
 		for (uint_fast16_t i = 0; i < FPGA_RX_IQ_BUFFER_HALF_SIZE; i++)
 			arm_sqrt_f32(APROC_Audio_Buffer_RX1_I[i], &APROC_Audio_Buffer_RX1_I[i]);
 		arm_scale_f32(APROC_Audio_Buffer_RX1_I, 0.5f, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		dc_filter(APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, DC_FILTER_RX1_I);
 		doRX_LPF2_IQ(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_NOTCH(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
-		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_SMETER(AUDIO_RX1, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 		doVAD(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_DNR(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE, CurrentVFO->Mode, false);
@@ -291,6 +313,8 @@ void processRxAudio(void)
 		doRX_LPF_IQ(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_DemodSAM(AUDIO_RX1, APROC_Audio_Buffer_RX1_I, APROC_Audio_Buffer_RX1_Q, APROC_Audio_Buffer_RX1_I, APROC_Audio_Buffer_RX1_Q, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_LPF2_IQ(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+		//doRX_NOTCH(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+		//doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_SMETER(AUDIO_RX1, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 		doVAD(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_DNR(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE, CurrentVFO->Mode, true);
@@ -300,9 +324,10 @@ void processRxAudio(void)
 		doRX_LPF_IQ(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_SMETER(AUDIO_RX1, APROC_Audio_Buffer_RX1_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 		DemodulateFM(APROC_Audio_Buffer_RX1_I, APROC_Audio_Buffer_RX1_Q, AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE, false, TRX_RX1_dBm); // 48khz iq
+		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_LPF2_IQ(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_IFGain(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
-		doRX_NoiseBlanker(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+		doRX_NOTCH(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 		doRX_DNR(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE, CurrentVFO->Mode, false);
 		doRX_AGC(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE, CurrentVFO->Mode, false);
 		doRX_COPYCHANNEL(AUDIO_RX1, FPGA_RX_IQ_BUFFER_HALF_SIZE);
@@ -348,10 +373,10 @@ void processRxAudio(void)
 		case TRX_MODE_LSB:
 			doRX_HILBERT(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			arm_sub_f32(APROC_Audio_Buffer_RX2_I, APROC_Audio_Buffer_RX2_Q, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE); // difference of I and Q - LSB
+			doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_HPF_I(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_LPF_I(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_NOTCH(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
-			doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_SMETER(AUDIO_RX2, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 			doVAD(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_DNR(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE, SecondaryVFO->Mode, false);
@@ -368,10 +393,10 @@ void processRxAudio(void)
 		case TRX_MODE_USB:
 			doRX_HILBERT(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			arm_add_f32(APROC_Audio_Buffer_RX2_I, APROC_Audio_Buffer_RX2_Q, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE); // sum of I and Q - USB
+			doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_HPF_I(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_LPF_I(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_NOTCH(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
-			doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_SMETER(AUDIO_RX2, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 			doVAD(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_DNR(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE, SecondaryVFO->Mode, false);
@@ -394,10 +419,10 @@ void processRxAudio(void)
 			for (uint_fast16_t i = 0; i < FPGA_RX_IQ_BUFFER_HALF_SIZE; i++)
 				arm_sqrt_f32(APROC_Audio_Buffer_RX2_I[i], &APROC_Audio_Buffer_RX2_I[i]);
 			arm_scale_f32(APROC_Audio_Buffer_RX2_I, 0.5f, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+			doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			dc_filter(APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, DC_FILTER_RX2_I);
 			doRX_LPF2_IQ(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_NOTCH(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
-			doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_SMETER(AUDIO_RX2, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 			doVAD(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_DNR(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE, SecondaryVFO->Mode, false);
@@ -407,6 +432,8 @@ void processRxAudio(void)
 			doRX_LPF_IQ(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_DemodSAM(AUDIO_RX2, APROC_Audio_Buffer_RX2_I, APROC_Audio_Buffer_RX2_Q, APROC_Audio_Buffer_RX2_I, APROC_Audio_Buffer_RX2_Q, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_LPF2_IQ(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+			//doRX_NOTCH(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+			//doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_SMETER(AUDIO_RX2, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 			doVAD(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_DNR(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE, SecondaryVFO->Mode, true);
@@ -416,8 +443,10 @@ void processRxAudio(void)
 			doRX_LPF_IQ(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_SMETER(AUDIO_RX2, APROC_Audio_Buffer_RX2_I, FPGA_RX_IQ_BUFFER_HALF_SIZE, true);
 			DemodulateFM(APROC_Audio_Buffer_RX2_I, APROC_Audio_Buffer_RX2_Q, AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE, false, TRX_RX2_dBm);
+			doRX_NoiseBlanker(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_LPF2_IQ(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_IFGain(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
+			doRX_NOTCH(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE);
 			doRX_DNR(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE, SecondaryVFO->Mode, false);
 			doRX_AGC(AUDIO_RX2, FPGA_RX_IQ_BUFFER_HALF_SIZE, SecondaryVFO->Mode, false);
 			break;
@@ -1442,6 +1471,30 @@ static void doRX_SMETER(AUDIO_PROC_RX_NUM rx_id, float32_t *buff, uint16_t size,
 		if (if_gained && current_if_gain != 0.0f)
 			i *= 1.0f / current_if_gain;
 		Processor_RX1_Power_value = i;
+		
+		// Calc
+		if (Processor_RX1_Power_value == 0)
+		{
+			TRX_RX1_dBm = -150.0f;
+		}
+		else
+		{
+			float32_t adc_volts = Processor_RX1_Power_value * (TRX.ADC_PGA ? (ADC_RANGE_PGA / 2.0f) : (ADC_RANGE / 2.0f));
+			if (TRX.ADC_Driver)
+				adc_volts *= db2rateV(-ADC_DRIVER_GAIN_DB);
+			TRX_RX1_dBm = 10.0f * log10f_fast((adc_volts * adc_volts / ADC_INPUT_IMPEDANCE) / 0.001f);
+			if (CurrentVFO->Freq < 70000000)
+				TRX_RX1_dBm += CALIBRATE.smeter_calibration_hf;
+			else
+				TRX_RX1_dBm += CALIBRATE.smeter_calibration_vhf;
+
+			if (TRX.LNA)
+				TRX_RX1_dBm += CALIBRATE.LNA_compensation;
+
+			if (TRX_RX1_dBm < -150.0f)
+				TRX_RX1_dBm = -150.0f;
+			Processor_RX1_Power_value = 0;
+		}
 	}
 
 	if (rx_id == AUDIO_RX2)
@@ -1454,6 +1507,30 @@ static void doRX_SMETER(AUDIO_PROC_RX_NUM rx_id, float32_t *buff, uint16_t size,
 		if (if_gained && current_if_gain != 0.0f)
 			i *= 1.0f / current_if_gain;
 		Processor_RX2_Power_value = i;
+		
+		//Calc
+		if (Processor_RX2_Power_value == 0)
+		{
+			TRX_RX2_dBm = -150.0f;
+		}
+		else
+		{
+			float32_t adc_volts = Processor_RX2_Power_value * (TRX.ADC_PGA ? (ADC_RANGE_PGA / 2.0f) : (ADC_RANGE / 2.0f));
+			if (TRX.ADC_Driver)
+				adc_volts *= db2rateV(-ADC_DRIVER_GAIN_DB);
+			TRX_RX2_dBm = 10.0f * log10f_fast((adc_volts * adc_volts / ADC_INPUT_IMPEDANCE) / 0.001f);
+			if (SecondaryVFO->Freq < 70000000)
+				TRX_RX2_dBm += CALIBRATE.smeter_calibration_hf;
+			else
+				TRX_RX2_dBm += CALIBRATE.smeter_calibration_vhf;
+
+			if (TRX.LNA)
+				TRX_RX2_dBm += CALIBRATE.LNA_compensation;
+
+			if (TRX_RX2_dBm < -150.0f)
+				TRX_RX2_dBm = -150.0f;
+			Processor_RX2_Power_value = 0;
+		}
 	}
 }
 
@@ -1474,77 +1551,71 @@ static void doRX_COPYCHANNEL(AUDIO_PROC_RX_NUM rx_id, uint16_t size)
 // FM demodulator
 static void DemodulateFM(float32_t *data_i, float32_t *data_q, AUDIO_PROC_RX_NUM rx_id, uint16_t size, bool wfm, float32_t dbm)
 {
-	float32_t *i_prev = &DFM_RX1_i_prev;
-	float32_t *q_prev = &DFM_RX1_q_prev;
-	float32_t *emph_prev = &DFM_RX1_emph_prev;
-	bool *squelched = &DFM_RX1_Squelched;
-	float32_t *squelchRate = &DFM_RX1_SquelchRate;
+	demod_fm_instance *DFM = &DFM_RX1;
 	bool sql_enabled = CurrentVFO->SQL;
 	int8_t FM_SQL_threshold_dbm = CurrentVFO->FM_SQL_threshold_dbm;
-	float32_t angle, x, y, b;
+	arm_biquad_cascade_df2T_instance_f32 *SFM_Pilot_Filter = &SFM_RX1_Pilot_Filter;
+	arm_biquad_cascade_df2T_instance_f32 *SFM_Audio_Filter = &SFM_RX1_Audio_Filter;
+	
+	float32_t angle;
 
 	if (rx_id == AUDIO_RX2)
 	{
-		i_prev = &DFM_RX2_i_prev;
-		q_prev = &DFM_RX2_q_prev;
-		emph_prev = &DFM_RX2_emph_prev;
-		squelched = &DFM_RX2_Squelched;
-		squelchRate = &DFM_RX2_SquelchRate;
+		DFM = &DFM_RX2;
 		FM_SQL_threshold_dbm = SecondaryVFO->FM_SQL_threshold_dbm;
 		sql_enabled = SecondaryVFO->SQL;
+		SFM_Pilot_Filter = &SFM_RX2_Pilot_Filter;
+		SFM_Audio_Filter = &SFM_RX2_Audio_Filter;
 	}
-
+	
+	// *** Squelch Processing ***
+	if (FM_SQL_threshold_dbm > dbm && !DFM->squelched)
+	{
+		DFM->squelchRate = 1.0f;
+		DFM->squelched = true; // yes, close the squelch
+	}
+	else if (FM_SQL_threshold_dbm <= dbm && DFM->squelched)
+	{
+		DFM->squelchRate = 0.01f;
+		DFM->squelched = false; //  yes, open the squelch
+	}
+	
+	// do IQ demod
 	for (uint_fast16_t i = 0; i < size; i++)
 	{
 		// first, calculate "x" and "y" for the arctan2, comparing the vectors of present data with previous data
-		y = (data_q[i] * *i_prev) - (data_i[i] * *q_prev);
-		x = (data_i[i] * *i_prev) + (data_q[i] * *q_prev);
-		arm_atan2_f32(y, x, &angle);
-
-		*q_prev = data_q[i]; // save "previous" value of each channel to allow detection of the change of angle in next go-around
-		*i_prev = data_i[i];
-
+		float32_t x = (data_q[i] * DFM->i_prev) - (data_i[i] * DFM->q_prev);
+		float32_t y = (data_i[i] * DFM->i_prev) + (data_q[i] * DFM->q_prev);
+		
+		// save "previous" value of each channel to allow detection of the change of angle in next go-around
+		DFM->q_prev = data_q[i]; 
+		DFM->i_prev = data_i[i];
+		
 		// demod
+		arm_atan2_f32(x, y, &angle);
 		data_i[i] = (float32_t)(angle / F_PI) * 0.01f;
 
-		// fm de emphasis
-		// const float32_t alpha = 0.25f;
-		// data_i[i] = data_i[i] * (1.0f - alpha) + *emph_prev * alpha;
-		//*emph_prev = data_i[i];
-
 		// smooth SQL edges
-		if (!*squelched || !sql_enabled) // high-pass audio only if we are un-squelched (to save processor time)
+		if (!DFM->squelched || !sql_enabled)
 		{
-			if (*squelchRate < 1.00f)
+			if (DFM->squelchRate < 1.00f)
 			{
-				data_i[i] *= *squelchRate;
-				*squelchRate = 1.001f * *squelchRate;
+				data_i[i] *= DFM->squelchRate;
+				DFM->squelchRate = 1.01f * DFM->squelchRate;
 			}
 		}
-		else if (*squelched) // were we squelched or tone NOT detected?
+		else if (DFM->squelched) // were we squelched or tone NOT detected?
 		{
-			if (*squelchRate > 0.01f)
+			if (DFM->squelchRate > 0.01f)
 			{
-				data_i[i] *= *squelchRate;
-				*squelchRate = 0.999f * *squelchRate;
+				data_i[i] *= DFM->squelchRate;
+				DFM->squelchRate = 0.99f * DFM->squelchRate;
 			}
 			else
 			{
 				data_i[i] = 0;
 			}
 		}
-	}
-
-	// *** Squelch Processing ***
-	if (FM_SQL_threshold_dbm > dbm && !*squelched)
-	{
-		*squelchRate = 1.0f;
-		*squelched = true; // yes, close the squelch
-	}
-	else if (FM_SQL_threshold_dbm <= dbm && *squelched)
-	{
-		*squelchRate = 0.01f;
-		*squelched = false; //  yes, open the squelch
 	}
 
 	// RDS Decoder
@@ -1554,28 +1625,43 @@ static void DemodulateFM(float32_t *data_i, float32_t *data_q, AUDIO_PROC_RX_NUM
 	}
 
 	// Stereo FM
-	if (TRX.FM_Stereo && !*squelched)
+	if (TRX.FM_Stereo && !DFM->squelched && wfm)
 	{
-		arm_biquad_cascade_df2T_f32_single(&SFM_Pilot_Filter, data_i, stereo_fm_pilot_out, size);
-		arm_biquad_cascade_df2T_f32_single(&SFM_Audio_Filter, data_i, stereo_fm_audio_out, size);
+		arm_biquad_cascade_df2T_f32_single(SFM_Pilot_Filter, data_i, DFM->stereo_fm_pilot_out, size);
+		arm_biquad_cascade_df2T_f32_single(SFM_Audio_Filter, data_i, DFM->stereo_fm_audio_out, size);
 
 		// move signal to low freq
 		for (uint_fast16_t i = 0; i < size; i++)
 		{
 			static float32_t prev_sfm_pilot_sample = 0.0f;
-			arm_atan2_f32(stereo_fm_pilot_out[i], prev_sfm_pilot_sample, &angle); // double freq
+			arm_atan2_f32(DFM->stereo_fm_pilot_out[i], prev_sfm_pilot_sample, &angle); // double freq
 			angle *= 2.0f;
 			
-			prev_sfm_pilot_sample = stereo_fm_pilot_out[i];
+			prev_sfm_pilot_sample = DFM->stereo_fm_pilot_out[i];
 
 			// get stereo sample from decoded wfm
-			float32_t stereo_sample = stereo_fm_audio_out[i] * arm_sin_f32(angle) * 2.0f;
+			float32_t stereo_sample = DFM->stereo_fm_audio_out[i] * arm_sin_f32(angle) * 2.0f;
 
 			// get channels
 			data_q[i] = (data_i[i] - stereo_sample) / 2.0f; // Mono (L+R) - Stereo (L-R) = 2R
 			data_i[i] = (data_i[i] + stereo_sample) / 2.0f; // Mono (L+R) + Stereo (L-R) = 2L
-			// data_i[i] = stereo_sample;
-			// data_q[i] = stereo_sample;
+		}
+	}
+	
+	// fm de emphasis
+	if (!DFM->squelched) {
+		#define deeemp_alpha 0.75f
+		
+		for (uint_fast16_t i = 0; i < size; i++) {
+			data_i[i] = data_i[i] * (1.0f - deeemp_alpha) + DFM->deemph_i_prev * deeemp_alpha;
+			DFM->deemph_i_prev = data_i[i];
+		}
+		
+		if (TRX.FM_Stereo && wfm) {
+			for (uint_fast16_t i = 0; i < size; i++) {
+				data_q[i] = data_q[i] * (1.0f - deeemp_alpha) + DFM->deemph_q_prev * deeemp_alpha;
+				DFM->deemph_q_prev = data_q[i];
+			}
 		}
 	}
 }
@@ -1964,5 +2050,38 @@ static void doRX_DemodSAM(AUDIO_PROC_RX_NUM rx_id, float32_t *i_buffer, float32_
 		println("SAM Carrier offset: ", carrier);
 		sam_data->count = 0;
 		sam_data->lowpass = carrier;
+	}
+}
+
+void APROC_doVOX(void) {
+	if(!TRX.VOX || !TRX_Inited || SYSMENU_FT8_DECODER_opened) 
+		return;
+	
+	uint32_t current_tick = HAL_GetTick();
+	if(current_tick <= TRX.VOX_TIMEOUT)
+		return;
+	
+	static uint32_t VOX_LastSignalTime = 0;
+	static bool VOX_applied = false;
+	
+	static q31_t rms = 0;
+	arm_rms_q31(CODEC_Audio_Buffer_TX, CODEC_AUDIO_BUFFER_HALF_SIZE, &rms);
+	float32_t full_scale_rate = (float32_t)rms / CODEC_BITS_FULL_SCALE;
+	float32_t VOX_dbFS = rate2dbV(full_scale_rate);
+	//println("VOX dbFS: ", VOX_dbFS);
+	
+	if(VOX_dbFS > TRX.VOX_THRESHOLD)
+		VOX_LastSignalTime = current_tick;
+	
+	uint32_t vox_timeout_now = current_tick - VOX_LastSignalTime;
+	
+	if(!VOX_applied && (vox_timeout_now < TRX.VOX_TIMEOUT)) {
+		TRX_ptt_soft = true;
+		VOX_applied = true;
+	}
+	
+	if(VOX_applied && (vox_timeout_now >= TRX.VOX_TIMEOUT)) {
+		TRX_ptt_soft = false;
+		VOX_applied = false;
 	}
 }

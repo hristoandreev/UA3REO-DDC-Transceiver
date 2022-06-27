@@ -19,8 +19,6 @@
 #define FM_SQUELCH_HYSTERESIS 0.3f		  // Hysteresis for FM squelch
 #define FM_SQUELCH_PROC_DECIMATION 10	  // Number of times we go through the FM demod algorithm before we do a squelch calculation
 #define FM_RX_SQL_SMOOTHING 0.25f		  // Smoothing factor for IIR squelch noise averaging
-#define AUDIO_RX_NB_DELAY_BUFFER_ITEMS 32 // NoiseBlanker buffer size
-#define AUDIO_RX_NB_DELAY_BUFFER_SIZE (AUDIO_RX_NB_DELAY_BUFFER_ITEMS * 2)
 #define AUDIO_MAX_REVERBER_TAPS 10
 
 // SAM
@@ -70,6 +68,18 @@ typedef struct
 } demod_sam_const_t;
 //
 
+typedef struct
+{
+	float32_t stereo_fm_pilot_out[FPGA_RX_IQ_BUFFER_HALF_SIZE];
+	float32_t stereo_fm_audio_out[FPGA_RX_IQ_BUFFER_HALF_SIZE];
+	float32_t i_prev;
+	float32_t q_prev;
+	float32_t deemph_i_prev;
+	float32_t deemph_q_prev;
+	float32_t squelchRate;
+	bool squelched;
+} demod_fm_instance;
+
 typedef enum // receiver number
 {
 	AUDIO_RX1,
@@ -91,15 +101,16 @@ extern volatile float32_t Processor_RX1_Power_value;	  // RX signal magnitude
 extern volatile float32_t Processor_RX2_Power_value;	  // RX signal magnitude
 extern bool NeedReinitReverber;
 extern bool APROC_IFGain_Overflow;
-extern bool DFM_RX1_Squelched;
-extern bool DFM_RX2_Squelched;
 extern float32_t APROC_TX_clip_gain;
 extern float32_t APROC_TX_tune_power;
+extern demod_fm_instance DFM_RX1;
+extern demod_fm_instance DFM_RX1;
 
 // Public methods
 extern void processRxAudio(void);	  // start audio processor for RX
 extern void preProcessRxAudio(void);  // start audio pre-processor for RX
 extern void processTxAudio(void);	  // start audio processor for TX
 extern void initAudioProcessor(void); // initialize audio processor
+extern void APROC_doVOX(void);
 
 #endif
