@@ -33,8 +33,7 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 #include "main.h"
-#include "stm32h7xx.h"
-#include "stm32h7xx_hal.h"
+#include "hardware.h"
 
 /*---------- -----------*/
 #define USBD_MAX_NUM_INTERFACES 10U
@@ -57,12 +56,6 @@ extern "C"
 #define DEVICE_HS 1
 
 /* Memory management macros */
-
-/** Alias for memory allocation. */
-#define USBD_malloc malloc
-
-/** Alias for memory release. */
-#define USBD_free free
 
 /** Alias for memory set. */
 #define USBD_memset memset

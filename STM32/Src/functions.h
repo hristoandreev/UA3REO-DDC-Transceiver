@@ -3,7 +3,6 @@
 
 __asm(".global __use_no_heap\n\t");
 
-#include "stm32h7xx_hal.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -13,12 +12,32 @@ __asm(".global __use_no_heap\n\t");
 #include "print.h"
 #include "settings.h"
 
-#define ITCM __attribute__((section(".ITCM"))) __attribute__((aligned(32)))   // 64kb ITCM
-#define IRAM2 __attribute__((section(".IRAM"))) __attribute__((aligned(32)))  // 512kb AXI SRAM
-#define SRAM __attribute__((section(".SRAM"))) __attribute__((aligned(32)))   // SRAM1+SRAM2+SRAM3 128kb+128kb+32kb
-#define SRAM4 __attribute__((section(".SRAM4"))) __attribute__((aligned(32))) // SRAM4 64kb
-#define BACKUP_SRAM_BANK1_ADDR (uint32_t *)0x38800000
-#define BACKUP_SRAM_BANK2_ADDR (uint32_t *)0x38800800
+#ifdef STM32H743xx
+	#define ITCM __attribute__((section(".ITCM"))) __attribute__((aligned(32)))   // 64kb ITCM
+	#define IRAM2 __attribute__((section(".IRAM"))) __attribute__((aligned(32)))  // 512kb AXI SRAM
+	#define SRAM __attribute__((section(".SRAM"))) __attribute__((aligned(32)))   // SRAM1+SRAM2+SRAM3 128kb+128kb+32kb
+	#define SRAM4 __attribute__((section(".SRAM4"))) __attribute__((aligned(32))) // SRAM4 64kb
+	#define BACKUP_SRAM_BANK1_ADDR (uint32_t *)0x38800000
+	#define BACKUP_SRAM_BANK2_ADDR (uint32_t *)0x38800800
+	
+	#define SRAM_ON_F407
+	#define SRAM_ON_H743 SRAM
+#endif
+
+#ifdef STM32F407xx
+	#define IRAM1 __attribute__((section(".IRAM1"))) __attribute__((aligned(32))) // 64kb CCM IRAM1
+	#define IRAM2 __attribute__((section(".IRAM2"))) __attribute__((aligned(32))) // 128kb IRAM2
+	
+	#define ITCM IRAM1 // double
+	#define SRAM IRAM2 // double
+	#define SRAM4 IRAM2 // double
+	#define BACKUP_SRAM_BANK1_ADDR (uint32_t *)(BKPSRAM_BASE)
+	#define BACKUP_SRAM_BANK2_ADDR (uint32_t *)(BKPSRAM_BASE+0x800) // 4kb Backup SRAM
+	
+	#define SRAM_ON_F407 SRAM
+	#define SRAM_ON_H743
+#endif
+
 //#define ALIGN_32BIT __attribute__((aligned(32)))
 
 // UINT from BINARY STRING
@@ -158,23 +177,8 @@ __asm(".global __use_no_heap\n\t");
     (b) = t;                    \
   }
 
-typedef struct
-{
-  float32_t Load; /*!< CPU load percentage */
-  uint32_t WCNT;  /*!< Number of working cycles in one period. Meant for private use */
-  uint32_t SCNT;  /*!< Number of sleeping cycles in one period. Meant for private use */
-  uint32_t SINC;
-} CPULOAD_t;
+volatile extern bool SPI_DMA_TXRX_ready_callback;
 
-extern CPULOAD_t CPU_LOAD;
-volatile extern bool SPI_busy;
-volatile extern bool SPI_process;
-volatile extern bool SPI_TXRX_ready;
-
-extern void CPULOAD_Init(void);
-extern void CPULOAD_GoToSleepMode(void);
-extern void CPULOAD_WakeUp(void);
-extern void CPULOAD_Calc(void);
 extern uint32_t getRXPhraseFromFrequency(int32_t freq, uint8_t rx_num);
 extern uint32_t getTXPhraseFromFrequency(float64_t freq);
 extern void addSymbols(char *dest, char *str, uint_fast8_t length, char *symbol, bool toEnd);
@@ -187,13 +191,18 @@ extern void print_bin26(uint32_t data, bool _inline);
 // extern void delay_us(uint32_t us);
 extern float32_t log10f_fast(float32_t X);
 extern void readFromCircleBuffer32(uint32_t *source, uint32_t *dest, uint32_t index, uint32_t length, uint32_t words_to_read);
+extern void readHalfFromCircleUSBBuffer16Bit(uint8_t *source, int32_t *dest, uint32_t index, uint32_t length);
 extern void readHalfFromCircleUSBBuffer24Bit(uint8_t *source, int32_t *dest, uint32_t index, uint32_t length);
 extern void dma_memcpy32(void *dest, void *src, uint32_t size);
 extern void dma_memcpy(void *dest, void *src, uint32_t size);
 extern void dma_memset32(void *dest, uint32_t val, uint32_t size);
 extern void memset16(void *dest, uint16_t val, uint32_t size);
 extern void dma_memset(void *dest, uint8_t val, uint32_t size);
+#if HRDW_HAS_MDMA
 extern void SLEEPING_MDMA_PollForTransfer(MDMA_HandleTypeDef *hmdma);
+#else
+extern void SLEEPING_DMA_PollForTransfer(DMA_HandleTypeDef *hdma);
+#endif
 extern float32_t db2rateV(float32_t i);
 extern float32_t db2rateP(float32_t i);
 extern float32_t rate2dbV(float32_t i);
@@ -204,16 +213,19 @@ extern float32_t getMaxTXAmplitudeOnFreq(uint32_t freq);
 extern float32_t generateSin(float32_t amplitude, float32_t *index, uint32_t samplerate, uint32_t freq);
 extern int32_t convertToSPIBigEndian(int32_t in);
 extern uint8_t rev8(uint8_t data);
-extern bool SPI_Transmit(uint8_t *out_data, uint8_t *in_data, uint16_t count, GPIO_TypeDef *CS_PORT, uint16_t CS_PIN, bool hold_cs, uint32_t prescaler, bool dma);
+extern bool SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *out_data, uint8_t *in_data, uint32_t count, GPIO_TypeDef *CS_PORT, uint16_t CS_PIN, bool hold_cs, uint32_t prescaler, bool dma);
 extern float32_t quick_median_select(float32_t *arr, int n);
 extern uint8_t getInputType(void);
+#if HRDW_HAS_SD
 extern unsigned int sd_crc16_byte(unsigned int crcval, unsigned int byte);
 extern unsigned int sd_crc7_byte(unsigned int crcval, unsigned int byte);
 extern void sd_crc_generate_table(void);
+#endif
 extern void arm_biquad_cascade_df2T_f32_single(const arm_biquad_cascade_df2T_instance_f32 *S, const float32_t *pSrc, float32_t *pDst, uint32_t blockSize);
 extern void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *I, const arm_biquad_cascade_df2T_instance_f32 *Q, const float32_t *pSrc_I, const float32_t *pSrc_Q, float32_t *pDst_I, float32_t *pDst_Q, uint32_t blockSize);
 extern char cleanASCIIgarbage(char chr);
 extern bool textStartsWith(const char *a, const char *b);
 extern void *alloc_to_wtf(uint32_t size, bool reset);
+extern float fast_sqrt(const float x);
 
 #endif

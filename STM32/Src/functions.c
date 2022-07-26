@@ -1,5 +1,5 @@
 #include "functions.h"
-#include "stm32h7xx_hal.h"
+#include "hardware.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -11,10 +11,7 @@
 #include "usbd_cat_if.h"
 #include "lcd.h"
 
-CPULOAD_t CPU_LOAD = {0};
-volatile bool SPI_busy = false;
-volatile bool SPI_process = false;
-volatile bool SPI_TXRX_ready = false;
+volatile bool SPI_DMA_TXRX_ready_callback = false;
 
 void readFromCircleBuffer32(uint32_t *source, uint32_t *dest, uint32_t index, uint32_t length, uint32_t words_to_read)
 {
@@ -27,6 +24,34 @@ void readFromCircleBuffer32(uint32_t *source, uint32_t *dest, uint32_t index, ui
 		uint_fast16_t prev_part = words_to_read - index;
 		dma_memcpy32(&dest[0], &source[length - prev_part], prev_part);
 		dma_memcpy32(&dest[prev_part], &source[0], (words_to_read - prev_part));
+	}
+}
+
+void readHalfFromCircleUSBBuffer16Bit(uint8_t *source, int32_t *dest, uint32_t index, uint32_t length)
+{
+	uint_fast16_t halflen = length / 2;
+	uint_fast16_t readed_index = 0;
+	if (index >= halflen)
+	{
+		for (uint_fast16_t i = (index - halflen); i < index; i++)
+		{
+			dest[readed_index] = (source[i * 2 + 0] << 16) | (source[i * 2 + 1] << 24);
+			readed_index++;
+		}
+	}
+	else
+	{
+		uint_fast16_t prev_part = halflen - index;
+		for (uint_fast16_t i = (length - prev_part); i < length; i++)
+		{
+			dest[readed_index] = (source[i * 2 + 0] << 16) | (source[i * 2 + 1] << 24);
+			readed_index++;
+		}
+		for (uint_fast16_t i = 0; i < (halflen - prev_part); i++)
+		{
+			dest[readed_index] = (source[i * 2 + 0] << 16) | (source[i * 2 + 1] << 24);
+			readed_index++;
+		}
 	}
 }
 
@@ -254,10 +279,15 @@ float32_t volume2rate(float32_t i) // from the position of the volume knob to th
 	float32_t mute_zone = 15.0f;
 	if (MAX_VOLUME_VALUE == 100.0f)
 		mute_zone = 1.0f;
-
-	if (i < (mute_zone / MAX_VOLUME_VALUE)) // mute zone
+	
+	if (i == 0.0f)
 		return 0.0f;
 
+#if !defined(FRONTPANEL_LITE) && !defined(FRONTPANEL_X1)
+	if (i < (mute_zone / MAX_VOLUME_VALUE)) // mute zone
+		return 0.0f;
+#endif
+	
 	return powf(VOLUME_EPSILON, (1.0f - i));
 }
 
@@ -345,70 +375,6 @@ float32_t generateSin(float32_t amplitude, float32_t *index, uint32_t samplerate
 	return ret;
 }
 
-static uint32_t CPULOAD_startWorkTime = 0;
-static uint32_t CPULOAD_startSleepTime = 0;
-static uint32_t CPULOAD_WorkingTime = 0;
-static uint32_t CPULOAD_SleepingTime = 0;
-static uint32_t CPULOAD_SleepCounter = 0;
-static bool CPULOAD_status = true; // true - wake up ; false - sleep
-
-void CPULOAD_Init(void)
-{
-	DBGMCU->CR |= (DBGMCU_CR_DBG_SLEEPD1_Msk | DBGMCU_CR_DBG_STOPD1_Msk | DBGMCU_CR_DBG_STANDBYD1_Msk);
-	// allow using the counter
-	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-	// start the counter
-	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-	// zero the value of the counting register
-	DWT->CYCCNT = 0;
-	CPULOAD_status = true;
-}
-
-void CPULOAD_GoToSleepMode(void)
-{
-	// Add to working time
-	CPULOAD_WorkingTime += DWT->CYCCNT - CPULOAD_startWorkTime;
-	// Save count cycle time
-	CPULOAD_SleepCounter++;
-	CPULOAD_startSleepTime = DWT->CYCCNT;
-	CPULOAD_status = false;
-	// Go to sleep mode Wait for wake up interrupt
-	__WFI();
-}
-
-void CPULOAD_WakeUp(void)
-{
-	if (CPULOAD_status)
-		return;
-	CPULOAD_status = true;
-	// Increase number of sleeping time in CPU cycles
-	CPULOAD_SleepingTime += DWT->CYCCNT - CPULOAD_startSleepTime;
-	// Save current time to get number of working CPU cycles
-	CPULOAD_startWorkTime = DWT->CYCCNT;
-}
-
-void CPULOAD_Calc(void)
-{
-	// Save values
-	CPU_LOAD.SCNT = CPULOAD_SleepingTime;
-	CPU_LOAD.WCNT = CPULOAD_WorkingTime;
-	CPU_LOAD.SINC = CPULOAD_SleepCounter;
-	CPU_LOAD.Load = ((float)CPULOAD_WorkingTime / (float)(CPULOAD_SleepingTime + CPULOAD_WorkingTime) * 100);
-	if (CPU_LOAD.SCNT == 0)
-	{
-		CPU_LOAD.Load = 100;
-	}
-	if (CPU_LOAD.SCNT == 0 && CPU_LOAD.WCNT == 0)
-	{
-		CPU_LOAD.Load = 255;
-		CPULOAD_Init();
-	}
-	// Reset time
-	CPULOAD_SleepingTime = 0;
-	CPULOAD_WorkingTime = 0;
-	CPULOAD_SleepCounter = 0;
-}
-
 inline int32_t convertToSPIBigEndian(int32_t in)
 {
 	return (int32_t)(0xFFFF0000 & (uint32_t)(in << 16)) | (int32_t)(0x0000FFFF & (uint32_t)(in >> 16));
@@ -421,107 +387,119 @@ inline uint8_t rev8(uint8_t data)
 }
 
 IRAM2 uint8_t SPI_tmp_buff[8] = {0};
-bool SPI_Transmit(uint8_t *out_data, uint8_t *in_data, uint16_t count, GPIO_TypeDef *CS_PORT, uint16_t CS_PIN, bool hold_cs, uint32_t prescaler, bool dma)
+bool SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *out_data, uint8_t *in_data, uint32_t count, GPIO_TypeDef *CS_PORT, uint16_t CS_PIN, bool hold_cs, uint32_t prescaler, bool dma)
 {
-	if (SPI_busy)
-	{
-		println("SPI Busy");
-		return false;
-	}
-
 	// SPI speed
-	if (hspi2.Init.BaudRatePrescaler != prescaler)
+	if (hspi->Init.BaudRatePrescaler != prescaler)
 	{
-		hspi2.Init.BaudRatePrescaler = prescaler;
-		HAL_SPI_Init(&hspi2);
+		hspi->Init.BaudRatePrescaler = prescaler;
+		HAL_SPI_Init(hspi);
 	}
 
-	const int32_t timeout = 0x200; // HAL_MAX_DELAY
-	SPI_busy = true;
+	#define SPI_timeout 200 // HAL_MAX_DELAY
 	HAL_GPIO_WritePin(CS_PORT, CS_PIN, GPIO_PIN_RESET);
 	HAL_StatusTypeDef res = 0;
 
+	if (count < 100) dma = false;
+	
 	if (dma)
 	{
-		memset(SPI_tmp_buff, 0x00, sizeof(SPI_tmp_buff));
-		Aligned_CleanDCache_by_Addr((uint32_t)out_data, count);
-		Aligned_CleanDCache_by_Addr((uint32_t)in_data, count);
-		uint32_t starttime = HAL_GetTick();
-		SPI_TXRX_ready = false;
+		uint32_t startTime = HAL_GetTick();
+		SPI_DMA_TXRX_ready_callback = false;
 		if (in_data == NULL)
 		{
-			if (hdma_spi2_rx.Init.MemInc != DMA_MINC_DISABLE)
+			dma_memset(SPI_tmp_buff, 0x00, sizeof(SPI_tmp_buff));
+			Aligned_CleanDCache_by_Addr((uint32_t)out_data, count);
+			
+			if (hspi->hdmarx->Init.MemInc != DMA_MINC_DISABLE)
 			{
-				hdma_spi2_rx.Init.MemInc = DMA_MINC_DISABLE;
-				HAL_DMA_Init(&hdma_spi2_rx);
+				hspi->hdmarx->Init.MemInc = DMA_MINC_DISABLE;
+				HAL_DMA_Init(hspi->hdmarx);
 			}
-			if (hdma_spi2_tx.Init.MemInc != DMA_MINC_ENABLE)
+			if (hspi->hdmatx->Init.MemInc != DMA_MINC_ENABLE)
 			{
-				hdma_spi2_tx.Init.MemInc = DMA_MINC_ENABLE;
-				HAL_DMA_Init(&hdma_spi2_tx);
+				hspi->hdmatx->Init.MemInc = DMA_MINC_ENABLE;
+				HAL_DMA_Init(hspi->hdmatx);
 			}
-			res = HAL_SPI_TransmitReceive_DMA(&hspi2, out_data, SPI_tmp_buff, count);
+			res = HAL_SPI_TransmitReceive_DMA(hspi, out_data, SPI_tmp_buff, count);
+			
+			while (!SPI_DMA_TXRX_ready_callback && ((HAL_GetTick() - startTime) < SPI_timeout))
+				CPULOAD_GoToSleepMode();
 		}
 		else if (out_data == NULL)
 		{
-			if (hdma_spi2_rx.Init.MemInc != DMA_MINC_ENABLE)
+			dma_memset(in_data, 0x00, count);
+			
+			/*if (hspi->hdmarx->Init.MemInc != DMA_MINC_ENABLE)
 			{
-				hdma_spi2_rx.Init.MemInc = DMA_MINC_ENABLE;
-				HAL_DMA_Init(&hdma_spi2_rx);
+				hspi->hdmarx->Init.MemInc = DMA_MINC_ENABLE;
+				HAL_DMA_Init(hspi->hdmarx);
 			}
-			if (hdma_spi2_tx.Init.MemInc != DMA_MINC_DISABLE)
+			if (hspi->hdmatx->Init.MemInc != DMA_MINC_DISABLE)
 			{
-				hdma_spi2_tx.Init.MemInc = DMA_MINC_DISABLE;
-				HAL_DMA_Init(&hdma_spi2_tx);
-			}
-			res = HAL_SPI_TransmitReceive_DMA(&hspi2, SPI_tmp_buff, in_data, count);
+				hspi->hdmatx->Init.MemInc = DMA_MINC_DISABLE;
+				HAL_DMA_Init(hspi->hdmatx);
+			}*/
+			
+			res = HAL_SPI_Receive_IT(hspi, in_data, count);
+			while (HAL_SPI_GetState(hspi) != HAL_SPI_STATE_READY && (HAL_GetTick() - startTime) < SPI_timeout) CPULOAD_GoToSleepMode();
+			
+			//res = HAL_SPI_TransmitReceive_DMA(hspi, SPI_tmp_buff, in_data, count);
+			//while (!SPI_DMA_TXRX_ready_callback && ((HAL_GetTick() - startTime) < SPI_timeout)) CPULOAD_GoToSleepMode();
 		}
 		else
 		{
-			if (hdma_spi2_rx.Init.MemInc != DMA_MINC_ENABLE)
+			dma_memset(in_data, 0x00, count);
+			Aligned_CleanDCache_by_Addr((uint32_t)out_data, count);
+			
+			if (hspi->hdmarx->Init.MemInc != DMA_MINC_ENABLE)
 			{
-				hdma_spi2_rx.Init.MemInc = DMA_MINC_ENABLE;
-				HAL_DMA_Init(&hdma_spi2_rx);
+				hspi->hdmarx->Init.MemInc = DMA_MINC_ENABLE;
+				HAL_DMA_Init(hspi->hdmarx);
 			}
-			if (hdma_spi2_tx.Init.MemInc != DMA_MINC_ENABLE)
+			if (hspi->hdmatx->Init.MemInc != DMA_MINC_ENABLE)
 			{
-				hdma_spi2_tx.Init.MemInc = DMA_MINC_ENABLE;
-				HAL_DMA_Init(&hdma_spi2_tx);
+				hspi->hdmatx->Init.MemInc = DMA_MINC_ENABLE;
+				HAL_DMA_Init(hspi->hdmatx);
 			}
-			res = HAL_SPI_TransmitReceive_DMA(&hspi2, out_data, in_data, count);
+			res = HAL_SPI_TransmitReceive_DMA(hspi, out_data, in_data, count);
+			
+			while (!SPI_DMA_TXRX_ready_callback && ((HAL_GetTick() - startTime) < SPI_timeout))
+				CPULOAD_GoToSleepMode();
 		}
-		while (!SPI_TXRX_ready && ((HAL_GetTick() - starttime) < 1000))
-			CPULOAD_GoToSleepMode();
 		Aligned_CleanInvalidateDCache_by_Addr((uint32_t)in_data, count);
+		
+		if((HAL_GetTick() - startTime) > SPI_timeout)
+			res = HAL_TIMEOUT;
 	}
 	else
 	{
 		__SPI2_CLK_ENABLE();
 		if (in_data == NULL)
 		{
-			res = HAL_SPI_Transmit_IT(&hspi2, out_data, count);
+			res = HAL_SPI_Transmit_IT(hspi, out_data, count);
 		}
 		else if (out_data == NULL)
 		{
 			dma_memset(in_data, 0x00, count);
-			res = HAL_SPI_Receive_IT(&hspi2, in_data, count);
+			res = HAL_SPI_Receive_IT(hspi, in_data, count);
 		}
 		else
 		{
 			dma_memset(in_data, 0x00, count);
-			res = HAL_SPI_TransmitReceive_IT(&hspi2, out_data, in_data, count);
+			res = HAL_SPI_TransmitReceive_IT(hspi, out_data, in_data, count);
 		}
 		uint32_t startTime = HAL_GetTick();
-		while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY && (HAL_GetTick() - startTime) < timeout)
+		while (HAL_SPI_GetState(hspi) != HAL_SPI_STATE_READY && (HAL_GetTick() - startTime) < SPI_timeout)
 			CPULOAD_GoToSleepMode();
 	}
 
-	if (HAL_SPI_GetError(&hspi2) != 0)
+	if (HAL_SPI_GetError(hspi) != 0)
 		res = HAL_ERROR;
 
 	if (!hold_cs)
 		HAL_GPIO_WritePin(CS_PORT, CS_PIN, GPIO_PIN_SET);
-	SPI_busy = false;
+	
 	if (res == HAL_TIMEOUT)
 	{
 		println("[ERR] SPI timeout");
@@ -529,7 +507,13 @@ bool SPI_Transmit(uint8_t *out_data, uint8_t *in_data, uint16_t count, GPIO_Type
 	}
 	if (res == HAL_ERROR)
 	{
-		println("[ERR] SPI error, code: ", hspi2.ErrorCode);
+		print("[ERR] SPI error, code: ", hspi->ErrorCode, " COUNT: ", count, " MODE: ");
+		if (in_data == NULL) {
+			println("TX");
+		} else if (out_data == NULL) {
+			println("RX");
+		} else { println("TXRX"); }
+		
 		return false;
 	}
 
@@ -604,58 +588,6 @@ float32_t quick_median_select(float32_t *arr, int n)
 	}
 }
 
-static uint32_t dma_memset32_reg = 0;
-static bool dma_memset32_busy = false;
-void dma_memset32(void *dest, uint32_t val, uint32_t size)
-{
-	if (size == 0)
-		return;
-
-	if (dma_memset32_busy) // for async calls
-	{
-		if (val == 0)
-		{
-			memset(dest, val, size * 4);
-		}
-		else
-		{
-			uint32_t *buf = dest;
-			while (size--)
-				*buf++ = val;
-		}
-		return;
-	}
-
-	dma_memset32_busy = true;
-	dma_memset32_reg = val;
-	Aligned_CleanDCache_by_Addr(&dma_memset32_reg, sizeof(dma_memset32_reg));
-	Aligned_CleanDCache_by_Addr(dest, size * 4);
-
-	uint32_t max_block = DMA_MAX_BLOCK / 4;
-	uint32_t *current_dest = (uint32_t *)dest;
-	uint32_t estimated = size;
-	while (estimated > 0)
-	{
-		uint32_t block_size = (estimated > max_block) ? max_block : estimated;
-		HAL_MDMA_Start(&hmdma_mdma_channel44_sw_0, (uint32_t)&dma_memset32_reg, (uint32_t)current_dest, 4 * block_size, 1);
-		SLEEPING_MDMA_PollForTransfer(&hmdma_mdma_channel44_sw_0);
-		estimated -= block_size;
-		current_dest += block_size;
-	}
-
-	Aligned_CleanInvalidateDCache_by_Addr(dest, size * 4);
-	dma_memset32_busy = false;
-
-	/*uint32_t *pDst = (uint32_t *)dest;
-	uint8_t errors = 0;
-	for(uint32_t i = 0; i < size; i++)
-		if(pDst[i] != val && errors < 3)
-		{
-			println(i);
-			errors++;
-		}*/
-}
-
 void memset16(void *dest, uint16_t val, uint32_t size)
 {
 	if (size == 0)
@@ -679,7 +611,7 @@ void memset16(void *dest, uint16_t val, uint32_t size)
 	}*/
 }
 
-void dma_memset(void *dest, uint8_t val, uint32_t size)
+__WEAK void dma_memset(void *dest, uint8_t val, uint32_t size)
 {
 	if (dma_memset32_busy || size < 128) // for async and fast calls
 	{
@@ -713,36 +645,7 @@ void dma_memset(void *dest, uint8_t val, uint32_t size)
 	}
 }
 
-static bool dma_memcpy32_busy = false;
-void dma_memcpy32(void *dest, void *src, uint32_t size)
-{
-	if (size == 0)
-		return;
-
-	if (dma_memcpy32_busy) // for async calls
-	{
-		memcpy(dest, src, size * 4);
-		return;
-	}
-
-	dma_memcpy32_busy = true;
-	Aligned_CleanDCache_by_Addr(src, size * 4);
-	Aligned_CleanDCache_by_Addr(dest, size * 4);
-
-	uint8_t res = HAL_MDMA_Start(&hmdma_mdma_channel40_sw_0, (uint32_t)src, (uint32_t)dest, size * 4, 1);
-	SLEEPING_MDMA_PollForTransfer(&hmdma_mdma_channel40_sw_0);
-
-	Aligned_CleanInvalidateDCache_by_Addr(dest, size * 4);
-	dma_memcpy32_busy = false;
-
-	/*char *pSrc = (char *)src;
-	char *pDst = (char *)dest;
-	for(uint32_t i = 0; i < size * 4; i++)
-		if(pSrc[i] != pDst[i])
-			println(size * 4, " ", i);*/
-}
-
-void dma_memcpy(void *dest, void *src, uint32_t size)
+__WEAK void dma_memcpy(void *dest, void *src, uint32_t size)
 {
 	if (dma_memcpy32_busy || size < 1024) // for async and fast calls
 	{
@@ -785,6 +688,7 @@ void dma_memcpy(void *dest, void *src, uint32_t size)
 	}
 }
 
+#if HRDW_HAS_MDMA
 void SLEEPING_MDMA_PollForTransfer(MDMA_HandleTypeDef *hmdma)
 {
 #define Timeout 100
@@ -823,6 +727,116 @@ void SLEEPING_MDMA_PollForTransfer(MDMA_HandleTypeDef *hmdma)
 
 	hmdma->State = HAL_MDMA_STATE_READY;
 }
+#endif
+
+typedef struct
+{
+  __IO uint32_t ISR;   /*!< DMA interrupt status register */
+  __IO uint32_t Reserved0;
+  __IO uint32_t IFCR;  /*!< DMA interrupt flag clear register */
+} DMA_Base_Registers;
+
+void SLEEPING_DMA_PollForTransfer(DMA_HandleTypeDef *hdma)
+{
+	#define Timeout 100
+	
+	HAL_StatusTypeDef status = HAL_OK; 
+  uint32_t mask_cpltlevel;
+  uint32_t tickstart = HAL_GetTick(); 
+  uint32_t tmpisr;
+  
+  /* calculate DMA base and stream number */
+  DMA_Base_Registers *regs;
+
+  if(HAL_DMA_STATE_BUSY != hdma->State)
+  {
+    return;
+  }
+  
+	/* Transfer Complete flag */
+	mask_cpltlevel = DMA_FLAG_TCIF0_4 << hdma->StreamIndex;
+  
+  regs = (DMA_Base_Registers *)hdma->StreamBaseAddress;
+  tmpisr = regs->ISR;
+  
+  while(((tmpisr & mask_cpltlevel) == RESET) && ((hdma->ErrorCode & HAL_DMA_ERROR_TE) == RESET))
+  {
+    /* Check for the Timeout (Not applicable in circular mode)*/
+		if(((HAL_GetTick() - tickstart ) > Timeout))
+		{
+			/* Update error code */
+			hdma->ErrorCode = HAL_DMA_ERROR_TIMEOUT;
+			
+			/* Change the DMA state */
+			hdma->State = HAL_DMA_STATE_READY;
+			
+			/* Process Unlocked */
+			__HAL_UNLOCK(hdma);
+			
+			return;
+		}
+
+    /* Get the ISR register value */
+    tmpisr = regs->ISR;
+
+    if((tmpisr & (DMA_FLAG_TEIF0_4 << hdma->StreamIndex)) != RESET)
+    {
+      /* Update error code */
+      hdma->ErrorCode |= HAL_DMA_ERROR_TE;
+      
+      /* Clear the transfer error flag */
+      regs->IFCR = DMA_FLAG_TEIF0_4 << hdma->StreamIndex;
+    }
+    
+    if((tmpisr & (DMA_FLAG_FEIF0_4 << hdma->StreamIndex)) != RESET)
+    {
+      /* Update error code */
+      hdma->ErrorCode |= HAL_DMA_ERROR_FE;
+      
+      /* Clear the FIFO error flag */
+      regs->IFCR = DMA_FLAG_FEIF0_4 << hdma->StreamIndex;
+    }
+    
+    if((tmpisr & (DMA_FLAG_DMEIF0_4 << hdma->StreamIndex)) != RESET)
+    {
+      /* Update error code */
+      hdma->ErrorCode |= HAL_DMA_ERROR_DME;
+      
+      /* Clear the Direct Mode error flag */
+      regs->IFCR = DMA_FLAG_DMEIF0_4 << hdma->StreamIndex;
+    }
+		
+		// go sleep
+		CPULOAD_GoToSleepMode();
+  }
+  
+  if(hdma->ErrorCode != HAL_DMA_ERROR_NONE)
+  {
+    if((hdma->ErrorCode & HAL_DMA_ERROR_TE) != RESET)
+    {
+      HAL_DMA_Abort(hdma);
+    
+      /* Clear the half transfer and transfer complete flags */
+      regs->IFCR = (DMA_FLAG_HTIF0_4 | DMA_FLAG_TCIF0_4) << hdma->StreamIndex;
+    
+      /* Change the DMA state */
+      hdma->State= HAL_DMA_STATE_READY;
+
+      /* Process Unlocked */
+      __HAL_UNLOCK(hdma);
+			
+      return;
+   }
+  }
+
+	/* Clear the half transfer and transfer complete flags */
+	regs->IFCR = (DMA_FLAG_HTIF0_4 | DMA_FLAG_TCIF0_4) << hdma->StreamIndex;
+	
+	hdma->State = HAL_DMA_STATE_READY;
+	
+	/* Process Unlocked */
+	__HAL_UNLOCK(hdma);
+}
 
 uint8_t getInputType(void)
 {
@@ -832,6 +846,7 @@ uint8_t getInputType(void)
 	return type;
 }
 
+#if HRDW_HAS_SD
 /* CRC16 table (for SD data) */
 static unsigned int sd_crc16_table[256];
 /* CRC7 table (for SD commands) */
@@ -890,6 +905,7 @@ void sd_crc_generate_table(void)
 	}
 	crc_table_generated = true;
 }
+#endif
 
 void arm_biquad_cascade_df2T_f32_single(const arm_biquad_cascade_df2T_instance_f32 *S, const float32_t *pSrc, float32_t *pDst, uint32_t blockSize)
 {
@@ -1000,6 +1016,7 @@ bool textStartsWith(const char *a, const char *b)
 	return 0;
 }
 
+#if HRDW_HAS_FULL_FFT_BUFFER
 void *alloc_to_wtf(uint32_t size, bool reset)
 {
 	static uint32_t allocated = 0;
@@ -1015,4 +1032,20 @@ void *alloc_to_wtf(uint32_t size, bool reset)
 	void * p = (void *) ((uint8_t *)print_output_buffer + allocated);
 	allocated += size;
 	return p;
+}
+#endif
+
+float fast_sqrt(const float x)
+{
+	#define SQRT_MAGIC_F 0x5f3759df 
+  const float xhalf = 0.5f*x;
+ 
+  union // get bits for floating value
+  {
+    float x;
+    int i;
+  } u;
+  u.x = x;
+  u.i = SQRT_MAGIC_F - (u.i >> 1);  // gives initial guess y0
+  return x*u.x*(1.5f - xhalf*u.x*u.x);// Newton step, repeating increases accuracy 
 }

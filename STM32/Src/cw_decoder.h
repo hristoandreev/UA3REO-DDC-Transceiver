@@ -1,7 +1,7 @@
 #ifndef CW_DECODER_h
 #define CW_DECODER_h
 
-#include "stm32h7xx_hal.h"
+#include "hardware.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -30,7 +30,7 @@
 #define CWDECODER_ERROR_DIFF 0.5f                        // error factor when determining the point and dash
 #define CWDECODER_ERROR_SPACE_DIFF 0.6f                  // error factor when determining the character and space
 #define CWDECODER_MAX_CODE_SIZE 10                       // maximum character code size
-#define CWDECODER_MAX_WPM 40                             // maximum WPM
+#define CWDECODER_MAX_WPM 30                             // maximum WPM
 #define CWDECODER_DEBUG false                            // Show Debug
 
 // Public variables

@@ -762,6 +762,56 @@ static float32_t LCD_GetSMeterValPosition(float32_t dbm, bool correct_vhf)
 	return TRX_s_meter;
 }
 
+static float32_t LCD_GetAnalowPowerValPosition(float32_t pwr)
+{
+	int32_t width = LAYOUT->STATUS_SMETER_WIDTH - 2;
+	float32_t pos = 20.0f; // zero
+	
+	// ugly corrections :/
+	
+	if(pwr > 0) { // 0-10w
+		pos += fmin(10, pwr) * 4.0f;
+		pwr -= 10.0f;
+	}
+	
+	if(pwr > 0) { // 10-20w
+		pos += fmin(10, pwr) * 2.1f;
+		pwr -= 10.0f;
+	}
+	
+	if(pwr > 0) { // 20-30w
+		pos += fmin(10, pwr) * 1.0f;
+		pwr -= 10.0f;
+	}
+	
+	if(pwr > 0) { // 30-40w
+		pos += fmin(10, pwr) * 1.5f;
+		pwr -= 10.0f;
+	}
+	
+	if(pwr > 0) { // 40-50w
+		pos += fmin(10, pwr) * 1.3f;
+		pwr -= 10.0f;
+	}
+	
+	if(pwr > 0) { // 50-90w
+		pos += fmin(40, pwr) * 1.0f;
+		pwr -= 40.0f;
+	}
+	
+	if(pwr > 0) { // 90w+
+		pos += pwr * 0.9f;
+	}
+
+	//limits
+	if (pos > width + 60.0f)
+		pos = width + 60.0f;
+	if (pos < -30.0f)
+		pos = -30.0f;
+		
+	return pos;
+}
+
 static void LCD_PrintMeterArrow(int16_t target_pixel_x)
 {
 	if (target_pixel_x < 0)
@@ -1118,7 +1168,10 @@ static void LCD_displayStatusInfoBar(bool redraw)
 			LCDDriver_printText(ctmp, LAYOUT->STATUS_LABEL_DBM_X_OFFSET, LAYOUT->STATUS_Y_OFFSET + LAYOUT->STATUS_LABEL_DBM_Y_OFFSET + 5, COLOR->STATUS_LABEL_DBM, BG_COLOR, LAYOUT->STATUS_LABELS_FONT_SIZE);
 
 			LCD_drawSMeter();
-			LCD_PrintMeterArrow(LCD_GetSMeterValPosition(LCD_SWR2DBM_meter(TRX_SWR_SMOOTHED), false));
+			if (TRX.AnalogMeterShowPWR)
+				LCD_PrintMeterArrow(LCD_GetAnalowPowerValPosition(TRX_PWR_Forward_SMOOTHED));
+			else
+				LCD_PrintMeterArrow(LCD_GetSMeterValPosition(LCD_SWR2DBM_meter(TRX_SWR_SMOOTHED), false));
 		}
 	}
 
@@ -1614,6 +1667,19 @@ void LCD_processTouch(uint16_t x, uint16_t y)
 				FRONTPANEL_BUTTONHANDLER_AsB(0);
 			return;
 		}
+		
+		// analog meter swr/pwr switch
+		if (TRX_on_TX && LAYOUT->STATUS_SMETER_ANALOG && y >= (LAYOUT->STATUS_Y_OFFSET + LAYOUT->STATUS_SMETER_TOP_OFFSET) && y <= (LAYOUT->STATUS_Y_OFFSET + LAYOUT->STATUS_SMETER_TOP_OFFSET + image_data_meter.height) && x >= (LAYOUT->STATUS_BAR_X_OFFSET) && x <= (LAYOUT->STATUS_BAR_X_OFFSET + image_data_meter.width))
+		{
+			TRX.AnalogMeterShowPWR = !TRX.AnalogMeterShowPWR;
+			
+			if (TRX.AnalogMeterShowPWR)
+				LCD_showTooltip("POWER");
+			else
+				LCD_showTooltip("SWR");
+			
+			return;
+		}
 	}
 
 	// buttons
@@ -1863,23 +1929,24 @@ static void LCD_showBandWindow(bool secondary_vfo)
 		return;
 
 	uint8_t buttons_in_line = 6;
-	if (TRX.Transverter_23cm || TRX.Transverter_13cm || TRX.Transverter_6cm || TRX.Transverter_3cm)
+	if (TRX.Transverter_23cm || TRX.Transverter_13cm || TRX.Transverter_6cm || TRX.Transverter_3cm || BANDS[BANDID_60m].selectable || BANDS[BANDID_4m].selectable || BANDS[BANDID_AIR].selectable || BANDS[BANDID_Marine].selectable)
 		buttons_in_line = 7;
 
 	uint8_t selectable_bands_count = 0;
-	uint8_t unselectable_bands_count = 0;
-	for (uint8_t i = 0; i < BANDS_COUNT; i++)
+	uint8_t bradcast_bands_count = 0;
+	for (uint8_t i = 0; i < BANDS_COUNT; i++) {
 		if (BANDS[i].selectable)
 			selectable_bands_count++;
-		else
-			unselectable_bands_count++;
+		if (BANDS[i].broadcast)
+			bradcast_bands_count++;
+	}
 	selectable_bands_count++; // memory bank
 
 	const uint8_t buttons_lines_selectable = ceil((float32_t)selectable_bands_count / (float32_t)buttons_in_line);
-	const uint8_t buttons_lines_unselectable = ceil((float32_t)unselectable_bands_count / (float32_t)buttons_in_line);
+	const uint8_t buttons_lines_broadcast = ceil((float32_t)bradcast_bands_count / (float32_t)buttons_in_line);
 	const uint8_t divider_height = 30;
 	uint16_t window_width = LAYOUT->WINDOWS_BUTTON_WIDTH * buttons_in_line + LAYOUT->WINDOWS_BUTTON_MARGIN * (buttons_in_line + 1);
-	uint16_t window_height = LAYOUT->WINDOWS_BUTTON_HEIGHT * (buttons_lines_selectable + buttons_lines_unselectable) + divider_height + LAYOUT->WINDOWS_BUTTON_MARGIN * (buttons_lines_selectable + buttons_lines_unselectable + 1);
+	uint16_t window_height = LAYOUT->WINDOWS_BUTTON_HEIGHT * (buttons_lines_selectable + buttons_lines_broadcast) + divider_height + LAYOUT->WINDOWS_BUTTON_MARGIN * (buttons_lines_selectable + buttons_lines_broadcast + 1);
 	LCD_openWindow(window_width, window_height);
 	LCD_busy = true;
 	int8_t curband = getBandFromFreq(TRX.VFO_A.Freq, true);
@@ -1891,9 +1958,9 @@ static void LCD_showBandWindow(bool secondary_vfo)
 	uint8_t xi = 0;
 	for (uint8_t bindx = 0; bindx < BANDS_COUNT; bindx++)
 	{
-		if (!BANDS[bindx].selectable)
+		if (!BANDS[bindx].selectable || BANDS[bindx].broadcast)
 			continue;
-
+		
 		if (!secondary_vfo)
 			printButton(LAYOUT->WINDOWS_BUTTON_MARGIN + xi * (LAYOUT->WINDOWS_BUTTON_WIDTH + LAYOUT->WINDOWS_BUTTON_MARGIN), LAYOUT->WINDOWS_BUTTON_MARGIN + yi * (LAYOUT->WINDOWS_BUTTON_HEIGHT + LAYOUT->WINDOWS_BUTTON_MARGIN), LAYOUT->WINDOWS_BUTTON_WIDTH, LAYOUT->WINDOWS_BUTTON_HEIGHT, (char *)BANDS[bindx].name, (curband == bindx), true, true, bindx, FRONTPANEL_BUTTONHANDLER_SET_VFOA_BAND, FRONTPANEL_BUTTONHANDLER_SET_VFOA_BAND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT);
 		else
@@ -1920,11 +1987,11 @@ static void LCD_showBandWindow(bool secondary_vfo)
 	if (xi != 0)
 		yi++;
 	LCDDriver_drawFastHLine(LCD_WIDTH / 2 - window_width / 2, LCD_window.y + LAYOUT->WINDOWS_BUTTON_MARGIN + divider_height / 3 + yi * (LAYOUT->WINDOWS_BUTTON_HEIGHT + LAYOUT->WINDOWS_BUTTON_MARGIN), window_width, COLOR->WINDOWS_BORDER);
-	// unselectable bands next (broadcast)
+	// broadcast bands next
 	xi = 0;
 	for (uint8_t bindx = 0; bindx < BANDS_COUNT; bindx++)
 	{
-		if (BANDS[bindx].selectable)
+		if (!BANDS[bindx].broadcast)
 			continue;
 
 		if (!secondary_vfo)
@@ -2191,6 +2258,12 @@ static void LCD_ShowMemoryChannelsButtonHandler(uint32_t parameter)
 #endif
 }
 
+static bool LCD_keyboards_current_lowcase_status = false;
+static void LCD_printKeyboardShiftHandler(uint32_t parameter)
+{
+	LCD_printKeyboard(LCD_keyboardHandler, !LCD_keyboards_current_lowcase_status);
+}
+
 void LCD_printKeyboard(void (*keyboardHandler)(uint32_t parameter), bool lowcase)
 {
 #if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
@@ -2205,6 +2278,8 @@ void LCD_printKeyboard(void (*keyboardHandler)(uint32_t parameter), bool lowcase
 	uint16_t buttons_left_offset = button_width * 2.5;
 	uint16_t x = 0;
 	uint16_t y = 0;
+	
+	LCD_keyboards_current_lowcase_status = lowcase;
 	//
 	char line1[] = "1234567890<";
 	for (uint8_t i = 0; i < strlen(line1); i++)
@@ -2239,16 +2314,19 @@ void LCD_printKeyboard(void (*keyboardHandler)(uint32_t parameter), bool lowcase
 		printButton(buttons_left_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + x * (button_width + LAYOUT->WINDOWS_BUTTON_MARGIN), buttons_top_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + y * (button_height + LAYOUT->WINDOWS_BUTTON_MARGIN), button_width, button_height, text, true, false, false, text[0], LCD_keyboardHandler, LCD_keyboardHandler, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT);
 	}
 	y++;
-	buttons_left_offset += button_width / 2;
 	//
-	char line4[] = "ZXCVBNM,./";
-	if(lowcase) strcpy(line4, "zxcvbnm,./");
+	char line4[] = "^ZXCVBNM,./";
+	if(lowcase) strcpy(line4, "^zxcvbnm,./");
 	for (uint8_t i = 0; i < strlen(line4); i++)
 	{
 		char text[2] = {0};
 		text[0] = line4[i];
 		x = i;
-		printButton(buttons_left_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + x * (button_width + LAYOUT->WINDOWS_BUTTON_MARGIN), buttons_top_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + y * (button_height + LAYOUT->WINDOWS_BUTTON_MARGIN), button_width, button_height, text, true, false, false, text[0], LCD_keyboardHandler, LCD_keyboardHandler, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT);
+		//LCD_keyboards_current_lowcase_status
+		if(i == 0) //shift
+			printButton(buttons_left_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + x * (button_width + LAYOUT->WINDOWS_BUTTON_MARGIN), buttons_top_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + y * (button_height + LAYOUT->WINDOWS_BUTTON_MARGIN), button_width, button_height, text, true, false, false, text[0], LCD_printKeyboardShiftHandler, LCD_printKeyboardShiftHandler, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT);
+		else
+			printButton(buttons_left_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + x * (button_width + LAYOUT->WINDOWS_BUTTON_MARGIN), buttons_top_offset + LAYOUT->WINDOWS_BUTTON_MARGIN + y * (button_height + LAYOUT->WINDOWS_BUTTON_MARGIN), button_width, button_height, text, true, false, false, text[0], LCD_keyboardHandler, LCD_keyboardHandler, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT);
 	}
 #endif
 }

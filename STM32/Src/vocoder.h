@@ -1,7 +1,9 @@
 #ifndef VOCODER_H
 #define VOCODER_H
 
-#include "stm32h7xx_hal.h"
+#if HRDW_HAS_SD
+
+#include "hardware.h"
 #include "adpcm-lib.h"
 #include "settings.h"
 
@@ -41,5 +43,7 @@ typedef struct
     // uint8_t data[];       // data body
 
 } WAV_header;
+
+#endif
 
 #endif
