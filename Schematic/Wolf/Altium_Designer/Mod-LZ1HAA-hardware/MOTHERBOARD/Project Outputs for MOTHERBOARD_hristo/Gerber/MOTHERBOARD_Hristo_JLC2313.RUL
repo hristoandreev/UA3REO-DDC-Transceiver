@@ -1,0 +1,11 @@
+DRC Rules Export File for PCB: D:\Altera_projects\UA3REO-DDC-Transceiver-hristo\Scheme\ALTIUM_DESIGNER\MOTHERBOARD\MOTHERBOARD_Hristo_JLC2313.PcbDoc
+RuleKind=Clearance|RuleName=Clearance_Poly|Scope=Board|Minimum=11.81
+RuleKind=Width|RuleName=Width_Power|Scope=Board|Minimum=5.51
+RuleKind=Clearance|RuleName=Clearance_Shielding|Scope=Board|Minimum=5.00
+RuleKind=Width|RuleName=Schematic Width Constraint_1|Scope=Board|Minimum=16.35
+RuleKind=Width|RuleName=Schematic Width Constraint|Scope=Board|Minimum=16.35
+RuleKind=MinimumAnnularRing|RuleName=MinimumAnnularRing|Scope=Board|Minimum=3.00
+RuleKind=ShortCircuit|RuleName=ShortCircuit|Scope=Board|Allowed=0
+RuleKind=SolderMaskExpansion|RuleName=SolderMaskExpansion|Scope=Board|Minimum=2.95
+RuleKind=Width|RuleName=Width|Scope=Board|Minimum=5.78
+RuleKind=Clearance|RuleName=Clearance|Scope=Board|Minimum=4.00
