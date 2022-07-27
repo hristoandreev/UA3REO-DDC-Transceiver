@@ -1,4 +1,3 @@
-#include "stm32h7xx_hal.h"
 #include "agc.h"
 #include "settings.h"
 #include "audio_filters.h"
@@ -7,7 +6,9 @@
 
 // Private variables
 static IRAM2 AGC_RX_Instance AGC_RX1 = {0};
+#if HRDW_HAS_DUAL_RX
 static IRAM2 AGC_RX_Instance AGC_RX2 = {0};
+#endif
 static IRAM2 AGC_TX_Instance AGC_TX = {0};
 
 // Run AGC on data block
@@ -16,11 +17,14 @@ void DoRxAGC(float32_t *agcBuffer_i, float32_t *agcBuffer_q, uint_fast16_t block
 	// RX1 or RX2
 	AGC_RX_Instance *AGC = &AGC_RX1;
 	bool VAD_Muting = VAD_RX1_Muting;
+	
+	#if HRDW_HAS_DUAL_RX
 	if (rx_id == AUDIO_RX2)
 	{
 		AGC = &AGC_RX2;
 		VAD_Muting = VAD_RX2_Muting;
 	}
+	#endif
 
 	// higher speed in settings - higher speed of AGC processing
 	float32_t RX_AGC_STEPSIZE_UP = 0.0f;
@@ -39,14 +43,18 @@ void DoRxAGC(float32_t *agcBuffer_i, float32_t *agcBuffer_q, uint_fast16_t block
 	// do k-weighting (for LKFS)
 	if (rx_id == AUDIO_RX1)
 	{
+		#ifndef STM32F407xx
 		arm_biquad_cascade_df2T_f32_single(&AGC_RX1_KW_HSHELF_FILTER, agcBuffer_i, AGC->agcBuffer_kw, blockSize);
 		arm_biquad_cascade_df2T_f32_single(&AGC_RX1_KW_HPASS_FILTER, agcBuffer_i, AGC->agcBuffer_kw, blockSize);
+		#endif
 	}
+	#if HRDW_HAS_DUAL_RX
 	else
 	{
 		arm_biquad_cascade_df2T_f32_single(&AGC_RX2_KW_HSHELF_FILTER, agcBuffer_i, AGC->agcBuffer_kw, blockSize);
 		arm_biquad_cascade_df2T_f32_single(&AGC_RX2_KW_HPASS_FILTER, agcBuffer_i, AGC->agcBuffer_kw, blockSize);
 	}
+	#endif
 
 	// do ring buffer
 	static uint32_t ring_position = 0;
@@ -62,7 +70,13 @@ void DoRxAGC(float32_t *agcBuffer_i, float32_t *agcBuffer_q, uint_fast16_t block
 
 	// calculate the magnitude in dBFS
 	float32_t AGC_RX_magnitude = 0;
+	
+	#ifndef STM32F407xx
 	arm_rms_f32(AGC->agcBuffer_kw, blockSize, &AGC_RX_magnitude);
+	#else
+	arm_rms_f32(agcBuffer_i, blockSize, &AGC_RX_magnitude);
+	#endif
+	
 	if (AGC_RX_magnitude == 0.0f)
 		AGC_RX_magnitude = 0.001f;
 	float32_t full_scale_rate = AGC_RX_magnitude / FLOAT_FULL_SCALE_POW;
@@ -117,8 +131,13 @@ void DoRxAGC(float32_t *agcBuffer_i, float32_t *agcBuffer_q, uint_fast16_t block
 	}
 
 	// AGC off, not adjustable
-	if ((rx_id == AUDIO_RX1 && !CurrentVFO->AGC) || (rx_id == AUDIO_RX2 && !SecondaryVFO->AGC))
+	if (rx_id == AUDIO_RX1 && !CurrentVFO->AGC)
 		AGC->need_gain_db = 1.0f;
+	
+	#if HRDW_HAS_DUAL_RX
+	if (rx_id == AUDIO_RX2 && !SecondaryVFO->AGC)
+		AGC->need_gain_db = 1.0f;
+	#endif
 
 	// gain limitation
 	if (AGC->need_gain_db > (float32_t)TRX.RX_AGC_Max_gain)
@@ -133,7 +152,7 @@ void DoRxAGC(float32_t *agcBuffer_i, float32_t *agcBuffer_q, uint_fast16_t block
 	}
 	
 	// apply gain
-	// println("cur agc: ", AGC_RX_dbFS, " need: ", AGC->need_gain_db);
+	// println("cur agc: ", AGC_RX_dbFS, " need: ", AGC->need_gain_db, " cur: ", current_need_gain, " old: ", AGC->need_gain_db_old);
 	if (fabsf(AGC->need_gain_db_old - current_need_gain) >= 1.0f) // gain changed
 	{
 		float32_t gainApplyStep = 0;
@@ -160,9 +179,9 @@ void DoRxAGC(float32_t *agcBuffer_i, float32_t *agcBuffer_q, uint_fast16_t block
 	}
 	else // gain did not change, apply gain across all samples
 	{
-		arm_scale_f32(agcBuffer_i, db2rateV(AGC->need_gain_db), agcBuffer_i, blockSize);
+		arm_scale_f32(agcBuffer_i, db2rateV(AGC->need_gain_db_old), agcBuffer_i, blockSize);
 		if (stereo)
-			arm_scale_f32(agcBuffer_q, db2rateV(AGC->need_gain_db), agcBuffer_q, blockSize);
+			arm_scale_f32(agcBuffer_q, db2rateV(AGC->need_gain_db_old), agcBuffer_q, blockSize);
 	}
 }
 
@@ -331,5 +350,8 @@ void ResetAGC(void)
 	// AGC_RX1.need_gain_db = 0.0f;
 	// AGC_RX2.need_gain_db = 0.0f;
 	dma_memset(AGC_RX1.ringbuffer, 0x00, sizeof(AGC_RX1.ringbuffer));
+	
+	#if HRDW_HAS_DUAL_RX
 	dma_memset(AGC_RX2.ringbuffer, 0x00, sizeof(AGC_RX2.ringbuffer));
+	#endif
 }

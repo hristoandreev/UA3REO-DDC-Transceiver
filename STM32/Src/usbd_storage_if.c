@@ -1,6 +1,9 @@
+#include "usbd_ua3reo.h"
 #include "usbd_storage_if.h"
 #include "sd.h"
 #include "lcd.h"
+
+#if HRDW_HAS_SD
 
 const int8_t STORAGE_Inquirydata_FS[] = {
 	/* 36 */
@@ -47,6 +50,7 @@ int8_t STORAGE_Init_FS(uint8_t lun)
 
 int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
+	#if HRDW_HAS_SD
 	if (!SD_Present || !SD_USBCardReader)
 	{
 		*block_num = 0;
@@ -56,16 +60,19 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
 
 	*block_num = sdinfo.SECTOR_COUNT;
 	*block_size = sdinfo.BLOCK_SIZE;
+	#endif
 	return (USBD_OK);
 }
 
 int8_t STORAGE_IsReady_FS(uint8_t lun)
 {
+	#if HRDW_HAS_SD
 	if (!SD_USBCardReader)
 		return (USBD_FAIL);
 
 	if (!SD_Present || SD_RecordInProcess || SD_CommandInProcess)
 		return (USBD_FAIL);
+	#endif
 	return (USBD_OK);
 }
 
@@ -76,10 +83,11 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
+	#if HRDW_HAS_SD
 	if (!SD_USBCardReader)
 		return (USBD_FAIL);
 
-	if (SPI_busy || SPI_process || SD_BusyByUSB || !SD_Present || SD_RecordInProcess || SD_CommandInProcess)
+	if (HRDW_SPI_Periph_busy || HRDW_SPI_Locked || SD_BusyByUSB || !SD_Present || SD_RecordInProcess || SD_CommandInProcess)
 	{
 		/*if(SPI_busy) println("RE: SPI_B");
 		if(SPI_process) println("RE: SPI_P");
@@ -129,14 +137,18 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 	}
 
 	return blk_len ? USBD_FAIL : USBD_OK;
+	#else
+	return USBD_OK;
+	#endif
 }
 
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
+	#if HRDW_HAS_SD
 	if (!SD_USBCardReader)
 		return (USBD_FAIL);
 
-	if (SPI_busy || SPI_process || SD_BusyByUSB || !SD_Present || SD_RecordInProcess || SD_CommandInProcess)
+	if (HRDW_SPI_Periph_busy || HRDW_SPI_Locked || SD_BusyByUSB || !SD_Present || SD_RecordInProcess || SD_CommandInProcess)
 		return (USBD_FAIL);
 
 	// HAL_SD_WriteBlocks(&hsd, buf, blk_addr, (uint32_t) blk_len, 10);
@@ -184,9 +196,14 @@ int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t b
 	}
 
 	return blk_len ? USBD_FAIL : USBD_OK;
+	#else
+	return USBD_OK;
+	#endif
 }
 
 int8_t STORAGE_GetMaxLun_FS(void)
 {
 	return 0;
 }
+
+#endif

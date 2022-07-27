@@ -6,7 +6,7 @@
 #include "functions.h"
 #include "wm8731.h"
 #include "lcd_driver.h"
-#include "stm32h7xx_ll_usb.h"
+#include "hardware.h"
 
 static uint8_t USBD_UA3REO_Init(USBD_HandleTypeDef *pdev);
 static uint8_t USBD_UA3REO_DeInit(USBD_HandleTypeDef *pdev);
@@ -79,7 +79,11 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		USB_DESC_TYPE_CONFIGURATION,	  /* bDescriptorType: Configuration */
 		(USB_CDC_CONFIG_DESC_SIZ & 0xFF), /* wTotalLength:no of returned bytes */
 		USB_CDC_CONFIG_DESC_SIZ >> 8,
+		#ifdef SHORT_USB_DESCRIPTOR
+		0x07, /* bNumInterfaces: count interface */
+		#else
 		0x0A, /* bNumInterfaces: count interface */
+		#endif
 		0x01, /* bConfigurationValue: Configuration value */
 		0x00, /* iConfiguration: Index of string descriptor describing the configuration */
 		0xC0, /* bmAttributes: self powered */
@@ -404,8 +408,8 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02, //     bDescriptorSubtype
 		0x01, //     bFormatType   (FORMAT_TYPE_1)
 		0x02, //     bNrChannels   (2 channels)
-		0x03, //     bSubframeSize
-		0x18, //     bBitResolution   (24 bits per sample)
+		BYTES_IN_SAMPLE_AUDIO_OUT_PACKET, //     bSubframeSize
+		HRDW_USB_AUDIO_BITS, //     bBitResolution   (16/24 bits per sample)
 		0x01, //     bSamFreqType   (Discrete sampling frequencies)
 		0x80, //         tSamFreq(1)   (48000 Hz)
 		0xBB, //         tSamFreq(1)   (48000 Hz)
@@ -474,8 +478,8 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02, //     bDescriptorSubtype
 		0x01, //     bFormatType   (FORMAT_TYPE_1)
 		0x02, //     bNrChannels   (2 channels)
-		0x03, //     bSubframeSize
-		0x18, //     bBitResolution   (24 bits per sample)
+		BYTES_IN_SAMPLE_AUDIO_OUT_PACKET, //     bSubframeSize
+		HRDW_USB_AUDIO_BITS, //     bBitResolution   (16/24 bits per sample)
 		0x01, //     bSamFreqType   (Discrete sampling frequencies)
 		0x80, //         tSamFreq(1)   (48000 Hz)
 		0xBB, //         tSamFreq(1)   (48000 Hz)
@@ -506,7 +510,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		//---------------------------------------------------------------------------
 
 		// AUDIO IQ PORT
-		
+#if HRDW_HAS_USB_IQ		
 		// Interface Association Descriptor:
 		//------------------------------
 		0x08,					 //     bLength
@@ -610,8 +614,8 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02, //     bDescriptorSubtype
 		0x01, //     bFormatType   (FORMAT_TYPE_1)
 		0x02, //     bNrChannels   (2 channels)
-		0x03, //     bSubframeSize
-		0x18, //     bBitResolution   (24 bits per sample)
+		BYTES_IN_SAMPLE_AUDIO_OUT_PACKET, //     bSubframeSize
+		HRDW_USB_AUDIO_BITS, //     bBitResolution   (16/24 bits per sample)
 		0x01, //     bSamFreqType   (Discrete sampling frequencies)
 		0x80, //         tSamFreq(1)   (48000 Hz)
 		0xBB, //         tSamFreq(1)   (48000 Hz)
@@ -638,9 +642,9 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02, //     bLockDelayUnits   (decoded PCM samples)
 		0x00, // wLockDelay
 		0x00, // wLockDelay
-
+#endif
 		//---------------------------------------------------------------------------
-
+#if HRDW_HAS_SD
 		// Mass Storage interface
 		0x09,				   /* bLength: Interface Descriptor size */
 		0x04,				   /* bDescriptorType: */
@@ -668,6 +672,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		LOBYTE(MSC_MAX_FS_PACKET),
 		HIBYTE(MSC_MAX_FS_PACKET),
 		0x00 /* Polling interval in milliseconds */
+#endif
 };
 
 /**
@@ -692,32 +697,48 @@ static uint8_t USBD_UA3REO_Init(USBD_HandleTypeDef *pdev)
 	USBD_DEBUG_HandleTypeDef *hcdc_debug;
 	USBD_CAT_HandleTypeDef *hcdc_cat;
 	USBD_AUDIO_HandleTypeDef *haudio;
+	#if HRDW_HAS_USB_IQ
 	USBD_IQ_HandleTypeDef *haudioiq;
+	#endif
+	#if HRDW_HAS_SD
 	USBD_MSC_BOT_HandleTypeDef *hstorage;
+	#endif
 
 	/* Open EP IN */
 	USBD_LL_OpenEP(pdev, DEBUG_IN_EP, USBD_EP_TYPE_BULK, CDC_DATA_FS_IN_PACKET_SIZE);
 	USBD_LL_OpenEP(pdev, CAT_IN_EP, USBD_EP_TYPE_BULK, CDC_DATA_FS_IN_PACKET_SIZE);
 	USBD_LL_OpenEP(pdev, AUDIO_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_OUT_PACKET);
+	#if HRDW_HAS_USB_IQ
 	USBD_LL_OpenEP(pdev, IQ_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_OUT_PACKET);
+	#endif
+	#if HRDW_HAS_SD
 	USBD_LL_OpenEP(pdev, MSC_EPIN_ADDR, USBD_EP_TYPE_BULK, MSC_MAX_FS_PACKET);
+	#endif
 
 	pdev->ep_in[DEBUG_IN_EP & 0xFU].is_used = 1U;
 	pdev->ep_in[CAT_IN_EP & 0xFU].is_used = 1U;
 	pdev->ep_in[AUDIO_IN_EP & 0xFU].is_used = 1U;
+	#if HRDW_HAS_USB_IQ
 	pdev->ep_in[IQ_IN_EP & 0xFU].is_used = 1U;
+	#endif
+	#if HRDW_HAS_SD
 	pdev->ep_in[MSC_EPIN_ADDR & 0xFU].is_used = 1U;
+	#endif
 
 	/* Open EP OUT */
 	USBD_LL_OpenEP(pdev, DEBUG_OUT_EP, USBD_EP_TYPE_BULK, CDC_DATA_FS_OUT_PACKET_SIZE);
 	USBD_LL_OpenEP(pdev, CAT_OUT_EP, USBD_EP_TYPE_BULK, CDC_DATA_FS_OUT_PACKET_SIZE);
 	USBD_LL_OpenEP(pdev, AUDIO_OUT_EP, USBD_EP_TYPE_ISOC, AUDIO_OUT_PACKET);
+	#if HRDW_HAS_SD
 	USBD_LL_OpenEP(pdev, MSC_EPOUT_ADDR, USBD_EP_TYPE_BULK, MSC_MAX_FS_PACKET);
+	#endif
 
 	pdev->ep_out[DEBUG_OUT_EP & 0xFU].is_used = 1U;
 	pdev->ep_out[CAT_OUT_EP & 0xFU].is_used = 1U;
 	pdev->ep_out[AUDIO_OUT_EP & 0xFU].is_used = 1U;
+	#if HRDW_HAS_SD
 	pdev->ep_out[MSC_EPOUT_ADDR & 0xFU].is_used = 1U;
+	#endif
 
 	// INT EP
 	USBD_LL_OpenEP(pdev, DEBUG_CMD_EP, USBD_EP_TYPE_INTR, CDC_CMD_PACKET_SIZE);
@@ -728,8 +749,12 @@ static uint8_t USBD_UA3REO_Init(USBD_HandleTypeDef *pdev)
 	static USBD_DEBUG_HandleTypeDef pClassDataDEBUG = {0};
 	static USBD_CAT_HandleTypeDef pClassDataCAT = {0};
 	static USBD_AUDIO_HandleTypeDef pClassDataAUDIO = {0};
+	#if HRDW_HAS_USB_IQ
 	static USBD_IQ_HandleTypeDef pClassDataIQ = {0};
+	#endif
+	#if HRDW_HAS_SD
 	static USBD_MSC_BOT_HandleTypeDef pClassDataSTORAGE = {0};
+	#endif
 
 	pdev->pClassDataDEBUG = &pClassDataDEBUG;
 	dma_memset(pdev->pClassDataDEBUG, 0, sizeof(USBD_DEBUG_HandleTypeDef));
@@ -737,10 +762,14 @@ static uint8_t USBD_UA3REO_Init(USBD_HandleTypeDef *pdev)
 	dma_memset(pdev->pClassDataCAT, 0, sizeof(USBD_CAT_HandleTypeDef));
 	pdev->pClassDataAUDIO = &pClassDataAUDIO;
 	dma_memset(pdev->pClassDataAUDIO, 0, sizeof(USBD_AUDIO_HandleTypeDef));
+	#if HRDW_HAS_USB_IQ
 	pdev->pClassDataIQ = &pClassDataIQ;
 	dma_memset(pdev->pClassDataIQ, 0, sizeof(USBD_IQ_HandleTypeDef));
+	#endif
+	#if HRDW_HAS_SD
 	pdev->pClassDataSTORAGE = &pClassDataSTORAGE;
 	dma_memset(pdev->pClassDataSTORAGE, 0, sizeof(USBD_MSC_BOT_HandleTypeDef));
+	#endif
 
 	hcdc_debug = (USBD_DEBUG_HandleTypeDef *)pdev->pClassDataDEBUG;
 
@@ -773,6 +802,7 @@ static uint8_t USBD_UA3REO_Init(USBD_HandleTypeDef *pdev)
 		return USBD_FAIL;
 	}
 	
+	#if HRDW_HAS_USB_IQ
 	haudioiq = (USBD_IQ_HandleTypeDef *)pdev->pClassDataIQ;
 	haudioiq->alt_setting = 0U;
 	
@@ -780,10 +810,12 @@ static uint8_t USBD_UA3REO_Init(USBD_HandleTypeDef *pdev)
 	{
 		return USBD_FAIL;
 	}
+	#endif
 
+	#if HRDW_HAS_SD
 	//MSC
-	
 	MSC_BOT_Init(pdev);
+	#endif
 
 	return ret;
 }
@@ -803,23 +835,35 @@ static uint8_t USBD_UA3REO_DeInit(USBD_HandleTypeDef *pdev)
 	USBD_LL_CloseEP(pdev, DEBUG_IN_EP);
 	USBD_LL_CloseEP(pdev, CAT_IN_EP);
 	USBD_LL_CloseEP(pdev, AUDIO_IN_EP);
+	#if HRDW_HAS_USB_IQ
 	USBD_LL_CloseEP(pdev, IQ_IN_EP);
+	#endif
+	#if HRDW_HAS_SD
 	USBD_LL_CloseEP(pdev, MSC_EPIN_ADDR);
+	#endif
 	pdev->ep_in[DEBUG_IN_EP & 0xFU].is_used = 0U;
 	pdev->ep_in[CAT_IN_EP & 0xFU].is_used = 0U;
 	pdev->ep_in[AUDIO_IN_EP & 0xFU].is_used = 0U;
+	#if HRDW_HAS_USB_IQ
 	pdev->ep_in[IQ_IN_EP & 0xFU].is_used = 0U;
+	#endif
+	#if HRDW_HAS_SD
 	pdev->ep_in[MSC_EPIN_ADDR & 0xFU].is_used = 0U;
+	#endif
 
 	/* Close EP OUT */
 	USBD_LL_CloseEP(pdev, DEBUG_OUT_EP);
 	USBD_LL_CloseEP(pdev, CAT_OUT_EP);
 	USBD_LL_CloseEP(pdev, AUDIO_OUT_EP);
+	#if HRDW_HAS_SD
 	USBD_LL_CloseEP(pdev, MSC_EPOUT_ADDR);
+	#endif
 	pdev->ep_out[DEBUG_OUT_EP & 0xFU].is_used = 0U;
 	pdev->ep_out[CAT_OUT_EP & 0xFU].is_used = 0U;
 	pdev->ep_out[AUDIO_OUT_EP & 0xFU].is_used = 0U;
+	#if HRDW_HAS_SD
 	pdev->ep_out[MSC_EPOUT_ADDR & 0xFU].is_used = 0U;
+	#endif
 
 	// CLOSE INT EP
 	USBD_LL_CloseEP(pdev, DEBUG_CMD_EP);
@@ -843,16 +887,23 @@ static uint8_t USBD_UA3REO_DeInit(USBD_HandleTypeDef *pdev)
 		((USBD_AUDIO_ItfTypeDef *)pdev->pUserDataAUDIO)->DeInit();
 		pdev->pClassDataAUDIO = NULL;
 	}
+	
+	#if HRDW_HAS_USB_IQ
 	if (pdev->pClassDataIQ != NULL)
 	{
 		((USBD_IQ_ItfTypeDef *)pdev->pUserDataIQ)->DeInit();
 		pdev->pClassDataIQ = NULL;
 	}
+	#endif
+	
+	#if HRDW_HAS_SD
 	if (pdev->pClassDataSTORAGE != NULL)
 	{
 		MSC_BOT_DeInit(pdev);
 		pdev->pClassDataSTORAGE = NULL;
 	}
+	#endif
+	
 	return ret;
 }
 
@@ -1123,6 +1174,7 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *
 	return ret;
 }
 
+#if HRDW_HAS_USB_IQ
 static uint8_t USBD_IQ_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
 	USBD_IQ_HandleTypeDef *haudio;
@@ -1221,7 +1273,9 @@ static uint8_t USBD_IQ_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req
 	}
 	return ret;
 }
+#endif
 
+#if HRDW_HAS_SD
 uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
 	USBD_MSC_BOT_HandleTypeDef *hmsc = (USBD_MSC_BOT_HandleTypeDef *)pdev->pClassDataSTORAGE;
@@ -1334,6 +1388,7 @@ uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 
 	return (uint8_t)ret;
 }
+#endif
 
 static uint8_t USBD_UA3REO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
@@ -1350,16 +1405,20 @@ static uint8_t USBD_UA3REO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef 
 	{
 		ret = USBD_AUDIO_Setup(pdev, req);
 	}
+	#if HRDW_HAS_USB_IQ
 	else if (((req->bmRequest & USB_REQ_RECIPIENT_MASK) == USB_REQ_RECIPIENT_INTERFACE && req->wIndex == IQ_INTERFACE_IDX) ||
 			 ((req->bmRequest & USB_REQ_RECIPIENT_MASK) == USB_REQ_RECIPIENT_ENDPOINT && ((req->wIndex & 0x7F) == IQ_EP_IDX)))
 	{
 		ret = USBD_IQ_Setup(pdev, req);
 	}
+	#endif
+	#if HRDW_HAS_SD
 	else if (((req->bmRequest & USB_REQ_RECIPIENT_MASK) == USB_REQ_RECIPIENT_INTERFACE && req->wIndex == STORAGE_INTERFACE_IDX) ||
 			 ((req->bmRequest & USB_REQ_RECIPIENT_MASK) == USB_REQ_RECIPIENT_ENDPOINT && ((req->wIndex & 0x7F) == STORAGE_EP_IDX)))
 	{
 		ret = USBD_MSC_Setup(pdev, req);
 	}
+	#endif
 	else
 		ret = USBD_CAT_Setup(pdev, req);
 	return ret;
@@ -1454,12 +1513,12 @@ static uint8_t USBD_AUDIO_DataIn(USBD_HandleTypeDef *pdev)
 
 	pdev->ep_in[AUDIO_IN_EP & 0xFU].total_length = rx_audio_buffer_step;
 	HAL_PCD_EP_Transmit(pdev->pData, AUDIO_IN_EP, hcdc_audio->RxBuffer + rx_audio_buffer_head, rx_audio_buffer_step);
-	RX_USB_AUDIO_SAMPLES += rx_audio_buffer_step / (BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2); // 3 byte (24 bit) * 2 channel
+	RX_USB_AUDIO_SAMPLES += rx_audio_buffer_step / (BYTES_IN_SAMPLE_AUDIO_OUT_PACKET * 2); // 2/3 byte (16/24 bit) * 2 channel
 	rx_audio_buffer_head += rx_audio_buffer_step;
-
 	return USBD_OK;
 }
 
+#if HRDW_HAS_USB_IQ
 static uint8_t USBD_IQ_DataIn(USBD_HandleTypeDef *pdev)
 {
 	// Send iq to Host
@@ -1493,26 +1552,33 @@ static uint8_t USBD_IQ_DataIn(USBD_HandleTypeDef *pdev)
 
 	return USBD_OK;
 }
+#endif
 
+#if HRDW_HAS_SD
 uint8_t USBD_MSC_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
 	MSC_BOT_DataIn(pdev, epnum);
 
 	return (uint8_t)USBD_OK;
 }
+#endif
 
 static uint8_t USBD_UA3REO_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
 	if (epnum == AUDIO_EP_IDX)
 		return USBD_AUDIO_DataIn(pdev);
+	#if HRDW_HAS_USB_IQ
 	if (epnum == IQ_EP_IDX)
 		return USBD_IQ_DataIn(pdev);
+	#endif
 	if (epnum == DEBUG_EP_IDX)
 		return USBD_DEBUG_DataIn(pdev, epnum);
 	if (epnum == CAT_EP_IDX)
 		return USBD_CAT_DataIn(pdev, epnum);
+	#if HRDW_HAS_SD
 	if (epnum == STORAGE_EP_IDX)
 		return USBD_MSC_DataIn(pdev, epnum);
+	#endif
 	return USBD_FAIL;
 }
 /**
@@ -1574,12 +1640,14 @@ static uint8_t USBD_AUDIO_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 	return USBD_OK;
 }
 
+#if HRDW_HAS_SD
 uint8_t USBD_MSC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
 	MSC_BOT_DataOut(pdev, epnum);
 
 	return (uint8_t)USBD_OK;
 }
+#endif
 
 static uint8_t USBD_UA3REO_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
@@ -1589,8 +1657,10 @@ static uint8_t USBD_UA3REO_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 		return USBD_CAT_DataOut(pdev, epnum);
 	if (epnum == AUDIO_EP_IDX)
 		return USBD_AUDIO_DataOut(pdev, epnum);
+	#if HRDW_HAS_SD
 	if (epnum == STORAGE_EP_IDX)
 		return USBD_MSC_DataOut(pdev, epnum);
+	#endif
 	return USBD_FAIL;
 }
 
@@ -1631,9 +1701,10 @@ static uint8_t USBD_UA3REO_EP0_RxReady(USBD_HandleTypeDef *pdev)
 		}
 	}
 	
+	#if HRDW_HAS_USB_IQ
 	// IQ
-	USBD_IQ_HandleTypeDef *haudioiq;
-	haudioiq = (USBD_IQ_HandleTypeDef *)pdev->pClassDataIQ;
+	USBD_IQ_HandleTypeDef *haudioiq = (USBD_IQ_HandleTypeDef *)pdev->pClassDataIQ;
+	#endif
 	
 	return USBD_OK;
 }
@@ -1716,6 +1787,7 @@ uint8_t USBD_AUDIO_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_AUDIO_ItfTyp
 	return USBD_OK;
 }
 
+#if HRDW_HAS_USB_IQ
 uint8_t USBD_IQ_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_IQ_ItfTypeDef *fops)
 {
 	if (fops != NULL)
@@ -1724,6 +1796,7 @@ uint8_t USBD_IQ_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_IQ_ItfTypeDef *
 	}
 	return USBD_OK;
 }
+#endif
 
 /**
  * @brief  USBD_CDC_SetTxBuffer
@@ -1837,6 +1910,7 @@ uint8_t USBD_AUDIO_StartTransmit(USBD_HandleTypeDef *pdev)
 	}
 }
 
+#if HRDW_HAS_USB_IQ
 uint8_t USBD_IQ_StartTransmit(USBD_HandleTypeDef *pdev)
 {
 	if (pdev->pClassDataIQ != NULL)
@@ -1851,6 +1925,7 @@ uint8_t USBD_IQ_StartTransmit(USBD_HandleTypeDef *pdev)
 		return USBD_FAIL;
 	}
 }
+#endif
 
 uint8_t USBD_AUDIO_StartReceive(USBD_HandleTypeDef *pdev)
 {
@@ -1916,6 +1991,7 @@ static void AUDIO_REQ_GetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef 
 	USBD_CtlSendData(pdev, haudio->control.data, req->wLength);
 }
 
+#if HRDW_HAS_USB_IQ
 static void IQ_REQ_GetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
 	USBD_IQ_HandleTypeDef *haudio;
@@ -1926,6 +2002,7 @@ static void IQ_REQ_GetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *re
 	/* Send the current mute state */
 	USBD_CtlSendData(pdev, haudio->control.data, req->wLength);
 }
+#endif
 
 /**
  * @brief  AUDIO_Req_SetCurrent
@@ -1952,6 +2029,7 @@ static void AUDIO_REQ_SetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef 
 	}
 }
 
+#if HRDW_HAS_USB_IQ
 static void IQ_REQ_SetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
 	USBD_IQ_HandleTypeDef *haudio;
@@ -1969,6 +2047,7 @@ static void IQ_REQ_SetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *re
 		haudio->control.unit = HIBYTE(req->wIndex);	 /* Set the request target unit */
 	}
 }
+#endif
 
 static uint8_t USBD_UA3REO_SOF(void)
 {
@@ -1992,6 +2071,7 @@ void USBD_Restart(void)
 	USB_LastActiveTime = HAL_GetTick();
 }
 
+#if HRDW_HAS_SD
 /**
  * @brief  USBD_MSC_RegisterStorage
  * @param  fops: storage callback
@@ -2008,3 +2088,4 @@ uint8_t USBD_MSC_RegisterStorage(USBD_HandleTypeDef *pdev, USBD_StorageTypeDef *
 
 	return (uint8_t)USBD_OK;
 }
+#endif

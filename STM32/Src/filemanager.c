@@ -1,3 +1,6 @@
+#include "hardware.h"
+#if HRDW_HAS_SD
+
 #include "filemanager.h"
 #include "lcd.h"
 #include "sd.h"
@@ -712,13 +715,13 @@ void FILEMANAGER_OTAUpdate_handler(void)
 		uint32_t FileCRCValue = 0;
 		uint32_t NeedCRCValue = 0;
 
-		hcrc.Instance = CRC;
-		hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
-		hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
-		hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
-		hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
-		hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
-		HAL_CRC_Init(&hcrc);
+		HRDW_CRC_HANDLE.Instance = CRC;
+		HRDW_CRC_HANDLE.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
+		HRDW_CRC_HANDLE.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
+		HRDW_CRC_HANDLE.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
+		HRDW_CRC_HANDLE.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
+		HRDW_CRC_HANDLE.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
+		HAL_CRC_Init(&HRDW_CRC_HANDLE);
 
 		// FILINFO FileInfo;
 		// f_stat("firmware_fpga.jic", &FileInfo);
@@ -726,7 +729,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 
 		if (f_open(&File, "firmware_fpga.jic", FA_READ | FA_OPEN_EXISTING) == FR_OK)
 		{
-			__HAL_CRC_DR_RESET(&hcrc);
+			__HAL_CRC_DR_RESET(&HRDW_CRC_HANDLE);
 			uint32_t bytesreaded;
 			uint32_t bytesprocessed;
 			bool read_flag = true;
@@ -739,7 +742,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 				else
 				{
 					bytesprocessed += bytesreaded;
-					FileCRCValue = __REV(~HAL_CRC_Accumulate(&hcrc, (uint32_t *)SD_workbuffer_A, bytesreaded));
+					FileCRCValue = __REV(~HAL_CRC_Accumulate(&HRDW_CRC_HANDLE, (uint32_t *)SD_workbuffer_A, bytesreaded));
 				}
 			}
 			f_close(&File);
@@ -788,13 +791,13 @@ void FILEMANAGER_OTAUpdate_handler(void)
 		uint32_t FileCRCValue = 0;
 		uint32_t NeedCRCValue = 0;
 
-		hcrc.Instance = CRC;
-		hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
-		hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
-		hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
-		hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
-		hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
-		HAL_CRC_Init(&hcrc);
+		HRDW_CRC_HANDLE.Instance = CRC;
+		HRDW_CRC_HANDLE.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
+		HRDW_CRC_HANDLE.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
+		HRDW_CRC_HANDLE.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
+		HRDW_CRC_HANDLE.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
+		HRDW_CRC_HANDLE.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
+		HAL_CRC_Init(&HRDW_CRC_HANDLE);
 
 		// FILINFO FileInfo;
 		// f_stat("firmware_fpga.jic", &FileInfo);
@@ -802,7 +805,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 
 		if (f_open(&File, "firmware_stm32.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK)
 		{
-			__HAL_CRC_DR_RESET(&hcrc);
+			__HAL_CRC_DR_RESET(&HRDW_CRC_HANDLE);
 			uint32_t bytesreaded;
 			uint32_t bytesprocessed;
 			bool read_flag = true;
@@ -815,7 +818,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 				else
 				{
 					bytesprocessed += bytesreaded;
-					FileCRCValue = __REV(~HAL_CRC_Accumulate(&hcrc, (uint32_t *)SD_workbuffer_A, bytesreaded));
+					FileCRCValue = __REV(~HAL_CRC_Accumulate(&HRDW_CRC_HANDLE, (uint32_t *)SD_workbuffer_A, bytesreaded));
 				}
 			}
 			f_close(&File);
@@ -891,3 +894,5 @@ void FILEMANAGER_OTAUpdate_handler(void)
 		SYSMENU_eventCloseAllSystemMenu();
 	}
 }
+
+#endif

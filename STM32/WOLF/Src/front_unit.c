@@ -29,7 +29,7 @@ bool FRONTPanel_MCP3008_3_Enabled = true;
 
 static void FRONTPANEL_ENCODER_Rotated(float32_t direction);
 static void FRONTPANEL_ENCODER2_Rotated(int8_t direction);
-static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, GPIO_TypeDef *CS_PORT, uint16_t CS_PIN);
+static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num);
 static void FRONTPANEL_ENCODER2_Rotated(int8_t direction);
 
 static void FRONTPANEL_BUTTONHANDLER_MODE_P(uint32_t parameter);
@@ -48,6 +48,7 @@ static void FRONTPANEL_BUTTONHANDLER_XIT(uint32_t parameter);
 static void FRONTPANEL_BUTTONHANDLER_SPLIT(uint32_t parameter);
 static void FRONTPANEL_BUTTONHANDLER_STEP(uint32_t parameter);
 static void FRONTPANEL_BUTTONHANDLER_BANDMAP(uint32_t parameter);
+static void FRONTPANEL_BUTTONHANDLER_VOX(uint32_t parameter);
 static void FRONTPANEL_BUTTONHANDLER_FT8(uint32_t parameter);
 static void FRONTPANEL_BUTTONHANDLER_AUTOGAINER(uint32_t parameter);
 static void FRONTPANEL_BUTTONHANDLER_UP(uint32_t parameter);
@@ -151,6 +152,10 @@ const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS
 	{.name = "HPF", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_HPF, .holdHandler = FRONTPANEL_BUTTONHANDLER_HPF},
 	{.name = "SQL", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_SQUELCH, .holdHandler = FRONTPANEL_BUTTONHANDLER_SQUELCH},
 	{.name = "MENU", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_MENU, .holdHandler = FRONTPANEL_BUTTONHANDLER_MENU},
+	
+	// hidden entry for menu editor
+	{.name = "FT8", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_FT8, .holdHandler = FRONTPANEL_BUTTONHANDLER_FT8},
+	{.name = "VOX", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_VOX, .holdHandler = FRONTPANEL_BUTTONHANDLER_VOX},
 };
 #endif
 
@@ -219,9 +224,15 @@ const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS
 	{.name = "MODE-", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_MODE_N, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_N},
 	{.name = "BAND+", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_BAND_P, .holdHandler = FRONTPANEL_BUTTONHANDLER_BAND_P},
 	{.name = "BAND-", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_BAND_N, .holdHandler = FRONTPANEL_BUTTONHANDLER_BAND_N},
-	{.name = "FT8", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_FT8, .holdHandler = FRONTPANEL_BUTTONHANDLER_FT8},
+	{.name = "BANDMP", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_BANDMAP, .holdHandler = FRONTPANEL_BUTTONHANDLER_BANDMAP},
 	{.name = "AUTOGN", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_AUTOGAINER, .holdHandler = FRONTPANEL_BUTTONHANDLER_AUTOGAINER},
 	{.name = "LOCK", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_LOCK, .holdHandler = FRONTPANEL_BUTTONHANDLER_LOCK},
+	
+	// hidden entry for menu editor
+	{.name = "MENU", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_MENU, .holdHandler = FRONTPANEL_BUTTONHANDLER_MENU},
+	{.name = "FT8", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_FT8, .holdHandler = FRONTPANEL_BUTTONHANDLER_FT8},
+	{.name = "SQL", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_SQUELCH, .holdHandler = FRONTPANEL_BUTTONHANDLER_SQUELCH},
+	{.name = "VOX", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_VOX, .holdHandler = FRONTPANEL_BUTTONHANDLER_VOX},
 };
 #endif
 
@@ -711,7 +722,7 @@ void FRONTPANEL_Init(void)
 {
 	uint16_t test_value = 0;
 #ifdef HRDW_MCP3008_1
-	test_value = FRONTPANEL_ReadMCP3008_Value(0, AD1_CS_GPIO_Port, AD1_CS_Pin);
+	test_value = FRONTPANEL_ReadMCP3008_Value(0, 1);
 	if (test_value == 65535)
 	{
 		FRONTPanel_MCP3008_1_Enabled = false;
@@ -720,7 +731,7 @@ void FRONTPANEL_Init(void)
 	}
 #endif
 #ifdef HRDW_MCP3008_2
-	test_value = FRONTPANEL_ReadMCP3008_Value(0, AD2_CS_GPIO_Port, AD2_CS_Pin);
+	test_value = FRONTPANEL_ReadMCP3008_Value(0, 2);
 	if (test_value == 65535)
 	{
 		FRONTPanel_MCP3008_2_Enabled = false;
@@ -729,7 +740,7 @@ void FRONTPANEL_Init(void)
 	}
 #endif
 #ifdef HRDW_MCP3008_3
-	test_value = FRONTPANEL_ReadMCP3008_Value(0, AD3_CS_GPIO_Port, AD3_CS_Pin);
+	test_value = FRONTPANEL_ReadMCP3008_Value(0, 3);
 	if (test_value == 65535)
 	{
 		FRONTPanel_MCP3008_3_Enabled = false;
@@ -760,9 +771,9 @@ void FRONTPANEL_Process(void)
 
 	if (SD_USBCardReader)
 		return;
-	if (SPI_process)
+	if (HRDW_SPI_Locked)
 		return;
-	SPI_process = true;
+	HRDW_SPI_Locked = true;
 
 	static uint32_t fu_debug_lasttime = 0;
 	uint16_t buttons_count = sizeof(PERIPH_FrontPanel_Buttons) / sizeof(PERIPH_FrontPanel_Button);
@@ -789,17 +800,17 @@ void FRONTPANEL_Process(void)
 // get state from ADC MCP3008 (10bit - 1024values)
 #ifdef HRDW_MCP3008_1
 		if (button->port == 1)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, AD1_CS_GPIO_Port, AD1_CS_Pin);
+			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
 		else
 #endif
 #ifdef HRDW_MCP3008_2
 			if (button->port == 2)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, AD2_CS_GPIO_Port, AD2_CS_Pin);
+			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
 		else
 #endif
 #ifdef HRDW_MCP3008_3
 			if (button->port == 3)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, AD3_CS_GPIO_Port, AD3_CS_Pin);
+			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
 		else
 #endif
 			continue;
@@ -842,7 +853,7 @@ void FRONTPANEL_Process(void)
 		}
 	}
 
-	SPI_process = false;
+	HRDW_SPI_Locked = false;
 }
 
 void FRONTPANEL_CheckButton(PERIPH_FrontPanel_Button *button, uint16_t mcp3008_value)
@@ -1772,6 +1783,18 @@ static void FRONTPANEL_BUTTONHANDLER_BANDMAP(uint32_t parameter)
 	NeedSaveSettings = true;
 }
 
+static void FRONTPANEL_BUTTONHANDLER_VOX(uint32_t parameter)
+{
+	TRX.VOX = !TRX.VOX;
+
+	if (TRX.VOX)
+		LCD_showTooltip("VOX ON");
+	else
+		LCD_showTooltip("VOX OFF");
+
+	NeedSaveSettings = true;
+}
+
 static void FRONTPANEL_BUTTONHANDLER_AUTOGAINER(uint32_t parameter)
 {
 	TRX.AutoGain = !TRX.AutoGain;
@@ -1785,14 +1808,17 @@ static void FRONTPANEL_BUTTONHANDLER_AUTOGAINER(uint32_t parameter)
 	NeedSaveSettings = true;
 }
 
-static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, GPIO_TypeDef *CS_PORT, uint16_t CS_PIN)
+static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num)
 {
 	uint8_t outData[3] = {0};
 	uint8_t inData[3] = {0};
 	uint16_t mcp3008_value = 0;
 
 	outData[0] = 0x18 | channel;
-	bool res = SPI_Transmit(outData, inData, 3, CS_PORT, CS_PIN, false, SPI_FRONT_UNIT_PRESCALER, false);
+	bool res = false;
+	if(adc_num == 1) res = HRDW_FrontUnit_SPI(outData, inData, 3, false);
+	if(adc_num == 2) res = HRDW_FrontUnit2_SPI(outData, inData, 3, false);
+	if(adc_num == 3) res = HRDW_FrontUnit3_SPI(outData, inData, 3, false);
 	if (res == false)
 		return 65535;
 	mcp3008_value = (uint16_t)(0 | ((inData[1] & 0x3F) << 4) | (inData[2] & 0xF0 >> 4));

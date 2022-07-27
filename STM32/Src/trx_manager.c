@@ -1,4 +1,4 @@
-#include "stm32h7xx_hal.h"
+#include "hardware.h"
 #include "main.h"
 #include "trx_manager.h"
 #include "functions.h"
@@ -18,6 +18,7 @@
 #include "vad.h"
 #include "swr_analyzer.h"
 #include "cw.h"
+#include "hardware.h"
 
 volatile bool TRX_ptt_hard = false;
 volatile bool TRX_ptt_soft = false;
@@ -81,6 +82,7 @@ volatile float32_t TRX_PWR_Current = 0.0f;
 volatile float32_t TRX_RF_Current = 0.0f;
 volatile float32_t TRX_VBAT_Voltage = 0.0f;
 volatile uint_fast16_t CW_Key_Timeout_est = 0;
+uint32_t dbg_FPGA_samples = 0;
 
 static uint_fast8_t TRX_TXRXMode = 0; // 0 - undef, 1 - rx, 2 - tx, 3 - txrx
 static bool TRX_SPLIT_Applied = false;
@@ -97,11 +99,7 @@ void TRX_Init()
 	uint_fast8_t saved_mode = CurrentVFO->Mode;
 	TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
 	TRX_setMode(saved_mode, CurrentVFO);
-	HAL_ADCEx_InjectedStart(&hadc1); // ADC RF-UNIT'а
-	#ifdef FRONTPANEL_X1
-	HAL_ADCEx_InjectedStart(&hadc2); //ADC Tangent (some versions)
-	#endif
-	HAL_ADCEx_InjectedStart(&hadc3); // ADC CPU temperature
+	HRDW_Init();
 }
 
 void TRX_Restart_Mode()
@@ -336,6 +334,9 @@ bool TRX_TX_Disabled(uint32_t freq)
 	case BANDID_6m:
 		if (CALIBRATE.NOTX_6m)
 			notx = true;
+		break;
+	case BANDID_4m:
+		notx = false;
 		break;
 	case BANDID_2m:
 	case BANDID_Marine:
@@ -590,23 +591,6 @@ void TRX_DoAutoGain(void)
 			TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA = TRX.ADC_PGA;
 		}
 	}
-}
-
-float32_t TRX_getSTM32H743Temperature(void)
-{
-	uint16_t TS_CAL1 = *((uint16_t *)0x1FF1E820); // TS_CAL1 Temperature sensor raw data acquired value at 30 °C, VDDA=3.3 V //-V566
-	uint16_t TS_CAL2 = *((uint16_t *)0x1FF1E840); // TS_CAL2 Temperature sensor raw data acquired value at 110 °C, VDDA=3.3 V //-V566
-	uint32_t TS_DATA = HAL_ADCEx_InjectedGetValue(&hadc3, ADC_INJECTED_RANK_1);
-	float32_t result = ((110.0f - 30.0f) / ((float32_t)TS_CAL2 - (float32_t)TS_CAL1)) * ((float32_t)TS_DATA - (float32_t)TS_CAL1) + 30; // from reference
-	return result;
-}
-
-float32_t TRX_getSTM32H743vref(void)
-{
-	uint16_t VREFINT_CAL = *VREFINT_CAL_ADDR; // VREFIN_CAL Raw data acquired at temperature of 30 °C, VDDA = 3.3 V //-V566
-	uint32_t VREFINT_DATA = HAL_ADCEx_InjectedGetValue(&hadc3, ADC_INJECTED_RANK_2);
-	float32_t result = 3.3f * (float32_t)VREFINT_CAL / (float32_t)VREFINT_DATA; // from reference
-	return result;
 }
 
 void TRX_TemporaryMute(void)

@@ -1,15 +1,26 @@
 #ifndef FFT_h
 #define FFT_h
 
-#include "stm32h7xx_hal.h"
+#include "hardware.h"
 #include <stdbool.h>
 #include <math.h>
 #include "functions.h"
 #include "wm8731.h"
 #include "screen_layout.h"
 
-#define FFT_SIZE 1024       // specify the size of the calculated FFT
-#define FFT_USEFUL_SIZE 960 // size after FFT cropping
+#ifdef STM32H743xx
+	#define FFT_SIZE 1024       // specify the size of the calculated FFT
+	#define FFT_USEFUL_SIZE 960 // size after FFT cropping
+	#define FFT_MAX_MEANS 10           // store old fft data for meaning
+#endif
+
+#ifdef STM32F407xx
+	#define FFT_SIZE 512       // specify the size of the calculated FFT
+	#define FFT_USEFUL_SIZE 480 // size after FFT cropping
+	#define FFT_MAX_MEANS 6           // store old fft data for meaning
+	#define FFT_SHORT_BUFFER_SIZE 20	//lines in small buffer for painting
+#endif
+
 #define FFT_HALF_SIZE (FFT_SIZE / 2)
 #define FFT_DOUBLE_SIZE_BUFFER (FFT_SIZE * 2)                                                                                                                // Buffer size for FFT calculation
 #define FFT_MIN ((float32_t)TRX.FFT_Sensitivity * 0.5f)                                                                                                      // MIN threshold of FFT signal
@@ -28,7 +39,6 @@
 #define FFT_3D_SLIDES 40                                                                                                                                     // 3D FFT parameters
 #define FFT_3D_Y_OFFSET 2
 #define FFT_3D_X_OFFSET 5
-#define FFT_MAX_MEANS 10           // store old fft data for meaning
 #define FFT_MAX_AVER 30            // store old fft data for averaging
 #define FFT_MAX_TOP_SCALE 30       // maximum scale parameter
 #define FFT_TX_MIN_LEVEL 30.0f     // fft tx minimum scale level
@@ -56,7 +66,10 @@ extern uint16_t FFT_FPS_Last;
 extern bool NeedWTFRedraw;
 extern bool NeedFFTReinit;
 extern uint32_t FFT_current_spectrum_width_hz;
+
+#if HRDW_HAS_FULL_FFT_BUFFER
 extern uint16_t print_output_buffer[FFT_AND_WTF_HEIGHT][MAX_FFT_PRINT_SIZE]; // buffer with fft/3d fft/wtf print data
+#endif
 
 // Public methods
 extern void FFT_Init(void);                              // FFT initialization
@@ -66,5 +79,6 @@ extern void FFT_doFFT(void);                             // FFT calculation
 extern bool FFT_printFFT(void);                          // FFT output
 extern void FFT_afterPrintFFT(void);                     // FFT output after callback
 extern uint32_t getFreqOnFFTPosition(uint16_t position); // get frequency from pixel X position
+extern void FFT_ShortBufferPrintFFT(void);
 
 #endif
