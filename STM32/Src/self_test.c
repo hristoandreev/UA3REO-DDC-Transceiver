@@ -11,13 +11,28 @@
 // Public variables
 bool SYSMENU_selftest_opened = false;
 
+// Private types
+
+typedef enum {
+    selfTest_Base,
+    selfTest_ADC_Bits,
+    selfTest_PGA_ADC_Symmetry_LNA,
+    selfTest_ATT,
+    selfTest_Power_Unit,
+    selfTest_HF_PA_Unit,
+    selfTest_VHF_PA_Unit,
+    selfTest_ATU_Unit,
+    selfTest_END
+}selfTestPages;
+
 // Private Variables
-static int8_t SELF_TEST_current_page = 0;
+static selfTestPages SELF_TEST_current_page = 0;
 static bool SELF_TEST_old_autogainer = false;
 static uint32_t SELF_TEST_old_freq = SELF_TEST_frequency;
 static bool LastLNA = false;
 static bool LastDRV = false;
 static bool LastPGA = false;
+static bool LastRAND = false;
 static bool LastATT = false;
 static float32_t LastATT_DB = false;
 
@@ -32,12 +47,15 @@ void SELF_TEST_Start(void)
 	LastLNA = TRX.LNA;
 	LastDRV = TRX.ADC_Driver;
 	LastPGA = TRX.ADC_PGA;
+    LastRAND = TRX.ADC_RAND;
 	LastATT = TRX.ATT;
 	LastATT_DB = TRX.ATT_DB;
+
+    TRX.ADC_RAND = true;
 	
 	SELF_TEST_old_autogainer = TRX.AutoGain;
 	SELF_TEST_old_freq = CurrentVFO->Freq;
-	SELF_TEST_current_page = 0;
+	SELF_TEST_current_page = selfTest_Base;
 	TRX_setFrequency(SELF_TEST_frequency, CurrentVFO);
 	LCDDriver_Fill(BG_COLOR);
 
@@ -54,6 +72,7 @@ void SELF_TEST_Stop(void)
 	TRX.LNA = LastLNA;
 	TRX.ADC_Driver = LastDRV;
 	TRX.ADC_PGA = LastPGA;
+    TRX.ADC_RAND = LastRAND;
 	TRX.ATT = LastATT;
 	TRX.ATT_DB = LastATT_DB;
 }
@@ -86,7 +105,7 @@ void SELF_TEST_Draw(void)
 	bool pass = true;
 
 	// print pages
-	if (SELF_TEST_current_page == 0)
+	if (SELF_TEST_current_page == selfTest_Base)
 	{
 		// FPGA BUS test
 		LCDDriver_printText("FPGA", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
@@ -132,10 +151,10 @@ void SELF_TEST_Draw(void)
 		LCDDriver_printText("TCXO", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
 		SELF_TEST_printResult(abs(TRX_VCXO_ERROR) < 10, pos_y);
 		pos_y += margin_bottom;
-		#endif
+        #endif
 	}
 
-	if (SELF_TEST_current_page == 1)
+	if (SELF_TEST_current_page == selfTest_ADC_Bits)
 	{
 		static bool ok[16] = {false};
 		static int8_t prev_adc_state[16] = {0};
@@ -183,7 +202,7 @@ void SELF_TEST_Draw(void)
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 	}
 
-	if (SELF_TEST_current_page == 2)
+	if (SELF_TEST_current_page == selfTest_PGA_ADC_Symmetry_LNA)
 	{
 		static uint8_t current_test = 0;
 		static uint32_t current_test_start_time = 0;
@@ -337,7 +356,7 @@ void SELF_TEST_Draw(void)
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 	}
 
-	if (SELF_TEST_current_page == 3)
+	if (SELF_TEST_current_page == selfTest_ATT)
 	{
 		static uint8_t current_test = 0;
 		static uint32_t current_test_start_time = 0;
@@ -571,6 +590,94 @@ void SELF_TEST_Draw(void)
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 	}
 
+    if (SELF_TEST_current_page == selfTest_Power_Unit)
+    {
+        // POWER UNIT hardware test
+        LCDDriver_printText("POWER UNIT", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+        pos_y += margin_bottom;
+        {
+            LCDDriver_printText("(INA219A) INPUT V/A SENSOR", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+        }
+    }
+
+    if (SELF_TEST_current_page == selfTest_HF_PA_Unit)
+    {
+        // HF PA UNIT hardware test
+        LCDDriver_printText("HF PA UNIT", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+        pos_y += margin_bottom;
+        {
+            LCDDriver_printText("(MCP4728) BIAS CURRENT REFERENCE", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("(INA3221A) BIAS CURRENT SENSOR", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("(EMC2101) TEMPERATURE SENSOR", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("(TCA9534A) ALERT EXPANDER", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("(TCA9534A) BAND LPF EXPANDER", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("(TCA9534A) EXT. LINEAR PA EXPANDER", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("OUTPUT BIAS CURRENT", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("OUTPUT BIAS CURRENT SYMMETRY", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("DRIVER BIAS CURRENT", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("DRIVER BIAS CURRENT SYMMETRY", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+        }
+    }
+
+    if (SELF_TEST_current_page == selfTest_VHF_PA_Unit) {
+        // HF PA UNIT hardware test
+        LCDDriver_printText("VHF PA UNIT", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+        pos_y += margin_bottom;
+        {
+            LCDDriver_printText("BIAS CURRENT", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+        }
+
+    }
+
+    if (SELF_TEST_current_page == selfTest_ATU_Unit)
+    {
+        // ATU hardware test
+        LCDDriver_printText("ANTENNA TUNER UNIT", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+        pos_y += margin_bottom;
+        {
+            LCDDriver_printText("(TCA9534A) TUNER EXPANDER", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+
+            LCDDriver_printText("(PCA9555PW) TUNER EXPANDER", margin_left + 30, pos_y, FG_COLOR, BG_COLOR, font_size);
+            SELF_TEST_printResult(false, pos_y);
+            pos_y += margin_bottom;
+        }
+    }
+
 	// Pager
 	pos_y += margin_bottom;
 	LCDDriver_printText("Rotate ENC2 to print next page", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
@@ -603,9 +710,9 @@ void SELF_TEST_EncRotate(int8_t direction)
 	SELF_TEST_current_page += direction;
 	if (SELF_TEST_current_page < 0)
 		SELF_TEST_current_page = 0;
-	if (SELF_TEST_current_page >= SELF_TEST_pages)
+	if (SELF_TEST_current_page >= selfTest_END)
 	{
-		SELF_TEST_current_page = SELF_TEST_pages - 1;
+		SELF_TEST_current_page = selfTest_END - 1;
 		FRONTPANEL_BUTTONHANDLER_SERVICES(0);
 	}
 
