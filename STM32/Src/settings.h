@@ -1,19 +1,15 @@
 #ifndef SETTINGS_h
 #define SETTINGS_h
 
-#include "stm32h7xx_hal.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "functions.h"
 #include "bands.h"
+#include "hardware.h"
 
-#define SETT_VERSION 51						  // Settings config version
-#define CALIB_VERSION 45					  // Calibration config version
-#define ADC_CLOCK 122880000					  // ADC generator frequency
-#define DAC_CLOCK 188160000					  // DAC generator frequency
-#define MAX_RX_FREQ_HZ 750000000			  // Maximum receive frequency (from the ADC datasheet)
-#define MAX_TX_FREQ_HZ DAC_CLOCK			  // Maximum transmission frequency
+#define SETT_VERSION 53						  // Settings config version
+#define CALIB_VERSION 46					  // Calibration config version
 #define TRX_SAMPLERATE 48000				  // audio stream sampling rate during processing and TX (NOT RX!)
 #define MAX_TX_AMPLITUDE_MULT 0.85f				  // Maximum amplitude when transmitting to FPGA
 #define AGC_CLIPPING 6.0f					  // Limit over target in AGC, dB
@@ -41,15 +37,6 @@
 #define CW_ADD_GAIN_IF 35.0f				  // additional IF gain in CW
 #define CW_ADD_GAIN_AF 6.0f					  // additional AF gain in CW
 #define TX_LPF_TIMEOUT (180 * 1000)			  // TX LPF On Timeout, millisec (3 min)
-// FRONT-PANEL, LCD AND TANGENT types moved to KEIL TARGETS
-
-// select how the SWR and the power is measured
-//#define SWR_AD8307_LOG true			//Enable if used log amplifier for the power measurement
-
-// SPI Speed
-#define SPI_FRONT_UNIT_PRESCALER SPI_BAUDRATEPRESCALER_4
-#define SPI_SD_PRESCALER SPI_BAUDRATEPRESCALER_2
-#define SPI_EEPROM_PRESCALER SPI_BAUDRATEPRESCALER_4
 
 //#define ADC_BITS 16																						// ADC bit depth
 //#define FPGA_BUS_BITS 32																				// bitness of data from FPGA
@@ -58,22 +45,12 @@
 //#define FPGA_BUS_FULL_SCALE_POW ((float64_t)FPGA_BUS_FULL_SCALE * (float64_t)FPGA_BUS_FULL_SCALE)		// maximum bus signal magnitude // (FPGA_BUS_FULL_SCALE * FPGA_BUS_FULL_SCALE)
 #define CODEC_BITS_FULL_SCALE 4294967296 // maximum signal amplitude in the bus // powf (2, FPGA_BUS_BITS)
 //#define CODEC_BITS_FULL_SCALE_POW ((float64_t)CODEC_BITS_FULL_SCALE * (float64_t)CODEC_BITS_FULL_SCALE) // maximum bus signal magnitude // (FPGA_BUS_FULL_SCALE * FPGA_BUS )_FULL_SCALE
-#define ADC_FULL_SCALE 65536 // maximum signal amplitude in the ADC // powf (2, ADC_BITS)
-#define FLOAT_FULL_SCALE_POW 4
 #define USB_DEBUG_ENABLED true	// allow using USB as a console
 #define SWD_DEBUG_ENABLED false // enable SWD as a console
 #define LCD_DEBUG_ENABLED false // enable LCD as a console
-#define DCDC_FREQ_0 960000
-#define DCDC_FREQ_1 1200000
-#define ADC_INPUT_IMPEDANCE 200.0f // 50ohm -> 1:4 trans
-#define ADC_RANGE 2.25f
-#define ADC_RANGE_PGA 1.5f
 
-#define ADC_LNA_GAIN_DB 20.0f
-#define ADC_DRIVER_GAIN_DB 25.5f
-#define ADC_PGA_GAIN_DB 3.522f
 #define AUTOGAINER_TAGET (ADC_FULL_SCALE / 3)
-#define AUTOGAINER_HYSTERESIS 5000
+#define AUTOGAINER_HYSTERESIS (ADC_FULL_SCALE / 13)
 
 #define MAX_WIFIPASS_LENGTH 32
 #define MAX_CALLSIGN_LENGTH 16
@@ -89,6 +66,7 @@
 #define W25Q16_COMMAND_Power_Down 0xB9
 #define W25Q16_COMMAND_Power_Up 0xAB
 #define W25Q16_COMMAND_GetStatus 0x05
+#define W25Q16_COMMAND_WriteStatus 0x01
 #define W25Q16_SECTOR_SIZE 4096
 #define EEPROM_SECTOR_CALIBRATION 0
 #define EEPROM_SECTOR_SETTINGS 4
@@ -113,40 +91,52 @@ static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 
 // FRONT PANELS
 #ifdef FRONTPANEL_NONE
-#define MAX_VOLUME_VALUE 1024.0f
-#define FUNCBUTTONS_COUNT 1
-#define FUNCBUTTONS_ON_PAGE 1
-static char ota_config_frontpanel[] = "NONE";
+	#define MAX_VOLUME_VALUE 1024.0f
+	#define FUNCBUTTONS_COUNT 1
+	#define FUNCBUTTONS_ON_PAGE 1
+	#define FUNCBUTTONS_PAGES 1
+	static char ota_config_frontpanel[] = "NONE";
 #endif
 
 #ifdef FRONTPANEL_SMALL_V1
-#define HRDW_MCP3008_1 true
-#define HRDW_MCP3008_2 true
-#define HRDW_MCP3008_3 true
-#define MAX_VOLUME_VALUE 1024.0f
-#define FUNCBUTTONS_COUNT 1
-#define FUNCBUTTONS_ON_PAGE 1
-static char ota_config_frontpanel[] = "SMALL";
+	#define HRDW_MCP3008_1 true
+	#define HRDW_MCP3008_2 true
+	#define HRDW_MCP3008_3 true
+	#define MAX_VOLUME_VALUE 1024.0f
+	#define FUNCBUTTONS_COUNT 1
+	#define FUNCBUTTONS_ON_PAGE 1
+	#define FUNCBUTTONS_PAGES 1
+	static char ota_config_frontpanel[] = "SMALL";
 #endif
 
-#define FUNCBUTTONS_MAX_COUNT 32
+#ifdef FRONTPANEL_LITE
+	#define HRDW_MCP3008_1 true
+	#define HRDW_HAS_FUNCBUTTONS true
+	#define MAX_VOLUME_VALUE 100.0f
+	#define FUNCBUTTONS_COUNT 25
+	#define FUNCBUTTONS_ON_PAGE 5
+	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
+	static char ota_config_frontpanel[] = "LITE";
+#endif
 
 #ifdef FRONTPANEL_BIG_V1
-#define HRDW_MCP3008_1 true
-#define HRDW_HAS_FUNCBUTTONS true
-#define MAX_VOLUME_VALUE 1024.0f
-#define FUNCBUTTONS_COUNT 32
-#define FUNCBUTTONS_ON_PAGE 8
-static char ota_config_frontpanel[] = "BIG";
+	#define HRDW_MCP3008_1 true
+	#define HRDW_HAS_FUNCBUTTONS true
+	#define MAX_VOLUME_VALUE 1024.0f
+	#define FUNCBUTTONS_COUNT (32+2)
+	#define FUNCBUTTONS_ON_PAGE 8
+	#define FUNCBUTTONS_PAGES 4
+	static char ota_config_frontpanel[] = "BIG";
 #endif
 
 #ifdef FRONTPANEL_WF_100D
-#define HRDW_MCP3008_1 true
-#define HRDW_HAS_FUNCBUTTONS true
-#define MAX_VOLUME_VALUE 1024.0f
-#define FUNCBUTTONS_COUNT 27
-#define FUNCBUTTONS_ON_PAGE 9
-static char ota_config_frontpanel[] = "WF_100D";
+	#define HRDW_MCP3008_1 true
+	#define HRDW_HAS_FUNCBUTTONS true
+	#define MAX_VOLUME_VALUE 1024.0f
+	#define FUNCBUTTONS_COUNT (27+4)
+	#define FUNCBUTTONS_ON_PAGE 9
+	#define FUNCBUTTONS_PAGES 3
+	static char ota_config_frontpanel[] = "WF_100D";
 #endif
 
 #ifdef FRONTPANEL_X1
@@ -155,47 +145,70 @@ static char ota_config_frontpanel[] = "WF_100D";
 	#define MAX_VOLUME_VALUE 100.0f
 	#define FUNCBUTTONS_COUNT 32
 	#define FUNCBUTTONS_ON_PAGE 4
+	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
 	static char ota_config_frontpanel[] = "X1";
 #endif
-
-#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
 
 // LCDs
 #if defined(LCD_ILI9481)
 static char ota_config_lcd[] = "ILI9481";
-#define FT8_SUPPORT true
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
+#endif
+		#if defined(LCD_ILI9481_IPS)
+static char ota_config_lcd[] = "ILI9481_IPS";
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 #if defined(LCD_HX8357B)
 static char ota_config_lcd[] = "HX8357B";
-#define FT8_SUPPORT true
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 #if defined(LCD_HX8357C) && !defined(LCD_SLOW)
 static char ota_config_lcd[] = "HX8357C";
-#define FT8_SUPPORT true
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 #if defined(LCD_HX8357C) && defined(LCD_SLOW)
 static char ota_config_lcd[] = "HX8357C-SLOW";
-#define FT8_SUPPORT true
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 #if defined(LCD_ILI9486)
 static char ota_config_lcd[] = "ILI9486";
-#define FT8_SUPPORT true
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 #if defined(LCD_ST7796S)
 static char ota_config_lcd[] = "ST7796S";
-#define FT8_SUPPORT true
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
-#if defined(LCD_ST7735S)
+#if defined(LCD_ST7735S) // X1
 static char ota_config_lcd[] = "ST7735S";
-#define FT8_SUPPORT false
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 #if defined(LCD_RA8875)
 static char ota_config_lcd[] = "RA8875";
-#define FT8_SUPPORT true
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 #if defined(LCD_NONE)
 static char ota_config_lcd[] = "NONE";
-#define FT8_SUPPORT false
+	#ifdef STM32H743xx 
+		#define FT8_SUPPORT true 
+	#endif
 #endif
 
 // TOUCHPADs
@@ -239,12 +252,14 @@ typedef struct
 	bool SQL;
 } VFO;
 
+#if HRDW_HAS_DUAL_RX
 // dual receiver operating mode
 typedef enum
 {
 	VFO_A_AND_B,
 	VFO_A_PLUS_B,
 } DUAL_RX_TYPE;
+#endif
 
 // CAT type
 typedef enum
@@ -352,7 +367,10 @@ extern struct TRX_SETTINGS
 	TRX_IQ_SAMPLERATE_VALUE SAMPLERATE_FM;
 	TRX_INPUT_TYPE InputType_MAIN;
 	TRX_INPUT_TYPE InputType_DIGI;
+	#if HRDW_HAS_DUAL_RX
 	DUAL_RX_TYPE Dual_RX_Type;
+	bool Dual_RX;
+	#endif
 	bool selected_vfo; // false - A; true - B
 	bool Fast;
 	bool LNA;
@@ -369,7 +387,6 @@ extern struct TRX_SETTINGS
 	bool BandMapEnabled;
 	bool AutoGain;
 	bool Locked;
-	bool Dual_RX;
 	bool Encoder_Accelerate;
 	bool Custom_Transverter_Enabled;
 	bool TUNER_Enabled;
@@ -465,7 +482,7 @@ extern struct TRX_SETTINGS
 	uint8_t FFT_3D;
 	uint8_t FFT_DXCluster_Timeout;
 	uint8_t FFT_Scale_Type;
-	uint8_t FuncButtons[FUNCBUTTONS_MAX_COUNT];
+	uint8_t FuncButtons[FUNCBUTTONS_COUNT];
 	bool FFT_Enabled;
 	bool WTF_Moving;
 	bool FFT_Automatic;
@@ -477,6 +494,7 @@ extern struct TRX_SETTINGS
 	bool FFT_DXCluster;
 	bool FFT_DXCluster_Azimuth;
 	bool Show_Sec_VFO;
+	bool AnalogMeterShowPWR;
 	// DECODERS
 	uint16_t RTTY_Speed;
 	uint16_t RTTY_Shift;
@@ -635,7 +653,7 @@ extern struct TRX_CALIBRATE
 	uint8_t EXT_TRANSV_3cm;
 	uint8_t ATU_AVERAGING;
 	uint8_t TwoSignalTune_Balance;
-	int8_t VCXO_correction;
+	int16_t VCXO_correction;
 	int8_t LNA_compensation;
 	TRX_RF_UNIT_TYPE RF_unit_type;
 	TRX_TANGENT_TYPE TangentType;
@@ -661,6 +679,8 @@ extern struct TRX_CALIBRATE
 	bool NOTX_2m;
 	bool NOTX_70cm;
 	bool ENABLE_60m_band;
+	bool ENABLE_4m_band;
+	bool ENABLE_AIR_band;
 	bool ENABLE_marine_band;
 	bool OTA_update;
 	bool LCD_Rotate;
@@ -673,7 +693,7 @@ extern struct TRX_CALIBRATE
 	uint8_t ENDBit; // end bit
 } CALIBRATE;
 
-extern char version_string[19]; // 1.2.3-yymmdd.hhmmss
+extern const char version_string[19]; // 1.2.3
 extern volatile bool NeedSaveSettings;
 extern volatile bool NeedSaveCalibration;
 extern volatile bool EEPROM_Busy;

@@ -1,5 +1,5 @@
 #include "settings.h"
-#if (defined(LCD_ILI9481) || defined(LCD_HX8357B) || defined(LCD_HX8357C) || defined(LCD_ILI9486) || defined(LCD_R61581) || defined(LCD_ST7796S))
+#if (defined(LCD_ILI9481) || defined(LCD_ILI9481_IPS) || defined(LCD_HX8357B) || defined(LCD_HX8357C) || defined(LCD_ILI9486) || defined(LCD_R61581) || defined(LCD_ST7796S))
 
 // Header files
 #include "lcd_driver.h"
@@ -58,7 +58,7 @@ inline uint16_t LCDDriver_readReg(uint16_t reg)
 // Initialise function
 void LCDDriver_Init(void)
 {
-#if (defined(LCD_ILI9481) || defined(LCD_HX8357B) || defined(LCD_ST7796S))
+#if (defined(LCD_ILI9481) || defined(LCD_ILI9481_IPS) || defined(LCD_HX8357B) || defined(LCD_ST7796S))
 #define ILI9481_COMM_DELAY 20
 
 	LCDDriver_SendCommand(LCD_COMMAND_SOFT_RESET); // 0x01
@@ -69,6 +69,7 @@ void LCDDriver_Init(void)
 
 	LCDDriver_SendCommand(LCD_COMMAND_NORMAL_MODE_ON); // 0x13
 
+#if (defined(LCD_ILI9481) || defined(LCD_HX8357B))
 	LCDDriver_SendCommand(LCD_COMMAND_POWER_SETTING); //(0xD0);
 	LCDDriver_SendData(0x07);
 	LCDDriver_SendData(0x42);
@@ -112,6 +113,55 @@ void LCDDriver_Init(void)
 	LCDDriver_SendData(0x0C);
 	LCDDriver_SendData(0x00);
 	HAL_Delay(ILI9481_COMM_DELAY);
+#endif
+
+#if (defined(LCD_ILI9481_IPS))
+	LCDDriver_SendCommand(LCD_COMMAND_POWER_SETTING); //(0xD0);
+	LCDDriver_SendData(0x07);
+	LCDDriver_SendData(0x42);
+	LCDDriver_SendData(0x17);
+	
+	LCDDriver_SendCommand(LCD_COMMAND_VCOM); //(0xD1);
+	LCDDriver_SendData(0x00);
+	LCDDriver_SendData(0x1C);
+	LCDDriver_SendData(0x1F);
+
+	LCDDriver_SendCommand(LCD_COMMAND_NORMAL_PWR_WR); //(0xD2);
+	LCDDriver_SendData(0x01);
+	LCDDriver_SendData(0x11);
+	HAL_Delay(ILI9481_COMM_DELAY);
+
+	LCDDriver_SendCommand(LCD_COMMAND_PANEL_DRV_CTL); //(0xC0);
+	LCDDriver_SendData(0x10);
+	LCDDriver_SendData(0x3B);
+	LCDDriver_SendData(0x00);
+	LCDDriver_SendData(0x02);
+	LCDDriver_SendData(0x11);
+	HAL_Delay(ILI9481_COMM_DELAY);
+	
+	LCDDriver_SendCommand(LCD_COMMAND_FR_SET); //(0xC5);
+	LCDDriver_SendData(0x03);
+	HAL_Delay(ILI9481_COMM_DELAY);
+	
+	LCDDriver_SendCommand(LCD_COMMAND_GAMMAWR); //(0xC8);
+	LCDDriver_SendData(0x00);
+	LCDDriver_SendData(0x32);
+	LCDDriver_SendData(0x36);
+	LCDDriver_SendData(0x45);
+	LCDDriver_SendData(0x06);
+	LCDDriver_SendData(0x16);
+	LCDDriver_SendData(0x37);
+	LCDDriver_SendData(0x75);
+	LCDDriver_SendData(0x77);
+	LCDDriver_SendData(0x54);
+	LCDDriver_SendData(0x0C);
+	LCDDriver_SendData(0x00);
+	HAL_Delay(ILI9481_COMM_DELAY);
+	
+	LCDDriver_SendCommand(0xB0); LCDDriver_SendData(0x00);  // CommandAccessProtect
+  LCDDriver_SendCommand(0xE4); LCDDriver_SendData(0xA0);
+  LCDDriver_SendCommand(0xF0); LCDDriver_SendData(0x01);
+#endif
 
 	LCDDriver_SendCommand(LCD_COMMAND_MADCTL); //(0x36);
 	LCDDriver_SendData(LCD_PARAM_MADCTL_BGR);
@@ -135,7 +185,7 @@ void LCDDriver_Init(void)
 	LCDDriver_SendData(0xDF);
 	HAL_Delay(ILI9481_COMM_DELAY);
 
-#if (defined(LCD_HX8357B))
+#if defined(LCD_HX8357B) || defined(LCD_ILI9481_IPS)
 	LCDDriver_SendCommand(LCD_COMMAND_COLOR_INVERSION_ON); //(0x21);
 	HAL_Delay(ILI9481_COMM_DELAY);
 #endif
@@ -440,6 +490,25 @@ void LCDDriver_setRotation(uint8_t rotate)
 	}
 	HAL_Delay(120);
 #endif
+#if defined(LCD_ILI9481_IPS)
+	LCDDriver_SendCommand(LCD_COMMAND_MADCTL);
+	switch (rotate)
+	{
+	case 1: // Portrait
+		LCDDriver_SendData(LCD_PARAM_MADCTL_BGR | LCD_PARAM_MADCTL_MX);
+		break;
+	case 2: // Landscape (Portrait + 90)
+		LCDDriver_SendData(LCD_PARAM_MADCTL_BGR | LCD_PARAM_MADCTL_MV | LCD_PARAM_MADCTL_MX | LCD_PARAM_MADCTL_MY);
+		break;
+	case 3: // Inverter portrait
+		LCDDriver_SendData(LCD_PARAM_MADCTL_BGR | LCD_PARAM_MADCTL_MY);
+		break;
+	case 4: // Inverted landscape
+		LCDDriver_SendData(LCD_PARAM_MADCTL_BGR | LCD_PARAM_MADCTL_MV);
+		break;
+	}
+	HAL_Delay(120);
+#endif
 #if defined(LCD_HX8357C)
 	LCDDriver_SendCommand(LCD_COMMAND_MADCTL);
 	switch (rotate)
@@ -524,6 +593,7 @@ void LCDDriver_Fill_RectXY(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, u
 		return;
 	}
 
+#if HRDW_HAS_DMA2D
 	// DMA2D Set color in 32bit format
 	WRITE_REG(hdma2d.Instance->OCOLR, (color << 16) | color);
 	// DMA2D Set width and 32bit align
@@ -539,6 +609,10 @@ void LCDDriver_Fill_RectXY(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, u
 		CPULOAD_GoToSleepMode();
 	// DMA2D clean flags
 	hdma2d.Instance->IFCR = DMA2D_FLAG_TC | DMA2D_FLAG_CTC;
+#else
+	while (n--)
+		LCDDriver_SendData(color);
+#endif
 }
 
 void LCDDriver_Fill_RectWH(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)

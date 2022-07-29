@@ -1,7 +1,7 @@
 #ifndef TRX_MANAGER_H
 #define TRX_MANAGER_H
 
-#include "stm32h7xx_hal.h"
+#include "hardware.h"
 #include <stdbool.h>
 #include "settings.h"
 
@@ -22,8 +22,6 @@ extern void TRX_setMode(uint_fast8_t _mode, VFO *vfo);
 extern void TRX_ptt_change(void);
 extern void TRX_DoAutoGain(void);
 extern void TRX_Restart_Mode(void);
-extern float32_t TRX_getSTM32H743Temperature(void);
-extern float32_t TRX_getSTM32H743vref(void);
 extern void TRX_TemporaryMute(void);
 extern void TRX_ProcessScanMode(void);
 extern void TRX_setFrequencySlowly(uint32_t target_freq);
@@ -93,5 +91,6 @@ volatile extern float32_t TRX_RF_Current;
 extern volatile float32_t TRX_VBAT_Voltage;
 extern uint32_t TRX_Inactive_Time;
 volatile extern uint_fast16_t CW_Key_Timeout_est;
+extern uint32_t dbg_FPGA_samples;
 
 #endif

@@ -1,6 +1,9 @@
+#include "hardware.h"
+
+#if HRDW_HAS_WIFI
+
 #include "wifi.h"
 #include "main.h"
-#include "stm32h7xx_hal.h"
 #include "functions.h"
 #include "settings.h"
 #include "trx_manager.h"
@@ -69,25 +72,25 @@ void WIFI_Init(void)
 
 	if (init_version == 0)
 	{
-		huart6.Init.BaudRate = 115200;
-		huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-		huart6.AdvancedInit.Swap = UART_ADVFEATURE_SWAP_DISABLE;
+		HRDW_WIFI_UART.Init.BaudRate = 115200;
+		HRDW_WIFI_UART.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+		HRDW_WIFI_UART.AdvancedInit.Swap = UART_ADVFEATURE_SWAP_DISABLE;
 	}
 
 	if (init_version == 1)
 	{
-		huart6.Init.BaudRate = 115200;
-		huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_SWAP_INIT;
-		huart6.AdvancedInit.Swap = UART_ADVFEATURE_SWAP_ENABLE;
+		HRDW_WIFI_UART.Init.BaudRate = 115200;
+		HRDW_WIFI_UART.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_SWAP_INIT;
+		HRDW_WIFI_UART.AdvancedInit.Swap = UART_ADVFEATURE_SWAP_ENABLE;
 	}
 
-	HAL_UART_Init(&huart6);
+	HAL_UART_Init(&HRDW_WIFI_UART);
 
 	// wifi uart speed = 115200 * 8 = 921600  / * 16 = 1843200
 	WIFI_SendCommand("AT+UART_CUR=921600,8,1,0,1\r\n"); // uart config
 	HAL_Delay(100);
-	huart6.Init.BaudRate = 921600;
-	HAL_UART_Init(&huart6);
+	HRDW_WIFI_UART.Init.BaudRate = 921600;
+	HAL_UART_Init(&HRDW_WIFI_UART);
 
 	WIFI_SendCommand("ATE0\r\n"); // echo off
 	WIFI_WaitForOk();
@@ -175,7 +178,7 @@ void WIFI_Process(void)
 		WIFI_WaitForOk();
 		WIFI_SendCommand("AT+CIPDNS_CUR=1,\"8.8.8.8\",\"77.88.8.8\"\r\n"); // DNS
 		// WIFI_WaitForOk();
-		WIFI_SendCommand("AT+CWHOSTNAME=\"UA3REO\"\r\n"); // Hostname
+		WIFI_SendCommand("AT+CWHOSTNAME=\"TRX-Wolf\"\r\n"); // Hostname
 		WIFI_WaitForOk();
 		// WIFI_SendCommand("AT+CWCOUNTRY=1,\"RU\",1,13\r\n"); //Country
 		// WIFI_WaitForOk();
@@ -576,7 +579,7 @@ void WIFI_Process(void)
 													BKPSRAM_Enable();
 													HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 													HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-													println("[RTC] New time set", sec, ":", min, ":", hrs, " ", day, "-", month, "-", year_short, " ", weekday);
+													println("[RTC] New time set ", hrs, ":", min, ":", sec, " ", day, "-", month, "-", year_short, " ", weekday);
 												}
 												TRX_SNTP_Synced = HAL_GetTick();
 												println("[WIFI] TIME SYNCED");
@@ -638,6 +641,12 @@ void WIFI_Process(void)
 	case WIFI_SLEEP:
 		break;
 	}
+}
+
+bool WIFI_AbortCallback()
+{
+	WIFI_ProcessingCommandCallback = NULL;
+	return true;
 }
 
 bool WIFI_GetSNTPTime(void (*callback)(void))
@@ -745,12 +754,12 @@ void WIFI_GoSleep(void)
 
 static void WIFI_SendCommand(char *command)
 {
-	HAL_UART_AbortReceive(&huart6);
-	HAL_UART_AbortReceive_IT(&huart6);
+	HAL_UART_AbortReceive(&HRDW_WIFI_UART);
+	HAL_UART_AbortReceive_IT(&HRDW_WIFI_UART);
 	dma_memset(WIFI_AnswerBuffer, 0x00, sizeof(WIFI_AnswerBuffer));
 	WIFI_Answer_ReadIndex = 0;
-	HAL_UART_Receive_DMA(&huart6, (uint8_t *)WIFI_AnswerBuffer, WIFI_ANSWER_BUFFER_SIZE);
-	HAL_UART_Transmit_IT(&huart6, (uint8_t *)command, (uint16_t)strlen(command));
+	HAL_UART_Receive_DMA(&HRDW_WIFI_UART, (uint8_t *)WIFI_AnswerBuffer, WIFI_ANSWER_BUFFER_SIZE);
+	HAL_UART_Transmit_IT(&HRDW_WIFI_UART, (uint8_t *)command, (uint16_t)strlen(command));
 	commandStartTime = HAL_GetTick();
 	HAL_Delay(WIFI_COMMAND_DELAY);
 	if (TRX.Debug_Type == TRX_DEBUG_WIFI) // DEBUG
@@ -788,7 +797,7 @@ static bool WIFI_TryGetLine(void)
 	dma_memset(tmp, 0x00, sizeof(tmp));
 
 	Aligned_CleanInvalidateDCache_by_Addr((uint32_t)WIFI_AnswerBuffer, sizeof(WIFI_AnswerBuffer));
-	uint16_t dma_index = WIFI_ANSWER_BUFFER_SIZE - (uint16_t)__HAL_DMA_GET_COUNTER(huart6.hdmarx);
+	uint16_t dma_index = WIFI_ANSWER_BUFFER_SIZE - (uint16_t)__HAL_DMA_GET_COUNTER(HRDW_WIFI_UART.hdmarx);
 	if (WIFI_Answer_ReadIndex == dma_index)
 		return false;
 
@@ -870,9 +879,9 @@ bool WIFI_SendIQData(uint8_t *data, uint32_t size)
 	WIFI_ProcessingCommandCallback = NULL;
 	char header[64] = {0};
 	sprintf(header, "AT+CIPSEND=%u,%u\r\n", link_id, size);
-	HAL_UART_Transmit_IT(&huart6, (uint8_t *)header, (uint16_t)strlen(header)); // Start IQ sending
+	HAL_UART_Transmit_IT(&HRDW_WIFI_UART, (uint8_t *)header, (uint16_t)strlen(header)); // Start IQ sending
 	HAL_Delay(2);
-	HAL_UART_Transmit_IT(&huart6, data, size); // Send IQ data
+	HAL_UART_Transmit_IT(&HRDW_WIFI_UART, data, size); // Send IQ data
 	WIFI_ProcessingCommand = WIFI_COMM_NONE;
 	WIFI_State = WIFI_READY;
 	return true;
@@ -965,9 +974,10 @@ static void WIFI_getHTTPResponse(void)
 
 			// may be partial content? continue downloading
 			start_time = HAL_GetTick();
-			if (readed_body_length < WIFI_HTTP_Response_ContentLength && (HAL_GetTick() - start_time) < 3000)
+			#define WIFI_STREAM_Timeout 10000
+			if (readed_body_length < WIFI_HTTP_Response_ContentLength && (HAL_GetTick() - start_time) < WIFI_STREAM_Timeout)
 			{
-				while (readed_body_length < WIFI_HTTP_Response_ContentLength && strlen(WIFI_HTTResponseHTML) < sizeof(WIFI_HTTResponseHTML) && (HAL_GetTick() - start_time) < 3000)
+				while (readed_body_length < WIFI_HTTP_Response_ContentLength && strlen(WIFI_HTTResponseHTML) < sizeof(WIFI_HTTResponseHTML) && (HAL_GetTick() - start_time) < WIFI_STREAM_Timeout)
 				{
 					if (WIFI_TryGetLine())
 					{
@@ -985,6 +995,10 @@ static void WIFI_getHTTPResponse(void)
 
 								// partial callback for image printing
 								readed_body_length += strlen(WIFI_HTTResponseHTML);
+								
+								// update timeout start
+								start_time = HAL_GetTick();
+								
 								if (WIFI_ProcessingCommandCallback == WIFI_printImage_stream_callback)
 									WIFI_printImage_stream_partial_callback();
 							}
@@ -1126,7 +1140,7 @@ static void WIFI_printImage_stream_callback(void)
 	// image print stream done
 }
 
-static void WIFI_printImage_callback(void)
+static void WIFI_printImage_Propagination_callback(void)
 {
 	LCDDriver_Fill(BG_COLOR);
 	if (WIFI_HTTP_Response_Status == 200)
@@ -1151,6 +1165,43 @@ static void WIFI_printImage_callback(void)
 					LCDDriver_printImage_RLECompressed_StartStream(LCD_WIDTH / 2 - width / 2, LCD_HEIGHT / 2 - height / 2, width, height);
 					WIFI_RLEStreamBuffer_part = 0;
 					WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php?part=0", WIFI_printImage_stream_callback, false, false);
+				}
+			}
+		}
+	}
+	else
+#ifdef LCD_SMALL_INTERFACE
+	LCDDriver_printText("Network error", 10, 20, FG_COLOR, BG_COLOR, 1);
+#else
+	LCDDriver_printTextFont("Network error", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+#endif
+}
+
+static void WIFI_printImage_DayNight_callback(void)
+{
+	LCDDriver_Fill(BG_COLOR);
+	if (WIFI_HTTP_Response_Status == 200)
+	{
+		char *istr1 = strchr(WIFI_HTTResponseHTML, ',');
+		if (istr1 != NULL)
+		{
+			*istr1 = 0;
+			uint32_t filesize = atoi(WIFI_HTTResponseHTML);
+			istr1++;
+			char *istr2 = strchr(istr1, ',');
+			if (istr2 != NULL)
+			{
+				*istr2 = 0;
+				uint16_t width = (uint16_t)(atoi(istr1));
+				istr2++;
+
+				uint16_t height = (uint16_t)(atoi(istr2));
+
+				if (filesize > 0 && width > 0 && height > 0)
+				{
+					LCDDriver_printImage_RLECompressed_StartStream(LCD_WIDTH / 2 - width / 2, LCD_HEIGHT / 2 - height / 2, width, height);
+					WIFI_RLEStreamBuffer_part = 0;
+					WIFI_getHTTPpage("ua3reo.ru", "/trx_services/daynight.php?part=0", WIFI_printImage_stream_callback, false, false);
 				}
 			}
 		}
@@ -1309,7 +1360,28 @@ void WIFI_getPropagination(void)
 		
 		return;
 	}
-	WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php", WIFI_printImage_callback, false, false);
+	WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php", WIFI_printImage_Propagination_callback, false, false);
+}
+
+void WIFI_getDayNightMap(void)
+{
+	LCDDriver_Fill(BG_COLOR);
+	if (WIFI_connected && WIFI_State == WIFI_READY) {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("Loading...", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+	} else {
+		#ifdef LCD_SMALL_INTERFACE
+			LCDDriver_printText("No connection", 10, 20, FG_COLOR, BG_COLOR, 1);
+		#else
+			LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		#endif
+		
+		return;
+	}
+	WIFI_getHTTPpage("ua3reo.ru", "/trx_services/daynight.php", WIFI_printImage_DayNight_callback, false, false);
 }
 
 bool WIFI_SW_Restart(void (*callback)(void))
@@ -1468,3 +1540,5 @@ void WIFI_downloadFileToSD(char *url, char *filename)
 	sprintf(url, "%s&start=%d&count=%d", url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
 	WIFI_getHTTPpage("ua3reo.ru", url, WIFI_downloadFileToSD_callback, false, false);
 }
+
+#endif

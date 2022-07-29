@@ -1,3 +1,6 @@
+#include "hardware.h"
+#if HRDW_HAS_SD
+
 #include "sd.h"
 #include "main.h"
 #include "fatfs.h"
@@ -452,6 +455,9 @@ static bool SDCOMM_WRITE_PACKET_RECORD_FILE_handler(void)
 		need_cqmess_reopen = true;
 		LCD_showTooltip("Stop recording");
 
+		// update file size
+		f_truncate(&File);
+		
 		// update wav length
 		f_lseek(&File, 0);
 		f_write(&File, &wav_hdr, sizeof(wav_hdr), &byteswritten);
@@ -1203,6 +1209,8 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_2m", (uint32_t *)&CALIBRATE.NOTX_2m, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_70cm", (uint32_t *)&CALIBRATE.NOTX_70cm, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.ENABLE_60m_band", (uint32_t *)&CALIBRATE.ENABLE_60m_band, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("CALIBRATE.ENABLE_4m_band", (uint32_t *)&CALIBRATE.ENABLE_4m_band, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("CALIBRATE.ENABLE_AIR_band", (uint32_t *)&CALIBRATE.ENABLE_AIR_band, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.ENABLE_marine_band", (uint32_t *)&CALIBRATE.ENABLE_marine_band, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.OTA_update", (uint32_t *)&CALIBRATE.OTA_update, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.TX_StartDelay", (uint32_t *)&CALIBRATE.TX_StartDelay, SYSMENU_UINT16);
@@ -1216,7 +1224,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.TwoSignalTune_Balance", (uint32_t *)&CALIBRATE.TwoSignalTune_Balance, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.LinearPowerControl", (uint32_t *)&CALIBRATE.LinearPowerControl, SYSMENU_BOOLEAN);
 			// Bands settings
-			char buff[64] = {0};
+			/*char buff[64] = {0};
 			for (uint8_t i = 0; i < BANDS_COUNT; i++)
 			{
 				sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].Freq", i);
@@ -1280,7 +1288,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].AGC, SYSMENU_BOOLEAN);
 				sprintf(buff, "TRX.MEMORY_CHANNELS[%d].SAMPLERATE", i);
 				SD_WRITE_SETT_LINE(buff, (uint32_t *)&CALIBRATE.MEMORY_CHANNELS[i].SAMPLERATE, SYSMENU_UINT8);
-			}
+			}*/
 		}
 
 		if (!res)
@@ -2003,6 +2011,10 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.NOTX_70cm = bval;
 	if (strcmp(name, "CALIBRATE.ENABLE_60m_band") == 0)
 		CALIBRATE.ENABLE_60m_band = bval;
+	if (strcmp(name, "CALIBRATE.ENABLE_4m_band") == 0)
+		CALIBRATE.ENABLE_4m_band = bval;
+	if (strcmp(name, "CALIBRATE.ENABLE_AIR_band") == 0)
+		CALIBRATE.ENABLE_AIR_band = bval;
 	if (strcmp(name, "CALIBRATE.ENABLE_marine_band") == 0)
 		CALIBRATE.ENABLE_marine_band = bval;
 	if (strcmp(name, "CALIBRATE.OTA_update") == 0)
@@ -2029,7 +2041,7 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.LinearPowerControl = bval;
 
 	// Bands settings
-	char buff[64] = {0};
+	/*char buff[64] = {0};
 	for (uint8_t i = 0; i < BANDS_COUNT; i++)
 	{
 		sprintf(buff, "TRX.BANDS_SAVED_SETTINGS[%d].Freq", i);
@@ -2121,7 +2133,7 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		sprintf(buff, "TRX.MEMORY_CHANNELS[%d].SAMPLERATE", i);
 		if (strcmp(name, buff) == 0)
 			CALIBRATE.MEMORY_CHANNELS[i].SAMPLERATE = (uint8_t)uintval;
-	}
+	}*/
 }
 
 static void SDCOMM_IMPORT_SETT_handler(void)
@@ -2261,7 +2273,7 @@ static uint8_t SPIx_WriteRead(uint8_t Byte)
 {
 	uint8_t SPIx_receivedByte = 0;
 
-	if (!SPI_Transmit(&Byte, &SPIx_receivedByte, 1, SD_CS_GPIO_Port, SD_CS_Pin, false, SPI_SD_PRESCALER, false))
+	if (!HRDW_SD_SPI(&Byte, &SPIx_receivedByte, 1, false))
 		println("SD SPI R Err");
 
 	return SPIx_receivedByte;
@@ -2378,7 +2390,7 @@ uint8_t SD_Read_Block(uint8_t *buff, uint32_t btr)
 	dma_memset(buff, 0xFF, btr);
 	// for (cnt = 0; cnt < btr; cnt++)
 	//   buff[cnt] = SPI_ReceiveByte();
-	if (!SPI_Transmit(NULL, SD_Read_Block_tmp, btr, SD_CS_GPIO_Port, SD_CS_Pin, false, SPI_SD_PRESCALER, true))
+	if (!HRDW_SD_SPI(NULL, SD_Read_Block_tmp, btr, false))
 	{
 		println("SD SPI R Err");
 		return 0;
@@ -2416,22 +2428,11 @@ uint8_t SD_Write_Block(uint8_t *buff, uint8_t token, bool dma)
 		// for (cnt = 0; cnt < sdinfo.BLOCK_SIZE; cnt++)
 		// SPI_SendByte(buff[cnt]);
 
-		if (dma)
+		dma_memcpy(SD_Write_Block_tmp, buff, sizeof(SD_Write_Block_tmp));
+		if (!HRDW_SD_SPI(SD_Write_Block_tmp, NULL, sdinfo.BLOCK_SIZE, false))
 		{
-			dma_memcpy(SD_Write_Block_tmp, buff, sizeof(SD_Write_Block_tmp));
-			if (!SPI_Transmit(SD_Write_Block_tmp, NULL, sdinfo.BLOCK_SIZE, SD_CS_GPIO_Port, SD_CS_Pin, false, SPI_SD_PRESCALER, dma))
-			{
-				println("SD SPI W Err");
-				return 0;
-			}
-		}
-		else
-		{
-			if (!SPI_Transmit(buff, NULL, sdinfo.BLOCK_SIZE, SD_CS_GPIO_Port, SD_CS_Pin, false, SPI_SD_PRESCALER, dma))
-			{
-				println("SD SPI W Err");
-				return 0;
-			}
+			println("SD SPI W Err");
+			return 0;
 		}
 
 		// CRC check
@@ -2474,14 +2475,14 @@ uint8_t sd_ini(void)
 	sdinfo.type = 0;
 	uint8_t ocr[4];
 	uint8_t csd[16];
-	temp = hspi2.Init.BaudRatePrescaler;
-	hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; // 156.25 kbbs (96 kbps)
-	HAL_SPI_Init(&hspi2);
+	//temp = hspi.Init.BaudRatePrescaler;
+	//hspi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; // 156.25 kbbs (96 kbps)
+	//HAL_SPI_Init(&hspi);
 	// HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_RESET);
 	for (i = 0; i < 10; i++)
 		SPI_Release();
-	hspi2.Init.BaudRatePrescaler = temp;
-	HAL_SPI_Init(&hspi2);
+	//hspi.Init.BaudRatePrescaler = temp;
+	//HAL_SPI_Init(&hspi);
 	// HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET);
 	if (SD_cmd(CMD0, 0) == 1) // Enter Idle state
 	{
@@ -2599,3 +2600,5 @@ uint8_t sd_ini(void)
 	// sendToDebug_str(sd_str_buff);
 	return 0;
 }
+
+#endif

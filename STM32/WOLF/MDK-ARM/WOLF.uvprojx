@@ -400,11 +400,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -478,6 +473,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -3156,6 +3166,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -3186,9 +3206,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -4246,11 +4266,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -4324,6 +4339,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -4671,6 +4701,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -4701,9 +4741,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -5830,11 +5870,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -5908,6 +5943,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -6255,6 +6305,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -6285,9 +6345,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -7414,11 +7474,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -7492,6 +7547,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -7839,6 +7909,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -7869,9 +7949,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -8998,11 +9078,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -9076,6 +9151,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -9423,6 +9513,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -9453,9 +9553,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -10582,11 +10682,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -10660,6 +10755,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -11007,6 +11117,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -11037,9 +11157,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -12166,11 +12286,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -12244,6 +12359,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -12591,6 +12721,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -12621,9 +12761,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -13681,11 +13821,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -13759,6 +13894,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -14106,6 +14256,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -14136,9 +14296,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>
@@ -15196,11 +15356,6 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Src\fpga.h</FilePath>
-            </File>
-            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -15274,6 +15429,21 @@
               <FileName>system_stm32h7xx.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\system_stm32h7xx.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\hardware.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardware.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\hardware.h</FilePath>
+            </File>
+            <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -15621,6 +15791,16 @@
               <FilePath>..\..\Src\decoder.h</FilePath>
             </File>
             <File>
+              <FileName>events.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\events.c</FilePath>
+            </File>
+            <File>
+              <FileName>events.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\events.h</FilePath>
+            </File>
+            <File>
               <FileName>fft.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\fft.c</FilePath>
@@ -15651,9 +15831,9 @@
               <FilePath>..\..\Src\fonts.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\fpga.c</FilePath>
+              <FileName>fpga.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\fpga.h</FilePath>
             </File>
             <File>
               <FileName>front_unit.h</FileName>

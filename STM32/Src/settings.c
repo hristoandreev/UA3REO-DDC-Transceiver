@@ -1,6 +1,5 @@
 #include "settings.h"
-#include "stm32h7xx_hal.h"
-#include "stm32h7xx_hal_rtc.h"
+#include "hardware.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "functions.h"
@@ -11,7 +10,7 @@
 #include "bands.h"
 #include "front_unit.h"
 
-char version_string[19] = "4.2.0";
+const char version_string[19] = "4.3.0";
 
 // W25Q16
 IRAM2 static uint8_t Write_Enable = W25Q16_COMMAND_Write_Enable;
@@ -28,9 +27,11 @@ struct TRX_CALIBRATE CALIBRATE = {0};
 bool EEPROM_Enabled = true;
 static uint8_t settings_bank = 1;
 
-IRAM2 static uint8_t write_clone[sizeof(TRX)] = {0};
-IRAM2 static uint8_t read_clone[sizeof(TRX)] = {0};
-IRAM2 static uint8_t verify_clone[sizeof(TRX)] = {0};
+#define MAX_CLONE_SIZE sizeof(CALIBRATE) > sizeof(TRX) ? sizeof(CALIBRATE) : sizeof(TRX)
+
+IRAM2 static uint8_t write_clone[MAX_CLONE_SIZE] = {0};
+IRAM2 static uint8_t read_clone[MAX_CLONE_SIZE] = {0};
+IRAM2 static uint8_t verify_clone[MAX_CLONE_SIZE] = {0};
 
 volatile bool NeedSaveSettings = false;
 volatile bool NeedSaveCalibration = false;
@@ -66,11 +67,11 @@ const char *MODE_DESCR[TRX_MODE_COUNT] = {
 void LoadSettings(bool clear)
 {
 	BKPSRAM_Enable();
-	dma_memcpy(&TRX, BACKUP_SRAM_BANK1_ADDR, sizeof(TRX));
+	memcpy(&TRX, BACKUP_SRAM_BANK1_ADDR, sizeof(TRX));
 	// Check, the data in the backup sram is correct, otherwise we use the second bank
 	if (TRX.ENDBit != 100 || TRX.flash_id != SETT_VERSION || TRX.csum != calculateCSUM())
 	{
-		dma_memcpy(&TRX, BACKUP_SRAM_BANK2_ADDR, sizeof(TRX));
+		memcpy(&TRX, BACKUP_SRAM_BANK2_ADDR, sizeof(TRX));
 		if (TRX.ENDBit != 100 || TRX.flash_id != SETT_VERSION || TRX.csum != calculateCSUM())
 		{
 			println("[ERR] BACKUP SRAM data incorrect");
@@ -100,7 +101,7 @@ void LoadSettings(bool clear)
 	{
 		if (clear)
 			println("[OK] Soft reset TRX");
-		dma_memset(&TRX, 0x00, sizeof(TRX));
+		memset(&TRX, 0x00, sizeof(TRX));
 		//
 		TRX.flash_id = SETT_VERSION; // Firmware ID in SRAM, if it doesn't match, use the default
 		TRX.NeedGoToBootloader = false;
@@ -108,10 +109,10 @@ void LoadSettings(bool clear)
 		TRX.selected_vfo = false;			  // current VFO (false - A)
 		TRX.VFO_A.Freq = 7100000;			  // stored VFO-A frequency
 		TRX.VFO_A.Mode = TRX_MODE_LSB;		  // saved VFO-A mode
-		TRX.VFO_A.LPF_RX_Filter_Width = 3000; // saved bandwidth for VFO-A
-		TRX.VFO_A.LPF_TX_Filter_Width = 3000; // saved bandwidth for VFO-A
-		TRX.VFO_A.HPF_RX_Filter_Width = 60;	  // saved bandwidth for VFO-A
-		TRX.VFO_A.HPF_TX_Filter_Width = 60;	  // saved bandwidth for VFO-A
+		TRX.VFO_A.LPF_RX_Filter_Width = 2700; // saved bandwidth for VFO-A
+		TRX.VFO_A.LPF_TX_Filter_Width = 2700; // saved bandwidth for VFO-A
+		TRX.VFO_A.HPF_RX_Filter_Width = 200;	  // saved bandwidth for VFO-A
+		TRX.VFO_A.HPF_TX_Filter_Width = 200;	  // saved bandwidth for VFO-A
 		TRX.VFO_A.ManualNotchFilter = false;  // notch filter to cut out noise
 		TRX.VFO_A.AutoNotchFilter = false;	  // notch filter to cut out noise
 		TRX.VFO_A.NotchFC = 1000;			  // cutoff frequency of the notch filter
@@ -121,10 +122,10 @@ void LoadSettings(bool clear)
 		TRX.VFO_A.FM_SQL_threshold_dbm = -90; // FM noise squelch
 		TRX.VFO_B.Freq = 14150000;			  // stored VFO-B frequency
 		TRX.VFO_B.Mode = TRX_MODE_USB;		  // saved VFO-B mode
-		TRX.VFO_B.LPF_RX_Filter_Width = 3000; // saved bandwidth for VFO-B
-		TRX.VFO_B.LPF_TX_Filter_Width = 3000; // saved bandwidth for VFO-B
-		TRX.VFO_B.HPF_RX_Filter_Width = 60;	  // saved bandwidth for VFO-B
-		TRX.VFO_B.HPF_TX_Filter_Width = 60;	  // saved bandwidth for VFO-B
+		TRX.VFO_B.LPF_RX_Filter_Width = 2700; // saved bandwidth for VFO-B
+		TRX.VFO_B.LPF_TX_Filter_Width = 2700; // saved bandwidth for VFO-B
+		TRX.VFO_B.HPF_RX_Filter_Width = 200;	  // saved bandwidth for VFO-B
+		TRX.VFO_B.HPF_TX_Filter_Width = 200;	  // saved bandwidth for VFO-B
 		TRX.VFO_B.ManualNotchFilter = false;  // notch filter to cut out noise
 		TRX.VFO_B.AutoNotchFilter = false;	  // notch filter to cut out noise
 		TRX.VFO_B.NotchFC = 1000;			  // cutoff frequency of the notch filter
@@ -159,6 +160,10 @@ void LoadSettings(bool clear)
 		TRX.SAMPLERATE_MAIN = TRX_SAMPLERATE_K96; // Samplerate for ssb/cw/digi/nfm/etc modes
 		TRX.SAMPLERATE_FM = TRX_SAMPLERATE_K192;  // Samplerate for FM mode
 #endif
+#ifdef STM32F407xx
+		TRX.SAMPLERATE_MAIN = TRX_SAMPLERATE_K48; // Samplerate for ssb/cw/digi/nfm/etc modes
+		TRX.SAMPLERATE_FM = TRX_SAMPLERATE_K48;  // Samplerate for FM mode
+#endif
 		TRX.FRQ_STEP = 10;					// frequency tuning step by the main encoder
 		TRX.FRQ_FAST_STEP = 100;			// frequency tuning step by the main encoder in FAST mode
 		TRX.FRQ_ENC_STEP = 25000;			// frequency tuning step by main add. encoder
@@ -175,13 +180,18 @@ void LoadSettings(bool clear)
 #endif
 		TRX.Locked = false;				  // Lock control
 		TRX.SPLIT_Enabled = false;				  // Split frequency mode (receive one VFO, transmit another)
+#if HRDW_HAS_DUAL_RX
 		TRX.Dual_RX = false;			  // Dual RX feature
 		TRX.Dual_RX_Type = VFO_A_PLUS_B;  // dual receiver mode
+#endif
 		TRX.Encoder_Accelerate = true;	  // Accelerate Encoder on fast rate
 		strcpy(TRX.CALLSIGN, "HamRad");	  // Callsign
 		strcpy(TRX.LOCATOR, "LO02RR");	  // Locator
 		TRX.Custom_Transverter_Enabled = false;  // Enable transverter mode
 		TRX.Transverter_Offset_Mhz = 144; // Offset from VFO
+#ifdef FRONTPANEL_LITE
+	TRX.Transverter_Offset_Mhz = 28;
+#endif
 		TRX.ATU_I = 0;					  // ATU default state
 		TRX.ATU_C = 0;					  // ATU default state
 		TRX.ATU_T = false;				  // ATU default state
@@ -215,7 +225,13 @@ void LoadSettings(bool clear)
 		TRX.DNR2_SNR_THRESHOLD = 35;		 // Digital noise reduction 2 level
 		TRX.DNR_AVERAGE = 2;				 // DNR averaging when looking for average magnitude
 		TRX.DNR_MINIMAL = 99;				 // DNR averaging when searching for minimum magnitude
-		TRX.NOISE_BLANKER = true;			 // suppressor of short impulse noise NOISE BLANKER
+		#ifdef STM32F407xx
+		TRX.NOISE_BLANKER = false;			 // suppressor of short impulse noise NOISE BLANKER
+		TRX.AGC_Spectral = false;			//Spectral AGC mode
+		#else
+		TRX.NOISE_BLANKER = false;			 // suppressor of short impulse noise NOISE BLANKER
+		TRX.AGC_Spectral = true;			//Spectral AGC mode
+		#endif
 		TRX.RX_AGC_SSB_speed = 10;			 // AGC receive rate on SSB
 		TRX.RX_AGC_CW_speed = 1;			 // AGC receive rate on CW
 		TRX.RX_AGC_Max_gain = 30;			 // Maximum AGC gain
@@ -238,7 +254,6 @@ void LoadSettings(bool clear)
 		TRX.CTCSS_Freq = 0;					 // CTCSS FM Frequency
 		TRX.SELFHEAR_Volume = 50;			 // Selfhearing volume
 		TRX.FM_Stereo = false;				 // Stereo FM Mode
-		TRX.AGC_Spectral = true;			//Spectral AGC mode
 		TRX.VAD_THRESHOLD = 150;				//Threshold of SSB/SCAN squelch
 		TRX.VOX = false;							//TX by voice activation
 		TRX.VOX_TIMEOUT = 300;				//VOX timeout in ms
@@ -254,7 +269,6 @@ void LoadSettings(bool clear)
 		TRX.CW_Iambic = false;		   // CW Iambic Keyer
 		TRX.CW_Invert = false;		   // CW dash/dot inversion
 		TRX.CW_PTT_Type = KEY_PTT;	   // CW PTT type (Key / External tangent ptt)
-		TRX.CW_Decoder_Threshold = 14; // CW Decoder sensivity
 		// SCREEN
 		TRX.ColorThemeId = 0;	// Selected Color theme
 		TRX.LayoutThemeId = 0;	// Selected Layout theme
@@ -271,6 +285,10 @@ void LoadSettings(bool clear)
 		TRX.FFT_Zoom = 1;	// approximation of the FFT spectrum
 		TRX.FFT_ZoomCW = 8; // zoomfft for cw mode
 #endif
+#ifdef STM32F407xx
+		TRX.FFT_Zoom = 1;	// approximation of the FFT spectrum
+		TRX.FFT_ZoomCW = 8; // zoomfft for cw mode
+#endif
 		TRX.LCD_Brightness = 60;   // LCD Brightness
 		TRX.LCD_SleepTimeout = 0;  // LCD Sleep Timeout berfore idle
 		TRX.WTF_Moving = true;	   // move WTF with frequency encoder
@@ -278,6 +296,9 @@ void LoadSettings(bool clear)
 		TRX.FFT_Sensitivity = 8;   // Threshold of FFT autocalibrate
 		TRX.FFT_Speed = 3;		   // FFT Speed
 		TRX.FFT_Averaging = 8;	   // averaging the FFT to make it smoother
+#ifdef STM32F407xx
+		TRX.FFT_Averaging = 6;
+#endif
 		TRX.FFT_Window = 1;		   // FFT Window
 		TRX.FFT_Style = 1;		   // FFT style
 		TRX.FFT_BW_Style = 2;	   // FFT BW style
@@ -303,11 +324,17 @@ void LoadSettings(bool clear)
 		TRX.FFT_DXCluster_Timeout = 5;	   // DXCluser timeout in minutes
 		TRX.Show_Sec_VFO = false;		   // Show secondary VFO on FFT
 		TRX.FFT_Scale_Type = 0;			   // Scale type (0 - amplitude, 1 - dbm)
+		TRX.AnalogMeterShowPWR = false;	// false - SWR, true - PWR
 		for (uint8_t i = 0; i < FUNCBUTTONS_COUNT; i++)
 			TRX.FuncButtons[i] = i;
 		// DECODERS
 		TRX.CW_Decoder = false;		 // automatic telegraph decoder
+		TRX.CW_Decoder_Threshold = 8; // CW Decoder sensivity
+		#ifdef STM32F407xx
+		TRX.RDS_Decoder = false;		 // RDS Decoder panel
+		#else
 		TRX.RDS_Decoder = true;		 // RDS Decoder panel
+		#endif
 		TRX.RTTY_Speed = 45;		 // RTTY decoder speed
 		TRX.RTTY_Shift = 170;		 // RTTY decoder shift
 		TRX.RTTY_Freq = 1000;		 // RTTY decoder center frequency
@@ -440,6 +467,8 @@ void LoadCalibration(bool clear)
 
 	if (CALIBRATE.ENDBit != 100 || CALIBRATE.flash_id != CALIB_VERSION || clear || CALIBRATE.csum != calculateCSUM_EEPROM()) // code for checking the firmware in the eeprom, if it does not match, we use the default
 	{
+		memset(&CALIBRATE, 0x00, sizeof(CALIBRATE));
+		
 		println("[ERR] CALIBRATE Flash check CODE:", CALIBRATE.flash_id, false);
 		CALIBRATE.flash_id = CALIB_VERSION; // code for checking the firmware in the eeprom, if it does not match, we use the default
 
@@ -448,6 +477,9 @@ void LoadCalibration(bool clear)
 		CALIBRATE.ENCODER_DEBOUNCE = 0;		   // time to eliminate contact bounce at the main encoder, ms
 		CALIBRATE.ENCODER2_DEBOUNCE = 10;	   // time to eliminate contact bounce at the additional encoder, ms
 		CALIBRATE.ENCODER_SLOW_RATE = 25;	   // slow down the encoder for high resolutions
+#if defined(FRONTPANEL_LITE)
+		CALIBRATE.ENCODER_SLOW_RATE = 10;
+#endif
 		CALIBRATE.ENCODER_ON_FALLING = true;  // encoder only triggers when level A falls
 		CALIBRATE.ENCODER_ACCELERATION = 75;   // acceleration rate if rotate
 		CALIBRATE.TangentType = TANGENT_MH48;  // Tangent type
@@ -553,6 +585,10 @@ void LoadCalibration(bool clear)
 		CALIBRATE.SWR_REF_Calibration_VHF = 9.5f;	   // SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 15;				   // Maximum RF power in Tune mode
 		CALIBRATE.MAX_RF_POWER = 100;				   // Max TRX Power for indication
+#elif defined(FRONTPANEL_LITE)
+		CALIBRATE.smeter_calibration_hf = 15;
+		CALIBRATE.TUNE_MAX_POWER = 5;				   // Maximum RF power in Tune mode
+		CALIBRATE.MAX_RF_POWER = 15;				   // Max TRX Power for indication
 #else
 		CALIBRATE.RFU_LPF_END = 60000 * 1000;		   // LPF
 		CALIBRATE.RFU_HPF_START = 60000 * 1000;		   // HPF U14-RF1
@@ -628,6 +664,8 @@ void LoadCalibration(bool clear)
 		CALIBRATE.NOTX_2m = false;
 		CALIBRATE.NOTX_70cm = true;
 		CALIBRATE.ENABLE_60m_band = false; // enable hidden bands
+		CALIBRATE.ENABLE_4m_band = false;
+		CALIBRATE.ENABLE_AIR_band = false;
 		CALIBRATE.ENABLE_marine_band = false;
 		CALIBRATE.OTA_update = true;			 // enable OTA FW update over WiFi
 		CALIBRATE.TX_StartDelay = 5;			 // Relay switch delay before RF signal ON, ms
@@ -679,6 +717,8 @@ void LoadCalibration(bool clear)
 	EEPROM_PowerDown();
 	// enable bands
 	BANDS[BANDID_60m].selectable = CALIBRATE.ENABLE_60m_band;
+	BANDS[BANDID_4m].selectable = CALIBRATE.ENABLE_4m_band;
+	BANDS[BANDID_AIR].selectable = CALIBRATE.ENABLE_AIR_band;
 	BANDS[BANDID_Marine].selectable = CALIBRATE.ENABLE_marine_band;
 }
 
@@ -689,16 +729,16 @@ void SaveSettings(void)
 	Aligned_CleanDCache_by_Addr((uint32_t *)&TRX, sizeof(TRX));
 	if (settings_bank == 1)
 	{
-		dma_memcpy(BACKUP_SRAM_BANK1_ADDR, &TRX, sizeof(TRX));
+		memcpy(BACKUP_SRAM_BANK1_ADDR, &TRX, sizeof(TRX));
 		Aligned_CleanDCache_by_Addr(BACKUP_SRAM_BANK1_ADDR, sizeof(TRX));
-		dma_memset(BACKUP_SRAM_BANK2_ADDR, 0x00, sizeof(TRX));
+		memset(BACKUP_SRAM_BANK2_ADDR, 0x00, sizeof(TRX));
 		Aligned_CleanDCache_by_Addr(BACKUP_SRAM_BANK2_ADDR, sizeof(TRX));
 	}
 	else
 	{
-		dma_memcpy(BACKUP_SRAM_BANK2_ADDR, &TRX, sizeof(TRX));
+		memcpy(BACKUP_SRAM_BANK2_ADDR, &TRX, sizeof(TRX));
 		Aligned_CleanDCache_by_Addr(BACKUP_SRAM_BANK2_ADDR, sizeof(TRX));
-		dma_memset(BACKUP_SRAM_BANK1_ADDR, 0x00, sizeof(TRX));
+		memset(BACKUP_SRAM_BANK1_ADDR, 0x00, sizeof(TRX));
 		Aligned_CleanDCache_by_Addr(BACKUP_SRAM_BANK1_ADDR, sizeof(TRX));
 	}
 	BKPSRAM_Disable();
@@ -808,22 +848,22 @@ static bool EEPROM_Sector_Erase(uint8_t sector, bool force)
 {
 	if (!force && !EEPROM_Enabled)
 		return true;
-	if (!force && SPI_process)
+	if (!force && HRDW_SPI_Locked)
 		return false;
 	else
-		SPI_process = true;
+		HRDW_SPI_Locked = true;
 
 	uint32_t BigAddress = sector * W25Q16_SECTOR_SIZE;
 	Address[2] = (BigAddress >> 16) & 0xFF;
 	Address[1] = (BigAddress >> 8) & 0xFF;
 	Address[0] = BigAddress & 0xFF;
 
-	SPI_Transmit(&Write_Enable, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, false); // Write Enable Command
-	SPI_Transmit(&Sector_Erase, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, false);  // Erase Command
-	SPI_Transmit(Address, NULL, 3, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, false);		  // Write Address ( The first address of flash module is 0x00000000 )
+	HRDW_EEPROM_SPI(&Write_Enable, NULL, 1, false); // Write Enable Command
+	HRDW_EEPROM_SPI(&Sector_Erase, NULL, 1, true);  // Erase Command
+	HRDW_EEPROM_SPI(Address, NULL, 3, false);		  // Write Address ( The first address of flash module is 0x00000000 )
 	EEPROM_WaitWrite();
 
-	SPI_process = false;
+	HRDW_SPI_Locked = false;
 	return true;
 }
 
@@ -831,16 +871,17 @@ static bool EEPROM_Write_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, bo
 {
 	if (!force && !EEPROM_Enabled)
 		return true;
-	if (!force && SPI_process)
+	if (!force && HRDW_SPI_Locked)
 		return false;
 	else
-		SPI_process = true;
+		HRDW_SPI_Locked = true;
 	if (size > sizeof(write_clone))
 	{
-		println("EEPROM buffer error");
+		println("EEPROM WR buffer error");
+		HRDW_SPI_Locked = false;
 		return false;
 	}
-	dma_memcpy(write_clone, Buffer, size);
+	memcpy(write_clone, Buffer, size);
 	Aligned_CleanDCache_by_Addr((uint32_t *)write_clone, sizeof(write_clone));
 
 	const uint16_t page_size = 256;
@@ -853,10 +894,10 @@ static bool EEPROM_Write_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, bo
 		uint16_t bsize = size - page_size * page;
 		if (bsize > page_size)
 			bsize = page_size;
-		SPI_Transmit(&Write_Enable, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, true);								   // Write Enable Command
-		SPI_Transmit(&Page_Program, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, true);									   // Write Command
-		SPI_Transmit(Address, NULL, 3, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, true);										   // Write Address ( The first address of flash module is 0x00000000 )
-		SPI_Transmit((uint8_t *)(write_clone + page_size * page), NULL, bsize, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, true); // Write Data
+		HRDW_EEPROM_SPI(&Write_Enable, NULL, 1, false);								   // Write Enable Command
+		HRDW_EEPROM_SPI(&Page_Program, NULL, 1, true);									   // Write Command
+		HRDW_EEPROM_SPI(Address, NULL, 3, true);										   // Write Address ( The first address of flash module is 0x00000000 )
+		HRDW_EEPROM_SPI((uint8_t *)(write_clone + page_size * page), NULL, bsize, false); // Write Data
 		EEPROM_WaitWrite();
 	}
 
@@ -887,11 +928,11 @@ static bool EEPROM_Write_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, bo
 		}
 		if (!verify_succ)
 		{
-			SPI_process = false;
+			HRDW_SPI_Locked = false;
 			return false;
 		}
 	}
-	SPI_process = false;
+	HRDW_SPI_Locked = false;
 	return true;
 }
 
@@ -899,11 +940,18 @@ static bool EEPROM_Read_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, boo
 {
 	if (!force && !EEPROM_Enabled)
 		return true;
-	if (!force && SPI_process)
+	if (!force && HRDW_SPI_Locked)
 		return false;
 	else
-		SPI_process = true;
+		HRDW_SPI_Locked = true;
 
+	if (size > sizeof(read_clone))
+	{
+		println("EEPROM RD buffer error");
+		HRDW_SPI_Locked = false;
+		return false;
+	}
+	
 	Aligned_CleanDCache_by_Addr((uint32_t *)Buffer, size);
 
 	uint32_t BigAddress = sector * W25Q16_SECTOR_SIZE;
@@ -915,18 +963,18 @@ static bool EEPROM_Read_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, boo
 	int8_t tryes = 0;
 	while (!read_ok && tryes < 5)
 	{
-		bool res = SPI_Transmit(&Read_Data, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, false); // Read Command
+		bool res = HRDW_EEPROM_SPI(&Read_Data, NULL, 1, true); // Read Command
 		if (!res)
 		{
 			EEPROM_Enabled = false;
 			println("[ERR] EEPROM not found...");
 			LCD_showError("EEPROM init error", true);
-			SPI_process = false;
+			HRDW_SPI_Locked = false;
 			return true;
 		}
 
-		SPI_Transmit(Address, NULL, 3, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, false);							 // Write Address
-		read_ok = SPI_Transmit(NULL, (uint8_t *)(Buffer), size, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, false); // Read
+		HRDW_EEPROM_SPI(Address, NULL, 3, true);							 // Write Address
+		read_ok = HRDW_EEPROM_SPI(NULL, (uint8_t *)(Buffer), size, false); // Read
 		tryes++;
 	}
 
@@ -942,18 +990,18 @@ static bool EEPROM_Read_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, boo
 		Address[1] = (BigAddress >> 8) & 0xFF;
 		Address[0] = BigAddress & 0xFF;
 
-		bool res = SPI_Transmit(&Read_Data, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, false); // Read Command
+		bool res = HRDW_EEPROM_SPI(&Read_Data, NULL, 1, true); // Read Command
 		if (!res)
 		{
 			EEPROM_Enabled = false;
 			println("[ERR] EEPROM not found...");
 			LCD_showError("EEPROM init error", true);
-			SPI_process = false;
+			HRDW_SPI_Locked = false;
 			return true;
 		}
 
-		SPI_Transmit(Address, NULL, 3, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, false);					   // Write Address
-		SPI_Transmit(NULL, (uint8_t *)(read_clone), size, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, false); // Read
+		HRDW_EEPROM_SPI(Address, NULL, 3, true);					   // Write Address
+		HRDW_EEPROM_SPI(NULL, (uint8_t *)(read_clone), size, false); // Read
 
 		Aligned_CleanInvalidateDCache_by_Addr((uint32_t *)read_clone, size);
 
@@ -961,12 +1009,12 @@ static bool EEPROM_Read_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, boo
 			if (read_clone[i] != Buffer[i])
 			{
 				// println("read err", read_clone[i]);
-				SPI_process = false;
+				HRDW_SPI_Locked = false;
 				return false;
 			}
 	}
 	if (!force)
-		SPI_process = false;
+		HRDW_SPI_Locked = false;
 	return true;
 }
 
@@ -979,8 +1027,8 @@ static void EEPROM_WaitWrite(void)
 	do
 	{
 		tryes++;
-		SPI_Transmit(&Get_Status, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, true, SPI_EEPROM_PRESCALER, false); // Get Status command
-		SPI_Transmit(NULL, &status, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, false);	   // Read data
+		HRDW_EEPROM_SPI(&Get_Status, NULL, 1, true); // Get Status command
+		HRDW_EEPROM_SPI(NULL, &status, 1, false);	   // Read data
 		if ((status & 0x01) == 0x01)
 			HAL_Delay(1);
 	} while ((status & 0x01) == 0x01 && (tryes < 200));
@@ -995,21 +1043,30 @@ static void EEPROM_PowerDown(void)
 {
 	if (!EEPROM_Enabled)
 		return;
-	SPI_Transmit(&Power_Down, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, false); // Power_Down Command
+	HRDW_EEPROM_SPI(&Power_Down, NULL, 1, false); // Power_Down Command
 }
 
 static void EEPROM_PowerUp(void)
 {
 	if (!EEPROM_Enabled)
 		return;
-	SPI_Transmit(&Power_Up, NULL, 1, W25Q16_CS_GPIO_Port, W25Q16_CS_Pin, false, SPI_EEPROM_PRESCALER, false); // Power_Up Command
+	HRDW_EEPROM_SPI(&Power_Up, NULL, 1, false); // Power_Up Command
 }
 
 void BKPSRAM_Enable(void)
 {
-	//__HAL_RCC_BKPRAM_CLK_ENABLE();
+	#ifdef STM32F407xx
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+	RCC->AHB1ENR |= RCC_AHB1ENR_BKPSRAMEN;
+	#endif
+	
 	HAL_PWREx_EnableBkUpReg();
 	HAL_PWR_EnableBkUpAccess();
+	
+	#ifdef STM32F407xx
+	*(__IO uint32_t *) CSR_BRE_BB = (uint32_t) ENABLE;
+	while (!(PWR->CSR & (PWR_FLAG_BRR)));
+	#endif
 }
 
 void BKPSRAM_Disable(void)
@@ -1019,6 +1076,7 @@ void BKPSRAM_Disable(void)
 
 static uint8_t calculateCSUM(void)
 {
+	#if HRDW_HAS_SD
 	sd_crc_generate_table();
 	uint8_t csum_old = TRX.csum;
 	uint8_t csum_new = 0;
@@ -1028,10 +1086,14 @@ static uint8_t calculateCSUM(void)
 		csum_new = sd_crc7_byte(csum_new, *(TRX_addr + i));
 	TRX.csum = csum_old;
 	return csum_new;
+	#else
+	return 100;
+	#endif
 }
 
 static uint8_t calculateCSUM_EEPROM(void)
 {
+	#if HRDW_HAS_SD
 	sd_crc_generate_table();
 	uint8_t csum_old = CALIBRATE.csum;
 	uint8_t csum_new = 0;
@@ -1041,6 +1103,9 @@ static uint8_t calculateCSUM_EEPROM(void)
 		csum_new = sd_crc7_byte(csum_new, *(CALIBRATE_addr + i));
 	CALIBRATE.csum = csum_old;
 	return csum_new;
+	#else
+	return 100;
+	#endif
 }
 
 void RTC_Calibration(void)
