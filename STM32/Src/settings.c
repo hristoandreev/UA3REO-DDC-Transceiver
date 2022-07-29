@@ -27,9 +27,11 @@ struct TRX_CALIBRATE CALIBRATE = {0};
 bool EEPROM_Enabled = true;
 static uint8_t settings_bank = 1;
 
-IRAM2 static uint8_t write_clone[sizeof(TRX)] = {0};
-IRAM2 static uint8_t read_clone[sizeof(TRX)] = {0};
-IRAM2 static uint8_t verify_clone[sizeof(TRX)] = {0};
+#define MAX_CLONE_SIZE sizeof(CALIBRATE) > sizeof(TRX) ? sizeof(CALIBRATE) : sizeof(TRX)
+
+IRAM2 static uint8_t write_clone[MAX_CLONE_SIZE] = {0};
+IRAM2 static uint8_t read_clone[MAX_CLONE_SIZE] = {0};
+IRAM2 static uint8_t verify_clone[MAX_CLONE_SIZE] = {0};
 
 volatile bool NeedSaveSettings = false;
 volatile bool NeedSaveCalibration = false;
@@ -107,10 +109,10 @@ void LoadSettings(bool clear)
 		TRX.selected_vfo = false;			  // current VFO (false - A)
 		TRX.VFO_A.Freq = 7100000;			  // stored VFO-A frequency
 		TRX.VFO_A.Mode = TRX_MODE_LSB;		  // saved VFO-A mode
-		TRX.VFO_A.LPF_RX_Filter_Width = 3000; // saved bandwidth for VFO-A
-		TRX.VFO_A.LPF_TX_Filter_Width = 3000; // saved bandwidth for VFO-A
-		TRX.VFO_A.HPF_RX_Filter_Width = 60;	  // saved bandwidth for VFO-A
-		TRX.VFO_A.HPF_TX_Filter_Width = 60;	  // saved bandwidth for VFO-A
+		TRX.VFO_A.LPF_RX_Filter_Width = 2700; // saved bandwidth for VFO-A
+		TRX.VFO_A.LPF_TX_Filter_Width = 2700; // saved bandwidth for VFO-A
+		TRX.VFO_A.HPF_RX_Filter_Width = 200;	  // saved bandwidth for VFO-A
+		TRX.VFO_A.HPF_TX_Filter_Width = 200;	  // saved bandwidth for VFO-A
 		TRX.VFO_A.ManualNotchFilter = false;  // notch filter to cut out noise
 		TRX.VFO_A.AutoNotchFilter = false;	  // notch filter to cut out noise
 		TRX.VFO_A.NotchFC = 1000;			  // cutoff frequency of the notch filter
@@ -120,10 +122,10 @@ void LoadSettings(bool clear)
 		TRX.VFO_A.FM_SQL_threshold_dbm = -90; // FM noise squelch
 		TRX.VFO_B.Freq = 14150000;			  // stored VFO-B frequency
 		TRX.VFO_B.Mode = TRX_MODE_USB;		  // saved VFO-B mode
-		TRX.VFO_B.LPF_RX_Filter_Width = 3000; // saved bandwidth for VFO-B
-		TRX.VFO_B.LPF_TX_Filter_Width = 3000; // saved bandwidth for VFO-B
-		TRX.VFO_B.HPF_RX_Filter_Width = 60;	  // saved bandwidth for VFO-B
-		TRX.VFO_B.HPF_TX_Filter_Width = 60;	  // saved bandwidth for VFO-B
+		TRX.VFO_B.LPF_RX_Filter_Width = 2700; // saved bandwidth for VFO-B
+		TRX.VFO_B.LPF_TX_Filter_Width = 2700; // saved bandwidth for VFO-B
+		TRX.VFO_B.HPF_RX_Filter_Width = 200;	  // saved bandwidth for VFO-B
+		TRX.VFO_B.HPF_TX_Filter_Width = 200;	  // saved bandwidth for VFO-B
 		TRX.VFO_B.ManualNotchFilter = false;  // notch filter to cut out noise
 		TRX.VFO_B.AutoNotchFilter = false;	  // notch filter to cut out noise
 		TRX.VFO_B.NotchFC = 1000;			  // cutoff frequency of the notch filter
@@ -875,7 +877,7 @@ static bool EEPROM_Write_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, bo
 		HRDW_SPI_Locked = true;
 	if (size > sizeof(write_clone))
 	{
-		println("EEPROM buffer error");
+		println("EEPROM WR buffer error");
 		HRDW_SPI_Locked = false;
 		return false;
 	}
@@ -943,6 +945,13 @@ static bool EEPROM_Read_Data(uint8_t *Buffer, uint16_t size, uint8_t sector, boo
 	else
 		HRDW_SPI_Locked = true;
 
+	if (size > sizeof(read_clone))
+	{
+		println("EEPROM RD buffer error");
+		HRDW_SPI_Locked = false;
+		return false;
+	}
+	
 	Aligned_CleanDCache_by_Addr((uint32_t *)Buffer, size);
 
 	uint32_t BigAddress = sector * W25Q16_SECTOR_SIZE;
