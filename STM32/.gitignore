@@ -1,0 +1,25 @@
+cmake-build*/
+.idea/
+*/.idea/
+Status Report.txt
+Design Rule Check*
+*~*.zip
+*.log
+*.o
+*.lnp
+*.bak
+*.d
+*.smsg
+*.rpt
+*.crf
+*._2i
+*.__i
+*._ia
+*.summary
+*.axf
+*.map
+*.dep
+*.jic
+*.pof
+*.sof
+WOLF.uvguix.*
