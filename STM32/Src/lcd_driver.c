@@ -251,7 +251,7 @@ void LCDDriver_printTextFont(char text[], uint16_t x, uint16_t y, uint16_t color
 	uint8_t c = 0;
 	text_cursor_x = x;
 	text_cursor_y = y;
-	for (uint16_t i = 0; i < 1024 && text[i] != NULL; i++)
+	for (uint16_t i = 0; i < 1024 && text[i] != '\0'; i++)
 	{
 		c = text[i];
 		if (c == '\n')
@@ -350,7 +350,7 @@ void LCDDriver_getTextBoundsFont(char text[], uint16_t x, uint16_t y, uint16_t *
 
 	int16_t minx = LCD_WIDTH, miny = LCD_HEIGHT, maxx = 0, maxy = 0;
 
-	for (uint16_t i = 0; i < 40 && text[i] != NULL; i++)
+	for (uint16_t i = 0; i < 40 && text[i] != '\0'; i++)
 	{
 		c = text[i];
 		LCDDriver_charBounds(c, &x, &y, &minx, &miny, &maxx, &maxy, gfxFont);

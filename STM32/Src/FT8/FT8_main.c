@@ -155,7 +155,7 @@ void MenagerFT8(void)
 
 		num_decoded_msg = ft8_decode();
 
-		//			for (uint32_t wait_i = 0; wait_i < 360000000; wait_i++) \
+		//			for (uint32_t wait_i = 0; wait_i < 360000000; wait_i++)
 //				__asm("nop");
 
 		// Debug
