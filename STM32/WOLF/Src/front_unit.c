@@ -1817,8 +1817,13 @@ static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num)
 	outData[0] = 0x18 | channel;
 	bool res = false;
 	if(adc_num == 1) res = HRDW_FrontUnit_SPI(outData, inData, 3, false);
+#if HRDW_MCP3008_2
 	if(adc_num == 2) res = HRDW_FrontUnit2_SPI(outData, inData, 3, false);
+#endif
+
+#if HRDW_MCP3008_3
 	if(adc_num == 3) res = HRDW_FrontUnit3_SPI(outData, inData, 3, false);
+#endif
 	if (res == false)
 		return 65535;
 	mcp3008_value = (uint16_t)(0 | ((inData[1] & 0x3F) << 4) | (inData[2] & 0xF0 >> 4));
