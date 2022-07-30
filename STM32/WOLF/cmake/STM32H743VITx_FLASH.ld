@@ -52,10 +52,10 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM);    /* end of RAM */
+/* _estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM); */   /* end of RAM */
 
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x200;      /* required amount of heap  */
+_Min_Heap_Size = 0x2000;      /* required amount of heap  */
 _Min_Stack_Size = 0x2000; /* required amount of stack */
 
 /* Specify the memory areas */
@@ -145,6 +145,17 @@ SECTIONS
     /* used by the startup to initialize data */
     _sidata = LOADADDR(.data);
 
+    /* User_heap_stack section, used to check that there is enough RAM left */
+    ._user_heap_stack :
+    {
+        . = ALIGN(8);
+        PROVIDE ( end = . );
+        PROVIDE ( _end = . );
+        . = . + _Min_Stack_Size;
+        _estack = .;
+        . = ALIGN(8);
+    } >DTCMRAM
+
     /* Initialized data sections goes into RAM, load LMA copy after code */
     .data :
     {
@@ -174,52 +185,65 @@ SECTIONS
         __bss_end__ = _ebss;
     } >DTCMRAM
 
-    /* User_heap_stack section, used to check that there is enough RAM left */
-    ._user_heap_stack :
+    .IRAM : ALIGN(4)
+    {
+        __iram_init_text__ = LOADADDR(.IRAM);
+        __iram_init__ = .;
+        *(.IRAM)
+        *(.IRAM.*)
+        . = ALIGN(4);
+        __iram_clear__ = .;
+    } >IRAM AT> FLASH
+
+    .SRAM : ALIGN(4)
+    {
+        __sram_init_text__ = LOADADDR(.SRAM);
+        __sram_init__ = .;
+        *(.SRAM)
+        *(.SRAM.*)
+        . = ALIGN(4);
+        __sram_clear__ = .;
+    } >SRAM AT> FLASH
+
+    .SRAM4 : ALIGN(4)
+    {
+        __sram4_init_text__ = LOADADDR(.SRAM4);
+        __sram4_init__ = .;
+        *(.SRAM4)
+        *(.SRAM4.*)
+        . = ALIGN(4);
+         __sram4_clear__ = .;
+    } >SRAM4 AT> FLASH
+
+    ._user_heap :
     {
         . = ALIGN(8);
-        PROVIDE ( end = . );
-        PROVIDE ( _end = . );
+        PROVIDE ( _sheap = . );
         . = . + _Min_Heap_Size;
-        . = . + _Min_Stack_Size;
+        _eheap = .;
         . = ALIGN(8);
-    } >DTCMRAM
-/*
-    .ITCMRAM :
-    {
-        . = ALIGN(4);
-        KEEP(*(.ITCMRAM))
-        . = ALIGN(4);
-    } >ITCMRAM
-*/
-    .IRAM :
-    {
-        . = ALIGN(4);
-        KEEP(*(.IRAM))
-        . = ALIGN(4);
-    } >IRAM
-
-    .SRAM :
-    {
-        . = ALIGN(4);
-        KEEP(*(.SRAM))
-        . = ALIGN(4);
-    } >SRAM
-
-    .SRAM4 :
-    {
-        . = ALIGN(4);
-        KEEP(*(.SRAM4))
-        . = ALIGN(4);
     } >SRAM4
-/*
-    .BACKUP_SRAM :
+
+    .ITCMRAM : ALIGN(4)
     {
+        __itcmram_init_text__ = LOADADDR(.ITCMRAM);
+        __itcmram_init__ = .;
+        *(.ITCMRAM)
+        *(.ITCMRAM.*)
         . = ALIGN(4);
-        KEEP(*(.BACKUP_SRAM))
+        __itcmram_clear__ = .;
+    } >ITCMRAM AT> FLASH
+
+    .BACKUP_SRAM : ALIGN(4)
+    {
+        __backup_sram_init_text__ = LOADADDR(.BACKUP_SRAM);
+        __backup_sram_init__ = .;
+        *(.BACKUP_SRAM)
+        *(.BACKUP_SRAM.*)
         . = ALIGN(4);
-    } >BACKUP_SRAM
-*/
+        __backup_sram_clear__ = .;
+    } >BACKUP_SRAM AT> FLASH
+
     /* Remove information from the standard libraries */
     /DISCARD/ :
     {

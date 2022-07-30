@@ -93,6 +93,9 @@ LoopFillZerobss:
   cmp r2, r4
   bcc FillZerobss
 
+  /* RAM areas initialization.*/
+  bl      __init_ram_areas
+
 /* Call static constructors */
     bl __libc_init_array
 /* Call the application's entry point.*/

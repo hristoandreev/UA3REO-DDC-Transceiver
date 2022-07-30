@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.17)
 include(dependencies.cmake)
 #include(${CMAKE_SOURCE_DIR}/toolchain.cmake)
 
+message(STATUS "STM32_CUBE_PROGRAMMER_DIR -> " ${STM32_CUBE_PROGRAMMER})
+message(STATUS "CMAKE_SOURCE_DIR -> " ${CMAKE_SOURCE_DIR})
+message(STATUS "CMAKE_BINARY_DIR -> " ${CMAKE_BINARY_DIR})
+
 set(STM32CubeProgrammer ${STM32_CUBE_PROGRAMMER}/bin/STM32_Programmer_CLI)
 message(STATUS "STM32CubeProgrammer -> " ${STM32CubeProgrammer})
 
@@ -10,7 +14,8 @@ set(LcdImageConverter ${CMAKE_BINARY_DIR}/_deps/lcd-image-converter-src/lcd-imag
 message(STATUS "ImageConverter -> " ${LcdImageConverter})
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-set(Script "${CMAKE_SOURCE_DIR}/WOLF/cmake/STM32H743VITx_FLASH.ld")
+
+set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/WOLF/cmake/STM32H743VITx_FLASH.ld")
 
 # hardware floating point
 add_compile_definitions(ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING;ARM_MATH_LOOPUNROLL)
@@ -20,10 +25,11 @@ add_link_options(-mfloat-abi=hard -mfpu=fpv5-d16)
 add_compile_options(-mcpu=cortex-m7 -mthumb)
 
 set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -c -x assembler-with-cpp -gdwarf-4 --specs=nano.specs")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -flto -Wall -fstack-usage --specs=nano.specs -funsigned-char -fshort-enums -fshort-wchar -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -flto -Wall -fstack-usage --specs=nano.specs -funsigned-char -fshort-enums -fshort-wchar -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -flto -Wall -fstack-usage --specs=nano.specs -Werror -funsigned-char -fshort-enums -fshort-wchar")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -flto -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -funsigned-char -fshort-enums -fshort-wchar -femit-class-debug-always -fstack-usage -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -flto -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -Werror -funsigned-char -fshort-enums -fshort-wchar -femit-class-debug-always -fstack-usage")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -Wall -fstack-usage --specs=nano.specs -funsigned-char -fshort-enums")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -flto -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -funsigned-char -fshort-enums -fshort-wchar -femit-class-debug-always -fstack-usage -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -funsigned-char -fshort-enums -femit-class-debug-always -fstack-usage")
 
 # uncomment to mitigate c++17 absolute addresses warnings
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
@@ -51,6 +57,7 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/WOLF/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy
         ${CMAKE_SOURCE_DIR}/WOLF/Drivers/CMSIS/Device/ST/STM32H7xx/Include
         ${CMAKE_SOURCE_DIR}/WOLF/Drivers/CMSIS/Include
+#        ${CMAKE_SOURCE_DIR}/WOLF/cmake
         ${CMAKE_SOURCE_DIR}/Src/USBDevice
         ${CMAKE_SOURCE_DIR}/Src
         ${CMAKE_SOURCE_DIR}/Src/JPEG
@@ -61,13 +68,16 @@ include_directories(
 )
 
 add_definitions(-DFRONTPANEL_BIG_V1 -DLCD_RA8875 -DTOUCHPAD_GT911 -DUSE_HAL_DRIVER -DSTM32H743xx -DDEBUG)
-message("CMAKE_SOURCE_DIR" ${CMAKE_SOURCE_DIR})
+
 file(GLOB_RECURSE SOURCES
         "${CMAKE_SOURCE_DIR}/WOLF/Drivers/*.*"
         "${CMAKE_SOURCE_DIR}/WOLF/Middlewares/*.*"
         "${CMAKE_SOURCE_DIR}/WOLF/Src/*.*"
 #        "${CMAKE_SOURCE_DIR}/WOLF/Utilities/*.*"
         "${CMAKE_SOURCE_DIR}/WOLF/cmake/startup_stm32h743vitx.s"
+        "${CMAKE_SOURCE_DIR}/WOLF/cmake/crt1.c"
+        "${CMAKE_SOURCE_DIR}/WOLF/cmake/syscalls.c"
+        "${CMAKE_SOURCE_DIR}/WOLF/cmake/sysmem.c"
         "${CMAKE_SOURCE_DIR}/Src/*.*"
         "${CMAKE_BINARY_DIR}/_deps/cmsis_5-src/CMSIS/DSP/Source/BasicMathFunctions.c"
         "${CMAKE_BINARY_DIR}/_deps/cmsis_5-src/CMSIS/DSP/Source/BasicMathFunctionsF16.c"
@@ -99,10 +109,8 @@ file(GLOB_RECURSE SOURCES
         "${CMAKE_BINARY_DIR}/_deps/cmsis_5-src/CMSIS/DSP/Source/TransformFunctionsF16.c"
         )
 
-set(LINKER_SCRIPT ${Script})
-
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
-add_link_options(-mcpu=cortex-m7 -mthumb -static --specs=nano.specs --specs=nosys.specs)
+add_link_options(-mcpu=cortex-m7 -mthumb -static -u _printf_float --specs=nano.specs)
 add_link_options(-T ${LINKER_SCRIPT})
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
