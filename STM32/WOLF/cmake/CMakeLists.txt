@@ -24,10 +24,10 @@ add_link_options(-mfloat-abi=hard -mfpu=fpv5-d16)
 
 add_compile_options(-mcpu=cortex-m7 -mthumb)
 
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -c -x assembler-with-cpp -gdwarf-4 --specs=nano.specs")
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -c -x assembler-with-cpp -gdwarf-4")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -flto -Wall -fstack-usage --specs=nano.specs -funsigned-char -fshort-enums -fshort-wchar -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -flto -Wall -fstack-usage --specs=nano.specs -Werror -funsigned-char -fshort-enums -fshort-wchar")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -Wall -fstack-usage --specs=nano.specs -funsigned-char -fshort-enums")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -Wall -fstack-usage -funsigned-char -fshort-enums -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -flto -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -funsigned-char -fshort-enums -fshort-wchar -femit-class-debug-always -fstack-usage -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -funsigned-char -fshort-enums -femit-class-debug-always -fstack-usage")
 
@@ -110,12 +110,12 @@ file(GLOB_RECURSE SOURCES
         )
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
-add_link_options(-mcpu=cortex-m7 -mthumb -static -u _printf_float --specs=nano.specs)
+add_link_options(-mcpu=cortex-m7 -mthumb -static -u _printf_float)
 add_link_options(-T ${LINKER_SCRIPT})
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
-target_link_libraries(${PROJECT_NAME}.elf -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group)
+target_link_libraries(${PROJECT_NAME}.elf -Wl,--start-group -lc -lm -lstdc++ -Wl,--end-group)
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)
