@@ -145,12 +145,13 @@ SECTIONS
     /* used by the startup to initialize data */
     _sidata = LOADADDR(.data);
 
-    /* User_stack section, used to check that there is enough RAM left */
-    ._user_stack :
+    /* User_heap_stack section, used to check that there is enough RAM left */
+    ._user_heap_stack :
     {
         . = ALIGN(8);
         PROVIDE ( end = . );
         PROVIDE ( _end = . );
+        . = . + _Min_Heap_Size;
         . = . + _Min_Stack_Size;
         _estack = .;
         . = ALIGN(8);
@@ -215,22 +216,14 @@ SECTIONS
          __sram4_clear__ = .;
     } >SRAM4 AT> FLASH
 
-    /* User_heap section, used to check that there is enough RAM left */
-    ._user_heap :
-    {
-        . = ALIGN(8);
-        PROVIDE ( _sheap = . );
-        . = . + _Min_Heap_Size;
-        _eheap = .;
-        . = ALIGN(8);
-    } >SRAM4
-/*
     .ITCMRAM : ALIGN(4)
     {
         __itcmram_init_text__ = LOADADDR(.ITCMRAM);
         __itcmram_init__ = .;
         *(.ITCMRAM)
         *(.ITCMRAM.*)
+        *(.RamFunc)        /* .RamFunc sections */
+        *(.RamFunc*)       /* .RamFunc* sections */
         . = ALIGN(4);
         __itcmram_clear__ = .;
     } >ITCMRAM AT> FLASH
@@ -244,7 +237,7 @@ SECTIONS
         . = ALIGN(4);
         __backup_sram_clear__ = .;
     } >BACKUP_SRAM AT> FLASH
-*/
+
     /* Remove information from the standard libraries */
     /DISCARD/ :
     {

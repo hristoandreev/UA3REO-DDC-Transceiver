@@ -25,10 +25,8 @@ add_link_options(-mfloat-abi=hard -mfpu=fpv5-d16)
 add_compile_options(-mcpu=cortex-m7 -mthumb)
 
 set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -c -x assembler-with-cpp -gdwarf-4")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -flto -Wall -fstack-usage --specs=nano.specs -funsigned-char -fshort-enums -fshort-wchar -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -flto -Wall -fstack-usage --specs=nano.specs -Werror -funsigned-char -fshort-enums -fshort-wchar")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -Wall -fstack-usage -funsigned-char -fshort-enums -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -flto -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -funsigned-char -fshort-enums -fshort-wchar -femit-class-debug-always -fstack-usage -Wno-unused-variable -Wno-unused-function -Wno-unused-value")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit -Wall -funsigned-char -fshort-enums -femit-class-debug-always -fstack-usage")
 
 # uncomment to mitigate c++17 absolute addresses warnings
@@ -52,12 +50,10 @@ endif ()
 include_directories(
         ${CMAKE_SOURCE_DIR}/WOLF/Inc
         ${CMAKE_SOURCE_DIR}/WOLF/Src
-#        ${CMAKE_SOURCE_DIR}/WOLF/Utilities/JPEG
         ${CMAKE_SOURCE_DIR}/WOLF/Drivers/STM32H7xx_HAL_Driver/Inc
         ${CMAKE_SOURCE_DIR}/WOLF/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy
         ${CMAKE_SOURCE_DIR}/WOLF/Drivers/CMSIS/Device/ST/STM32H7xx/Include
         ${CMAKE_SOURCE_DIR}/WOLF/Drivers/CMSIS/Include
-#        ${CMAKE_SOURCE_DIR}/WOLF/cmake
         ${CMAKE_SOURCE_DIR}/Src/USBDevice
         ${CMAKE_SOURCE_DIR}/Src
         ${CMAKE_SOURCE_DIR}/Src/JPEG
@@ -73,7 +69,6 @@ file(GLOB_RECURSE SOURCES
         "${CMAKE_SOURCE_DIR}/WOLF/Drivers/*.*"
         "${CMAKE_SOURCE_DIR}/WOLF/Middlewares/*.*"
         "${CMAKE_SOURCE_DIR}/WOLF/Src/*.*"
-#        "${CMAKE_SOURCE_DIR}/WOLF/Utilities/*.*"
         "${CMAKE_SOURCE_DIR}/WOLF/cmake/startup_stm32h743vitx.s"
         "${CMAKE_SOURCE_DIR}/WOLF/cmake/crt1.c"
         "${CMAKE_SOURCE_DIR}/WOLF/cmake/syscalls.c"
