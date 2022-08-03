@@ -144,7 +144,7 @@ void FILEMANAGER_EventSecondaryRotate(int8_t direction)
 	if (direction > 0 || current_index > 0)
 		current_index += direction;
 
-	int16_t real_file_index = FILEMANAGER_files_startindex + current_index - 1;
+	uint16_t real_file_index = FILEMANAGER_files_startindex + current_index - 1U;
 
 	// limit
 	if (real_file_index >= FILEMANAGER_files_count)
@@ -731,11 +731,11 @@ void FILEMANAGER_OTAUpdate_handler(void)
 		{
 			__HAL_CRC_DR_RESET(&HRDW_CRC_HANDLE);
 			uint32_t bytesreaded;
-			uint32_t bytesprocessed;
+			uint32_t bytesprocessed = 0;
 			bool read_flag = true;
 			while (read_flag)
 			{
-				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded) != FR_OK || bytesreaded == 0)
+				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded) != FR_OK || bytesreaded == 0)
 				{
 					read_flag = false;
 				}
@@ -750,7 +750,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			// read original CRC
 			f_open(&File, "firmware_fpga.crc", FA_READ | FA_OPEN_EXISTING);
 			dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
-			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded);
+			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded);
 			f_close(&File);
 			println("Need CRC: ", (char *)SD_workbuffer_A);
 
@@ -807,11 +807,11 @@ void FILEMANAGER_OTAUpdate_handler(void)
 		{
 			__HAL_CRC_DR_RESET(&HRDW_CRC_HANDLE);
 			uint32_t bytesreaded;
-			uint32_t bytesprocessed;
+			uint32_t bytesprocessed = 0;
 			bool read_flag = true;
 			while (read_flag)
 			{
-				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded) != FR_OK || bytesreaded == 0)
+				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded) != FR_OK || bytesreaded == 0)
 				{
 					read_flag = false;
 				}
@@ -826,7 +826,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			// read original CRC
 			f_open(&File, "firmware_stm32.crc", FA_READ | FA_OPEN_EXISTING);
 			dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
-			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded);
+			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded);
 			f_close(&File);
 			println("Need CRC: ", (char *)SD_workbuffer_A);
 

@@ -10,6 +10,9 @@
 
 #include "traffic_manager.h"
 
+#ifdef M_PI
+#undef M_PI
+#endif
 #define M_PI 3.14159265358979323846264338
 
 extern uint16_t cursor_line;

@@ -240,7 +240,7 @@ float32_t log10f_fast(float32_t X)
 {
 	float32_t Y, F;
 	int32_t E;
-	F = frexpf(fabsf(X), &E);
+	F = frexpf(fabsf(X), (int *)&E);
 	Y = 1.23149591368684f;
 	Y *= F;
 	Y += -4.11852516267426f;

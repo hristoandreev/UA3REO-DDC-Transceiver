@@ -369,7 +369,7 @@ static bool SDCOMM_CREATE_RECORD_FILE_main(char *filename, bool audio_rec)
 		wav_hdr.datasize = 0;
 
 		uint32_t byteswritten;
-		f_write(&File, &wav_hdr, sizeof(wav_hdr), &byteswritten);
+		f_write(&File, &wav_hdr, sizeof(wav_hdr), (UINT *)&byteswritten);
 
 		if (audio_rec)
 		{
@@ -460,7 +460,7 @@ static bool SDCOMM_WRITE_PACKET_RECORD_FILE_handler(void)
 		
 		// update wav length
 		f_lseek(&File, 0);
-		f_write(&File, &wav_hdr, sizeof(wav_hdr), &byteswritten);
+		f_write(&File, &wav_hdr, sizeof(wav_hdr), (UINT *)&byteswritten);
 
 		f_close(&File);
 		SD_NeedStopRecord = false;
@@ -740,7 +740,7 @@ static bool SDCOMM_OPEN_PLAY_FILE_handler(void)
 
 		// read header
 		uint32_t bytesreaded;
-		FRESULT res = f_read(&File, &wav_hdr, sizeof(wav_hdr), &bytesreaded);
+		FRESULT res = f_read(&File, &wav_hdr, sizeof(wav_hdr), (UINT *)&bytesreaded);
 		// println((TCHAR*)SD_workbuffer_A);
 		// println(bytesreaded, " ", res);
 

@@ -1851,7 +1851,7 @@ FILE __stdin;
 
 int fputc(int ch, FILE *f)
 {
-#pragma unused(f)
+    (void) f;
 
   //SWD
   if (SWD_DEBUG_ENABLED)

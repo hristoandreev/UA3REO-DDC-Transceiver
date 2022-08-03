@@ -1308,11 +1308,12 @@ bool WIFI_getDXCluster_background(void)
 {
 	if (!WIFI_connected || WIFI_State != WIFI_READY)
 		return false;
-	char url[64] = "/trx_services/cluster.php?background&band=";
+	char url[64];
+	char *url1 = "/trx_services/cluster.php?background&band=";
 	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
 	if (band >= 0)
-		strcat(url, BANDS[band].name);
-	sprintf(url, "%s&timeout=%d", url, TRX.FFT_DXCluster_Timeout);
+		strcat(url1, BANDS[band].name);
+	sprintf(url, "%s&timeout=%d", url1, TRX.FFT_DXCluster_Timeout);
 	WIFI_getHTTPpage("ua3reo.ru", url, WIFI_getDXCluster_background_callback, false, false);
 	return true;
 }
@@ -1450,7 +1451,7 @@ static void WIFI_WIFI_downloadFileToSD_callback_writed(void)
 	}
 	else
 	{
-		char url[128] = {0};
+		char url[160] = {0};
 		sprintf(url, "%s&start=%d&count=%d", WIFI_downloadFileToSD_url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
 		println("[WIFI] Get next file part");
 		WIFI_getHTTPpage("ua3reo.ru", url, WIFI_downloadFileToSD_callback, false, false);
@@ -1530,6 +1531,7 @@ static void WIFI_downloadFileToSD_callback(void)
 
 void WIFI_downloadFileToSD(char *url, char *filename)
 {
+    char url1[128];
 	if (WIFI_connected && WIFI_State != WIFI_READY)
 		return;
 	get_HTTP_tryes = 0;
@@ -1537,8 +1539,8 @@ void WIFI_downloadFileToSD(char *url, char *filename)
 	WIFI_downloadFileToSD_filename = filename;
 	WIFI_downloadFileToSD_startIndex = 0;
 	strcpy(WIFI_downloadFileToSD_url, url);
-	sprintf(url, "%s&start=%d&count=%d", url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
-	WIFI_getHTTPpage("ua3reo.ru", url, WIFI_downloadFileToSD_callback, false, false);
+	sprintf(url1, "%s&start=%d&count=%d", url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
+	WIFI_getHTTPpage("ua3reo.ru", url1, WIFI_downloadFileToSD_callback, false, false);
 }
 
 #endif

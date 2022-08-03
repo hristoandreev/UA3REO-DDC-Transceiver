@@ -21,9 +21,9 @@ void VOCODER_Process(void)
 	// encode audio
 	uint32_t outbuff_size = 0;
 	if (!SD_workbuffer_current)
-		adpcm_encode_block(ADPCM_cnxt, (uint8_t *)&SD_workbuffer_A[SD_RecordBufferIndex], &outbuff_size, VOCODER_Buffer, SIZE_ADPCM_BLOCK);
+		adpcm_encode_block(ADPCM_cnxt, (uint8_t *)&SD_workbuffer_A[SD_RecordBufferIndex], (size_t *)&outbuff_size, VOCODER_Buffer, SIZE_ADPCM_BLOCK);
 	else
-		adpcm_encode_block(ADPCM_cnxt, (uint8_t *)&SD_workbuffer_B[SD_RecordBufferIndex], &outbuff_size, VOCODER_Buffer, SIZE_ADPCM_BLOCK);
+		adpcm_encode_block(ADPCM_cnxt, (uint8_t *)&SD_workbuffer_B[SD_RecordBufferIndex], (size_t *)&outbuff_size, VOCODER_Buffer, SIZE_ADPCM_BLOCK);
 	SD_RecordBufferIndex += SIZE_ADPCM_COMPRESSED_BLOCK; // outbuff_size;
 
 	if (SD_RecordBufferIndex == _MAX_SS)

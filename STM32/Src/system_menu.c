@@ -1058,7 +1058,8 @@ static uint8_t TimeMenuSelection = 0;
 
 static void SYSMENU_HANDL_TRXMENU(int8_t direction)
 {
-#pragma unused(direction)
+    (void) direction;
+
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_trx_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_trx_handlers) / sizeof(sysmenu_trx_handlers[0]);
 	sysmenu_onroot = false;
@@ -1467,16 +1468,18 @@ static void SYSMENU_TRX_RotateLocatorChar(int8_t dir)
 
 static void SYSMENU_HANDL_TRX_SetCallsign(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_trx_setCallsign_menu_opened = true;
+    (void) direction;
+
+    sysmenu_trx_setCallsign_menu_opened = true;
 	SYSMENU_TRX_DrawCallsignMenu(true);
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
 static void SYSMENU_HANDL_TRX_SetLocator(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_trx_setLocator_menu_opened = true;
+    (void) direction;
+
+    sysmenu_trx_setLocator_menu_opened = true;
 	SYSMENU_TRX_DrawLocatorMenu(true);
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
@@ -1614,8 +1617,9 @@ static void SYSMENU_HANDL_TRX_TUNER_Enabled(int8_t direction)
 
 static void SYSMENU_HANDL_AUDIOMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_audio_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_audio_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_audio_handlers) / sizeof(sysmenu_audio_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -2210,8 +2214,9 @@ static void SYSMENU_HANDL_AUDIO_VOX_THRESHOLD(int8_t direction)
 
 static void SYSMENU_HANDL_CWMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_cw_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_cw_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_cw_handlers) / sizeof(sysmenu_cw_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_redraw(false);
@@ -2324,8 +2329,9 @@ static void SYSMENU_HANDL_CW_PTT_Type(int8_t direction)
 
 static void SYSMENU_HANDL_LCDMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_screen_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_screen_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_screen_handlers) / sizeof(sysmenu_screen_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -2937,8 +2943,9 @@ static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON32(int8_t direction)
 
 static void SYSMENU_HANDL_DECODERSMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_decoders_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_decoders_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_decoders_handlers) / sizeof(sysmenu_decoders_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_redraw(false);
@@ -3080,8 +3087,9 @@ static void SYSMENU_HANDL_DECODERS_RTTY_StopBits(int8_t direction)
 
 static void SYSMENU_HANDL_ADCMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_adc_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_adc_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_adc_handlers) / sizeof(sysmenu_adc_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3142,8 +3150,9 @@ static void SYSMENU_HANDL_ADC_DITH(int8_t direction)
 #if HRDW_HAS_WIFI
 static void SYSMENU_HANDL_WIFIMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_wifi_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_wifi_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_wifi_handlers) / sizeof(sysmenu_wifi_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3483,8 +3492,9 @@ static void SYSMENU_HANDL_WIFI_Enabled(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_SelectAP1(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_needupdate_ap = true;
+    (void) direction;
+
+    sysmenu_wifi_needupdate_ap = true;
 	sysmenu_wifi_selected_ap_index = 0;
 	sysmenu_wifi_selectap1_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3492,8 +3502,9 @@ static void SYSMENU_HANDL_WIFI_SelectAP1(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_SelectAP2(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_needupdate_ap = true;
+    (void) direction;
+
+    sysmenu_wifi_needupdate_ap = true;
 	sysmenu_wifi_selected_ap_index = 0;
 	sysmenu_wifi_selectap2_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3501,8 +3512,9 @@ static void SYSMENU_HANDL_WIFI_SelectAP2(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_SelectAP3(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_needupdate_ap = true;
+    (void) direction;
+
+    sysmenu_wifi_needupdate_ap = true;
 	sysmenu_wifi_selected_ap_index = 0;
 	sysmenu_wifi_selectap3_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3510,24 +3522,27 @@ static void SYSMENU_HANDL_WIFI_SelectAP3(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_SetAP1password(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_selected_ap_password_char_index = 0;
+    (void) direction;
+
+    sysmenu_wifi_selected_ap_password_char_index = 0;
 	sysmenu_wifi_setAP1password_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
 static void SYSMENU_HANDL_WIFI_SetAP2password(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_selected_ap_password_char_index = 0;
+    (void) direction;
+
+    sysmenu_wifi_selected_ap_password_char_index = 0;
 	sysmenu_wifi_setAP2password_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
 static void SYSMENU_HANDL_WIFI_SetAP3password(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_selected_ap_password_char_index = 0;
+    (void) direction;
+
+    sysmenu_wifi_selected_ap_password_char_index = 0;
 	sysmenu_wifi_setAP3password_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
@@ -3552,8 +3567,9 @@ static void SYSMENU_HANDL_WIFI_CAT_Server(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_UpdateFW(int8_t direction)
 {
-#pragma unused(direction)
-	LCD_systemMenuOpened = false;
+    (void) direction;
+
+    LCD_systemMenuOpened = false;
 	LCD_redraw(false);
 	LCD_doEvents();
 	WIFI_UpdateFW(NULL);
@@ -3565,8 +3581,9 @@ static void SYSMENU_HANDL_WIFI_UpdateFW(int8_t direction)
 #if HRDW_HAS_SD
 static void SYSMENU_HANDL_SDMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_sd_handlers) / sizeof(sysmenu_sd_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3574,8 +3591,9 @@ static void SYSMENU_HANDL_SDMENU(int8_t direction)
 
 static void SYSMENU_HANDL_SD_ExportSettingsDialog(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_export_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_export_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_sd_export_handlers) / sizeof(sysmenu_sd_export_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3583,8 +3601,9 @@ static void SYSMENU_HANDL_SD_ExportSettingsDialog(int8_t direction)
 
 static void SYSMENU_HANDL_SD_ImportSettingsDialog(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_import_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_import_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_sd_import_handlers) / sizeof(sysmenu_sd_import_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3719,8 +3738,9 @@ static void SYSMENU_HANDL_SETTIME(int8_t direction)
 
 static void SYSMENU_HANDL_Bootloader(int8_t direction)
 {
-#pragma unused(direction)
-	WM8731_CleanBuffer();
+    (void) direction;
+
+    WM8731_CleanBuffer();
 	TRX.NeedGoToBootloader = true;
 	SaveSettings();
 	HAL_Delay(500);
@@ -4035,8 +4055,9 @@ static void SYSMENU_HANDL_CALIB_TangentType(int8_t direction)
 
 static void SYSMENU_HANDL_CALIBRATIONMENU(int8_t direction)
 {
-#pragma unused(direction)
-	if (!SYSMENU_hiddenmenu_enabled)
+    (void) direction;
+
+    if (!SYSMENU_hiddenmenu_enabled)
 		return;
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_calibration_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_calibration_handlers) / sizeof(sysmenu_calibration_handlers[0]);
@@ -4061,8 +4082,9 @@ static void SYSMENU_HANDL_FT8_Decoder(int8_t direction) // Tisho
 
 static void SYSMENU_HANDL_SWR_Tandem_Ctrl(int8_t direction) // Tisho
 {
-#pragma unused(direction)
-	if (SYSMENU_TDM_CTRL_opened)
+    (void) direction;
+
+    if (SYSMENU_TDM_CTRL_opened)
 	{
 	}
 	else
@@ -5174,8 +5196,9 @@ static void SYSMENU_HANDL_CALIB_TwoSignalTune_Balance(int8_t direction)
 // SERVICES
 void SYSMENU_HANDL_SERVICESMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_services_opened = true;
+    (void) direction;
+
+    sysmenu_services_opened = true;
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_services_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_services_handlers) / sizeof(sysmenu_services_handlers[0]);
 	sysmenu_onroot = false;
@@ -5197,8 +5220,9 @@ void SYSMENU_SERVICE_FT8_HOTKEY(void)
 // SWR ANALYZER
 static void SYSMENU_HANDL_SWR_ANALYSER_MENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_swr_analyser_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_swr_analyser_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_swr_analyser_handlers) / sizeof(sysmenu_swr_analyser_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -5266,8 +5290,9 @@ static void SYSMENU_HANDL_SWR_HF_START(int8_t direction)
 // SPECTRUM ANALYZER
 static void SYSMENU_HANDL_SPECTRUMMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_spectrum_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_spectrum_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_spectrum_handlers) / sizeof(sysmenu_spectrum_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -5326,7 +5351,8 @@ static void SYSMENU_HANDL_SPECTRUM_BottomDBM(int8_t direction)
 // WSPR Beacon
 static void SYSMENU_HANDL_WSPRMENU(int8_t direction)
 {
-#pragma unused(direction)
+    (void) direction;
+
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_wspr_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_wspr_handlers) / sizeof(sysmenu_wspr_handlers[0]);
 	sysmenu_onroot = false;
@@ -6233,8 +6259,8 @@ static void drawSystemMenuElement(const struct sysmenu_item_handler *menuElement
 	if (menuElement->checkVisibleHandler != NULL && !menuElement->checkVisibleHandler())
 		return;
 	char ctmp[32] = {0};
-	float32_t *atu_i = ATU_I_VALS;
-	float32_t *atu_c = ATU_C_VALS;
+	const float32_t *atu_i = ATU_I_VALS;
+	const float32_t *atu_c = ATU_C_VALS;
 	float32_t float_tmp_val = 0;
 
 	if (!onlyVal)

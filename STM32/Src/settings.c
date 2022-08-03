@@ -12,6 +12,17 @@
 
 const char version_string[19] = "4.3.0-dev";
 
+const char ota_config_frontpanel[] = OTA_CONFIG_FRONT_PANEL;
+const char ota_config_lcd[] = OTA_CONFIG_LCD;
+const char ota_config_touchpad[] = OTA_CONFIG_TOUCHPAD;
+
+const float32_t ATU_5x5_I_VALS[ATU_MAXLENGTH + 1] = {0.0, 0.1, 0.22, 0.45, 1.0, 2.2};
+const float32_t ATU_5x5_C_VALS[ATU_MAXLENGTH + 1] = {0.0, 10.0, 22.0, 47.0, 100.0, 220.0};
+const float32_t ATU_7x7_I_VALS[ATU_MAXLENGTH + 1] = {0.0, 0.05, 0.1, 0.22, 0.45, 1.0, 2.2, 4.4};
+const float32_t ATU_7x7_C_VALS[ATU_MAXLENGTH + 1] = {0.0, 10.0, 22.0, 47.0, 100.0, 220.0, 470.0, 1000.0};
+const float32_t ATU_0x0_I_VALS[ATU_MAXLENGTH + 1] = {0.0};
+const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
+
 // W25Q16
 IRAM2 static uint8_t Write_Enable = W25Q16_COMMAND_Write_Enable;
 IRAM2 static uint8_t Sector_Erase = W25Q16_COMMAND_Sector_Erase;

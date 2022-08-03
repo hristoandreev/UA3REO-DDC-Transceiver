@@ -79,12 +79,12 @@
 #define ATU_0x0_MAXPOS B8(00000000)
 #define ATU_5x5_MAXPOS B8(00011111)
 #define ATU_7x7_MAXPOS B8(01111111)
-static float32_t ATU_5x5_I_VALS[ATU_MAXLENGTH + 1] = {0.0, 0.1, 0.22, 0.45, 1.0, 2.2};
-static float32_t ATU_5x5_C_VALS[ATU_MAXLENGTH + 1] = {0.0, 10.0, 22.0, 47.0, 100.0, 220.0};
-static float32_t ATU_7x7_I_VALS[ATU_MAXLENGTH + 1] = {0.0, 0.05, 0.1, 0.22, 0.45, 1.0, 2.2, 4.4};
-static float32_t ATU_7x7_C_VALS[ATU_MAXLENGTH + 1] = {0.0, 10.0, 22.0, 47.0, 100.0, 220.0, 470.0, 1000.0};
-static float32_t ATU_0x0_I_VALS[ATU_MAXLENGTH + 1] = {0.0};
-static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
+extern const float32_t ATU_5x5_I_VALS[ATU_MAXLENGTH + 1];
+extern const float32_t ATU_5x5_C_VALS[ATU_MAXLENGTH + 1];
+extern const float32_t ATU_7x7_I_VALS[ATU_MAXLENGTH + 1];
+extern const float32_t ATU_7x7_C_VALS[ATU_MAXLENGTH + 1];
+extern const float32_t ATU_0x0_I_VALS[ATU_MAXLENGTH + 1];
+extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 #define ATU_MAXPOS ((CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_RU4PN) ? ATU_5x5_MAXPOS : ((CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D) ? ATU_7x7_MAXPOS : ATU_0x0_MAXPOS))
 #define ATU_I_VALS ((CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_RU4PN) ? ATU_5x5_I_VALS : ((CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D) ? ATU_7x7_I_VALS : ATU_0x0_I_VALS))
 #define ATU_C_VALS ((CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_RU4PN) ? ATU_5x5_C_VALS : ((CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D) ? ATU_7x7_C_VALS : ATU_0x0_C_VALS))
@@ -95,7 +95,7 @@ static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 	#define FUNCBUTTONS_COUNT 1
 	#define FUNCBUTTONS_ON_PAGE 1
 	#define FUNCBUTTONS_PAGES 1
-	static char ota_config_frontpanel[] = "NONE";
+	#define OTA_CONFIG_FRONT_PANEL "NONE"
 #endif
 
 #ifdef FRONTPANEL_SMALL_V1
@@ -106,7 +106,7 @@ static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 	#define FUNCBUTTONS_COUNT 1
 	#define FUNCBUTTONS_ON_PAGE 1
 	#define FUNCBUTTONS_PAGES 1
-	static char ota_config_frontpanel[] = "SMALL";
+	#define OTA_CONFIG_FRONT_PANEL "SMALL"
 #endif
 
 #ifdef FRONTPANEL_LITE
@@ -116,7 +116,7 @@ static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 	#define FUNCBUTTONS_COUNT 25
 	#define FUNCBUTTONS_ON_PAGE 5
 	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
-	static char ota_config_frontpanel[] = "LITE";
+	#define OTA_CONFIG_FRONT_PANEL "LITE"
 #endif
 
 #ifdef FRONTPANEL_BIG_V1
@@ -126,7 +126,7 @@ static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 	#define FUNCBUTTONS_COUNT (32+2)
 	#define FUNCBUTTONS_ON_PAGE 8
 	#define FUNCBUTTONS_PAGES 4
-	static char ota_config_frontpanel[] = "BIG";
+    #define OTA_CONFIG_FRONT_PANEL "BIG"
 #endif
 
 #ifdef FRONTPANEL_WF_100D
@@ -136,7 +136,7 @@ static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 	#define FUNCBUTTONS_COUNT (27+4)
 	#define FUNCBUTTONS_ON_PAGE 9
 	#define FUNCBUTTONS_PAGES 3
-	static char ota_config_frontpanel[] = "WF_100D";
+	#define OTA_CONFIG_FRONT_PANEL "WF_100D"
 #endif
 
 #ifdef FRONTPANEL_X1
@@ -146,66 +146,66 @@ static float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 	#define FUNCBUTTONS_COUNT 32
 	#define FUNCBUTTONS_ON_PAGE 4
 	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
-	static char ota_config_frontpanel[] = "X1";
+	#define OTA_CONFIG_FRONT_PANEL "X1"
 #endif
 
 // LCDs
 #if defined(LCD_ILI9481)
-static char ota_config_lcd[] = "ILI9481";
+#define OTA_CONFIG_LCD "ILI9481"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
-		#if defined(LCD_ILI9481_IPS)
-static char ota_config_lcd[] = "ILI9481_IPS";
+#if defined(LCD_ILI9481_IPS)
+#define OTA_CONFIG_LCD "ILI9481_IPS"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_HX8357B)
-static char ota_config_lcd[] = "HX8357B";
+#define OTA_CONFIG_LCD "HX8357B"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_HX8357C) && !defined(LCD_SLOW)
-static char ota_config_lcd[] = "HX8357C";
+#define OTA_CONFIG_LCD "HX8357C"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_HX8357C) && defined(LCD_SLOW)
-static char ota_config_lcd[] = "HX8357C-SLOW";
+#define OTA_CONFIG_LCD "HX8357C-SLOW"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_ILI9486)
-static char ota_config_lcd[] = "ILI9486";
+#define OTA_CONFIG_LCD "ILI9486"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_ST7796S)
-static char ota_config_lcd[] = "ST7796S";
+#define OTA_CONFIG_LCD "ST7796S"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_ST7735S) // X1
-static char ota_config_lcd[] = "ST7735S";
+#define OTA_CONFIG_LCD "ST7735S"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_RA8875)
-static char ota_config_lcd[] = "RA8875";
-	#ifdef STM32H743xx 
+#define OTA_CONFIG_LCD "RA8875"
+	#ifdef STM32H743xx
 		#define FT8_SUPPORT true 
 	#endif
 #endif
 #if defined(LCD_NONE)
-static char ota_config_lcd[] = "NONE";
+#define OTA_CONFIG_LCD "NONE"
 	#ifdef STM32H743xx 
 		#define FT8_SUPPORT true 
 	#endif
@@ -213,10 +213,14 @@ static char ota_config_lcd[] = "NONE";
 
 // TOUCHPADs
 #if defined(TOUCHPAD_GT911)
-static char ota_config_touchpad[] = "GT911";
+#define OTA_CONFIG_TOUCHPAD "GT911"
 #else
-static char ota_config_touchpad[] = "NONE";
+#define OTA_CONFIG_TOUCHPAD "NONE"
 #endif
+
+extern const char ota_config_frontpanel[];
+extern const char ota_config_lcd[];
+extern const char ota_config_touchpad[];
 
 typedef enum
 {

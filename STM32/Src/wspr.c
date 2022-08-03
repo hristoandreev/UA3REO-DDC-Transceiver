@@ -301,8 +301,9 @@ static void WSPR_StopTransmit(void)
 // events to the encoder
 void WSPR_EncRotate(int8_t direction)
 {
-#pragma unused(direction)
-	if (LCD_busy)
+    (void) direction;
+
+    if (LCD_busy)
 		return;
 	LCD_busy = true;
 
