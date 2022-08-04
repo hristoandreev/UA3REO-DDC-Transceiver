@@ -1848,11 +1848,12 @@ static void MX_GPIO_Init(void)
 //обработка вывода отладки
 FILE __stdout;
 FILE __stdin;
-
-int fputc(int ch, FILE *f)
-{
+#if defined(__clang__)
+int fputc(int ch, FILE *f) {
 #pragma unused(f)
-
+#else
+int __io_putchar(int ch) {
+#endif
   //SWD
   if (SWD_DEBUG_ENABLED)
     ITM_SendChar((uint32_t)ch);
