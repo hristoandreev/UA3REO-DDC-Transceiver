@@ -1114,7 +1114,8 @@ static void WIFI_printImage_stream_partial_callback(void)
 	while (*istr != 0 && (len >= ((WIFI_RLEStreamBuffer_index * 4) + 4)))
 	{
 		// Get hex
-		strncpy(hex, istr, 4);
+//		strncpy(hex, istr, 4);
+		memcpy(hex, istr, 4);
 		val = (int16_t)(strtol(hex, NULL, 16));
 		istr += 4;
 		// Save
@@ -1129,7 +1130,8 @@ static void WIFI_printImage_stream_partial_callback(void)
 	if (strlen(WIFI_HTTResponseHTML) > (WIFI_RLEStreamBuffer_index * 4)) // part buffer preceed, move to begin
 	{
 		istr = &WIFI_HTTResponseHTML[(WIFI_RLEStreamBuffer_index * 4)];
-		strcpy(WIFI_HTTResponseHTML, istr);
+//		strcpy(WIFI_HTTResponseHTML, istr);
+		memmove(WIFI_HTTResponseHTML, istr, strlen(istr) + 1);
 	}
 	else
 		dma_memset(WIFI_HTTResponseHTML, 0x00, sizeof(WIFI_HTTResponseHTML));
@@ -1484,7 +1486,8 @@ static void WIFI_downloadFileToSD_callback(void)
 		while (*istr != 0 && (len >= ((WIFI_DecodedStreamBuffer_index * 2) + 2)))
 		{
 			// Get hex
-			strncpy(hex, istr, 2);
+//			strncpy(hex, istr, 2);
+            memcpy(hex, istr, 2);
 			val = (int16_t)(strtol(hex, NULL, 16));
 			istr += 2;
 			// Save

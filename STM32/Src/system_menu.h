@@ -42,7 +42,7 @@ struct sysmenu_item_handler
 	char *title;
 	SystemMenuType type;
 	bool (*checkVisibleHandler)(void);
-	uint32_t *value;
+	void *value;
 	void (*menuHandler)(int8_t direction);
 	char enumerate[ENUM_MAX_COUNT][ENUM_MAX_LENGTH];
 };

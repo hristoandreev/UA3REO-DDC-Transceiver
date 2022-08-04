@@ -56,7 +56,7 @@ static void SDCOMM_LISTROOT_handler(void);
 static void SDCOMM_MKFS_handler(void);
 static void SDCOMM_EXPORT_SETT_handler(void);
 static void SDCOMM_IMPORT_SETT_handler(void);
-static bool SD_WRITE_SETT_LINE(char *name, uint32_t *value, SystemMenuType type);
+static bool SD_WRITE_SETT_LINE(char *name, void *value, SystemMenuType type);
 static bool SD_WRITE_SETT_STRING(char *name, char *value);
 static void SDCOMM_PARSE_SETT_LINE(char *line);
 static bool SDCOMM_CREATE_RECORD_FILE_handler(void);
@@ -792,7 +792,7 @@ static void SDCOMM_READ_PLAY_FILE_handler(void)
 	}
 }
 
-static bool SD_WRITE_SETT_LINE(char *name, uint32_t *value, SystemMenuType type)
+static bool SD_WRITE_SETT_LINE(char *name, void *value, SystemMenuType type)
 {
 	uint32_t byteswritten;
 	char valbuff[64] = {0};
@@ -805,44 +805,44 @@ static bool SD_WRITE_SETT_LINE(char *name, uint32_t *value, SystemMenuType type)
 	switch (type)
 	{
 	case SYSMENU_BOOLEAN:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_B4:
 	case SYSMENU_UINT8:
 	case SYSMENU_ATU_I:
 	case SYSMENU_ATU_C:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_ENUM:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_ENUMR:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_UINT16:
-		sprintf(valbuff, "%u", (uint16_t)*value);
+		sprintf(valbuff, "%u", (uint16_t)*((uint16_t *)value));
 		break;
 	case SYSMENU_UINT32:
-		sprintf(valbuff, "%u", (uint32_t)*value);
+		sprintf(valbuff, "%u", (uint32_t)*((uint32_t *)value));
 		break;
 	case SYSMENU_UINT64:
-		sprintf(valbuff, "%llu", (uint64_t)*value);
+		sprintf(valbuff, "%llu", (uint64_t)*((uint64_t *)value));
 		break;
 	case SYSMENU_INT8:
-		sprintf(valbuff, "%d", (int8_t)*value);
+		sprintf(valbuff, "%d", (int8_t)*((int8_t *)value));
 		break;
 	case SYSMENU_INT16:
-		sprintf(valbuff, "%d", (int16_t)*value);
+		sprintf(valbuff, "%d", (int16_t)*((int16_t *)value));
 		break;
 	case SYSMENU_INT32:
-		sprintf(valbuff, "%d", (int32_t)*value);
+		sprintf(valbuff, "%d", (int32_t)*((int32_t *)value));
 		break;
 	case SYSMENU_FLOAT32:
 		dma_memcpy(&tmp_float, value, sizeof(float32_t));
 		sprintf(valbuff, "%.6f", (double)tmp_float);
 		break;
 	case SYSMENU_FUNCBUTTON:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_RUN:
 	case SYSMENU_UINT32R:
@@ -1460,17 +1460,19 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 	{
 		dma_memset(TRX.CALLSIGN, 0x00, sizeof(TRX.CALLSIGN));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.CALLSIGN))
-			lens = sizeof(TRX.CALLSIGN);
-		strncpy(TRX.CALLSIGN, value, lens);
+		if (lens > (sizeof(TRX.CALLSIGN) - 1))
+			lens = sizeof(TRX.CALLSIGN) - 1;
+//		strncpy(TRX.CALLSIGN, value, lens);
+		memcpy(TRX.CALLSIGN, value, lens);
 	}
 	if (strcmp(name, "TRX.LOCATOR") == 0)
 	{
 		dma_memset(TRX.LOCATOR, 0x00, sizeof(TRX.LOCATOR));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.LOCATOR))
-			lens = sizeof(TRX.LOCATOR);
-		strncpy(TRX.LOCATOR, value, lens);
+		if (lens > (sizeof(TRX.LOCATOR) - 1))
+			lens = sizeof(TRX.LOCATOR) - 1;
+//		strncpy(TRX.LOCATOR, value, lens);
+		memcpy(TRX.LOCATOR, value, lens);
 	}
 	if (strcmp(name, "TRX.Custom_Transverter_Enabled") == 0)
 		TRX.Custom_Transverter_Enabled = bval;
@@ -1712,49 +1714,55 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 	{
 		dma_memset(TRX.WIFI_AP1, 0x00, sizeof(TRX.WIFI_AP1));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_AP1))
-			lens = sizeof(TRX.WIFI_AP1);
-		strncpy(TRX.WIFI_AP1, value, lens);
+		if (lens > (sizeof(TRX.WIFI_AP1) - 1))
+			lens = sizeof(TRX.WIFI_AP1) - 1;
+//		strncpy(TRX.WIFI_AP1, value, lens);
+		memcpy(TRX.WIFI_AP1, value, lens);
 	}
 	if (strcmp(name, "TRX.WIFI_AP2") == 0)
 	{
 		dma_memset(TRX.WIFI_AP2, 0x00, sizeof(TRX.WIFI_AP2));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_AP2))
-			lens = sizeof(TRX.WIFI_AP2);
-		strncpy(TRX.WIFI_AP2, value, lens);
+		if (lens > (sizeof(TRX.WIFI_AP2) - 1))
+			lens = sizeof(TRX.WIFI_AP2) - 1;
+//		strncpy(TRX.WIFI_AP2, value, lens);
+		memcpy(TRX.WIFI_AP2, value, lens);
 	}
 	if (strcmp(name, "TRX.WIFI_AP3") == 0)
 	{
 		dma_memset(TRX.WIFI_AP3, 0x00, sizeof(TRX.WIFI_AP3));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_AP3))
-			lens = sizeof(TRX.WIFI_AP3);
-		strncpy(TRX.WIFI_AP3, value, lens);
+		if (lens > (sizeof(TRX.WIFI_AP3) - 1))
+			lens = sizeof(TRX.WIFI_AP3) - 1;
+//		strncpy(TRX.WIFI_AP3, value, lens);
+		memcpy(TRX.WIFI_AP3, value, lens);
 	}
 	if (strcmp(name, "TRX.WIFI_PASSWORD1") == 0)
 	{
 		dma_memset(TRX.WIFI_PASSWORD1, 0x00, sizeof(TRX.WIFI_PASSWORD1));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_PASSWORD1))
-			lens = sizeof(TRX.WIFI_PASSWORD1);
-		strncpy(TRX.WIFI_PASSWORD1, value, lens);
+		if (lens > (sizeof(TRX.WIFI_PASSWORD1) - 1))
+			lens = sizeof(TRX.WIFI_PASSWORD1) - 1;
+//		strncpy(TRX.WIFI_PASSWORD1, value, lens);
+		memcpy(TRX.WIFI_PASSWORD1, value, lens);
 	}
 	if (strcmp(name, "TRX.WIFI_PASSWORD2") == 0)
 	{
 		dma_memset(TRX.WIFI_PASSWORD2, 0x00, sizeof(TRX.WIFI_PASSWORD2));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_PASSWORD2))
-			lens = sizeof(TRX.WIFI_PASSWORD2);
-		strncpy(TRX.WIFI_PASSWORD2, value, lens);
+		if (lens > (sizeof(TRX.WIFI_PASSWORD2) - 1))
+			lens = sizeof(TRX.WIFI_PASSWORD2) - 1;
+//		strncpy(TRX.WIFI_PASSWORD2, value, lens);
+		memcpy(TRX.WIFI_PASSWORD2, value, lens);
 	}
 	if (strcmp(name, "TRX.WIFI_PASSWORD3") == 0)
 	{
 		dma_memset(TRX.WIFI_PASSWORD3, 0x00, sizeof(TRX.WIFI_PASSWORD3));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_PASSWORD3))
-			lens = sizeof(TRX.WIFI_PASSWORD3);
-		strncpy(TRX.WIFI_PASSWORD3, value, lens);
+		if (lens > (sizeof(TRX.WIFI_PASSWORD3) - 1))
+			lens = sizeof(TRX.WIFI_PASSWORD3) - 1;
+//		strncpy(TRX.WIFI_PASSWORD3, value, lens);
+		memcpy(TRX.WIFI_PASSWORD3, value, lens);
 	}
 	// SERVICES
 	if (strcmp(name, "TRX.SWR_CUSTOM_Begin") == 0)

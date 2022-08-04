@@ -264,7 +264,8 @@ void ua3reo_dev_cat_parseCommand(void)
 		println("New CAT command: |", _command, "|");
 
 	char command[3] = {0};
-	strncpy(command, _command, 2);
+//	strncpy(command, _command, 2);
+	memcpy(command, _command, 2);
 	bool has_args = false;
 	char arguments[32] = {0};
 	char ctmp[30] = {0};
