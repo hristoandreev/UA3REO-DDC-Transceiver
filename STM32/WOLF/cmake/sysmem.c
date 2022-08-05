@@ -34,18 +34,17 @@ static uint8_t *__sbrk_heap_end = NULL;
  *        and others from the C library
  *
  * @verbatim
- * ############################################################################
- * #  .data  #  .bss  #       newlib heap       #          MSP stack          #
- * #         #        #                         # Reserved by _Min_Stack_Size #
- * ############################################################################
- * ^-- RAM start      ^-- _end                             _estack, RAM end --^
+ * ##################################################################
+ * #          MSP stack          #       newlib heap       #  .bss  #
+ * # Reserved by _Min_Stack_Size #                         #        #
+ * ##################################################################
+ *  ^-- RAM start      _estack --^^-- _sheap              ^-- _eheap
  * @endverbatim
  *
- * This implementation starts allocating at the '_end' linker symbol
+ * This implementation starts allocating at the '_sheap' linker symbol
  * The '_Min_Stack_Size' linker symbol reserves a memory for the MSP stack
- * The implementation considers '_estack' linker symbol to be RAM end
  * NOTE: If the MSP stack, at any point during execution, grows larger than the
- * reserved size, please increase the '_Min_Stack_Size'.
+ * reserved size, please increase the '_Min_Heap_Size'.
  *
  * @param incr Memory size
  * @return Pointer to allocated memory
