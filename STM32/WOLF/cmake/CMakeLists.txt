@@ -150,6 +150,8 @@ file(MAKE_DIRECTORY ${GENERATED_SOURCE_DIR}/images ${GENERATED_SOURCE_DIR}/fonts
 # Generating the image binaries and adding to build
 foreach (IMAGE_PATH ${IMAGES})
     get_filename_component(IMAGE_NAME ${IMAGE_PATH} NAME_WE)
+    message(STATUS "Found -> " ${IMAGE_NAME}.png)
+
     string(REPLACE "-" "_" IMAGE_NAME "${IMAGE_NAME}")
     string(REPLACE " " "_" IMAGE_NAME "${IMAGE_NAME}")
 
@@ -168,6 +170,8 @@ list(APPEND FONT_SIZES "7" "9" "12" "18" "24" "32" "36")
 # Generating the font binaries and adding to build
 foreach (FONT_PATH ${FONTS})
     get_filename_component(FONT_NAME ${FONT_PATH} NAME_WE)
+    message(STATUS "Found -> " ${FONT_NAME}.ttf)
+
     string(REPLACE "-" "_" FONT_NAME "${FONT_NAME}")
     string(REPLACE " " "_" FONT_NAME "${FONT_NAME}")
     list(APPEND font_dependencies "${FONT_PATH}")
