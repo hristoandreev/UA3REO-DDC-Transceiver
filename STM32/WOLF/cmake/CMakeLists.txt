@@ -124,7 +124,7 @@ file(GLOB_RECURSE SOURCES
         )
 
 # Link options
-add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+add_link_options(-Wl,--gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m7 -mthumb -static -u _printf_float)
 add_link_options(-T ${LINKER_SCRIPT})
 
