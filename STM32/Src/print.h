@@ -21,6 +21,7 @@ static int __print_color_string = 1;
 static int __print_color_hex = 2;
 static int __print_color_float = 5;
 
+__attribute__((used))
 static void __print_setup_colors(int normal, int number, int string, int hex, int fractional) {
 	__print_color_string = string;
 	__print_color_number = number;
@@ -29,6 +30,7 @@ static void __print_setup_colors(int normal, int number, int string, int hex, in
 	__print_color_float = fractional;
 }
 
+__attribute__((used))
 static void __print_func (int count, unsigned short types[], ...) {
 	va_list v;
 	va_start(v, types);
