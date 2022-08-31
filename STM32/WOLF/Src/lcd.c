@@ -1077,8 +1077,8 @@ static void LCD_displayStatusInfoBar(bool redraw)
 		if (SYSMENU_HANDL_CHECK_HAS_ATU() && LAYOUT->STATUS_ATU_I_Y > 0)
 		{
 			if(TRX.TUNER_Enabled) {
-				float32_t *atu_i = ATU_I_VALS;
-				float32_t *atu_c = ATU_C_VALS;
+				const float32_t *atu_i = ATU_I_VALS;
+				const float32_t *atu_c = ATU_C_VALS;
 
 				float32_t i_val = 0;
 				float32_t c_val = 0;
