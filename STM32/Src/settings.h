@@ -8,8 +8,8 @@
 #include "bands.h"
 #include "hardware.h"
 
-#define SETT_VERSION 52						  // Settings config version
-#define CALIB_VERSION 45					  // Calibration config version
+#define SETT_VERSION 57						  // Settings config version
+#define CALIB_VERSION 49					  // Calibration config version
 #define TRX_SAMPLERATE 48000				  // audio stream sampling rate during processing and TX (NOT RX!)
 #define MAX_TX_AMPLITUDE_MULT 0.85f				  // Maximum amplitude when transmitting to FPGA
 #define AGC_CLIPPING 6.0f					  // Limit over target in AGC, dB
@@ -123,7 +123,7 @@ extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 	#define HRDW_MCP3008_1 true
 	#define HRDW_HAS_FUNCBUTTONS true
 	#define MAX_VOLUME_VALUE 1024.0f
-	#define FUNCBUTTONS_COUNT (32+2)
+	#define FUNCBUTTONS_COUNT (32+3)
 	#define FUNCBUTTONS_ON_PAGE 8
 	#define FUNCBUTTONS_PAGES 4
     #define OTA_CONFIG_FRONT_PANEL "BIG"
@@ -133,7 +133,7 @@ extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 	#define HRDW_MCP3008_1 true
 	#define HRDW_HAS_FUNCBUTTONS true
 	#define MAX_VOLUME_VALUE 1024.0f
-	#define FUNCBUTTONS_COUNT (27+4)
+	#define FUNCBUTTONS_COUNT (27+5)
 	#define FUNCBUTTONS_ON_PAGE 9
 	#define FUNCBUTTONS_PAGES 3
 	#define OTA_CONFIG_FRONT_PANEL "WF_100D"
@@ -147,6 +147,15 @@ extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 	#define FUNCBUTTONS_ON_PAGE 4
 	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
 	#define OTA_CONFIG_FRONT_PANEL "X1"
+#endif
+
+#ifdef FRONTPANEL_MINI
+	#define HRDW_HAS_FUNCBUTTONS true
+	#define MAX_VOLUME_VALUE 100.0f
+	#define FUNCBUTTONS_COUNT 32
+	#define FUNCBUTTONS_ON_PAGE 4
+	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
+	static char ota_config_frontpanel[] = "Mini";
 #endif
 
 // LCDs
@@ -192,10 +201,16 @@ extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 		#define FT8_SUPPORT true 
 	#endif
 #endif
-#if defined(LCD_ST7735S) // X1
+#if defined(LCD_ILI9341)
+static char ota_config_lcd[] = "ILI9341";
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT false
+	#endif
+#endif
+#if defined(LCD_ST7735S)
 #define OTA_CONFIG_LCD "ST7735S"
 	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+		#define FT8_SUPPORT false
 	#endif
 #endif
 #if defined(LCD_RA8875)
@@ -324,6 +339,21 @@ typedef enum
 	EXT_PTT,
 } CW_PTT_TYPE;
 
+// ENC2 FUNC MODE
+typedef enum
+{
+	ENC_FUNC_PAGER,
+	ENC_FUNC_FAST_STEP,
+	ENC_FUNC_SET_WPM,
+	ENC_FUNC_SET_RIT,
+	ENC_FUNC_SET_NOTCH,
+	ENC_FUNC_SET_LPF,
+	ENC_FUNC_SET_HPF,
+	ENC_FUNC_SET_SQL,
+	ENC_FUNC_SET_VOLUME,
+	ENC_FUNC_SET_IF,
+} ENC2_FUNC_MODE;
+
 // Save settings by band
 typedef struct
 {
@@ -334,6 +364,7 @@ typedef struct
 	uint8_t BEST_ATU_I;
 	uint8_t BEST_ATU_C;
 	int8_t FM_SQL_threshold_dbm;
+	uint8_t IF_Gain;
 	bool LNA;
 	bool ATT;
 	bool ANT_selected;
@@ -419,6 +450,7 @@ extern struct TRX_SETTINGS
 	uint16_t FM_LPF_RX_Filter;
 	uint16_t FM_LPF_TX_Filter;
 	uint16_t VOX_TIMEOUT;
+	uint8_t Volume_Step;
 	uint8_t IF_Gain;
 	uint8_t MIC_GAIN;
 	uint8_t MIC_REVERBER;
@@ -545,7 +577,7 @@ extern struct TRX_SETTINGS
 	bool WSPR_BANDS_2;
 	// Shadow variables
 	uint8_t FRONTPANEL_funcbuttons_page;
-	uint8_t ENC2_func_mode_idx;
+	ENC2_FUNC_MODE ENC2_func_mode;
 	uint8_t DNR_shadow;
 	int8_t FM_SQL_threshold_dbm_shadow;
 	bool SQL_shadow;
@@ -596,19 +628,21 @@ extern struct TRX_CALIBRATE
 	uint32_t RFU_BPF_8_START;
 	uint32_t RFU_BPF_8_END;
 	int16_t RTC_Calibration;
-	uint16_t rf_out_power_2200m;
-	uint16_t rf_out_power_160m;
-	uint16_t rf_out_power_80m;
-	uint16_t rf_out_power_40m;
-	uint16_t rf_out_power_30m;
-	uint16_t rf_out_power_20m;
-	uint16_t rf_out_power_17m;
-	uint16_t rf_out_power_15m;
-	uint16_t rf_out_power_12m;
-	uint16_t rf_out_power_cb;
-	uint16_t rf_out_power_10m;
-	uint16_t rf_out_power_6m;
-	uint16_t rf_out_power_2m;
+	uint8_t DAC_driver_mode;
+	uint8_t rf_out_power_2200m;
+	uint8_t rf_out_power_160m;
+	uint8_t rf_out_power_80m;
+	uint8_t rf_out_power_40m;
+	uint8_t rf_out_power_30m;
+	uint8_t rf_out_power_20m;
+	uint8_t rf_out_power_17m;
+	uint8_t rf_out_power_15m;
+	uint8_t rf_out_power_12m;
+	uint8_t rf_out_power_cb;
+	uint8_t rf_out_power_10m;
+	uint8_t rf_out_power_6m;
+	uint8_t rf_out_power_4m;
+	uint8_t rf_out_power_2m;
 	uint16_t TX_StartDelay;
 	int16_t smeter_calibration_hf;
 	int16_t smeter_calibration_vhf;
@@ -622,7 +656,7 @@ extern struct TRX_CALIBRATE
 	uint8_t CICFIR_GAINER_384K_val;
 	uint8_t TXCICFIR_GAINER_val;
 	uint8_t DAC_GAINER_val;
-	uint8_t MAX_RF_POWER;
+	uint8_t MAX_RF_POWER_ON_METER;
 	uint8_t ENCODER_ACCELERATION;
 	uint8_t FAN_MEDIUM_START;
 	uint8_t FAN_MEDIUM_STOP;
@@ -647,6 +681,7 @@ extern struct TRX_CALIBRATE
 	uint8_t EXT_CB;
 	uint8_t EXT_10m;
 	uint8_t EXT_6m;
+	uint8_t EXT_4m;
 	uint8_t EXT_FM;
 	uint8_t EXT_2m;
 	uint8_t EXT_70cm;
@@ -679,6 +714,7 @@ extern struct TRX_CALIBRATE
 	bool NOTX_CB;
 	bool NOTX_10m;
 	bool NOTX_6m;
+	bool NOTX_4m;
 	bool NOTX_FM;
 	bool NOTX_2m;
 	bool NOTX_70cm;

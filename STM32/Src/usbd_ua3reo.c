@@ -4,7 +4,7 @@
 #include "usbd_iq_if.h"
 #include "usbd_ctlreq.h"
 #include "functions.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "lcd_driver.h"
 #include "hardware.h"
 
@@ -15,9 +15,9 @@ static uint8_t USBD_UA3REO_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
 static uint8_t USBD_UA3REO_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum);
 static uint8_t USBD_UA3REO_EP0_RxReady(USBD_HandleTypeDef *pdev);
 static uint8_t USBD_UA3REO_EP0_TxReady(void);
-static uint8_t USBD_UA3REO_SOF(void);
-static uint8_t USBD_UA3REO_IsoINIncomplete(void);
-static uint8_t USBD_UA3REO_IsoOutIncomplete(void);
+static uint8_t USBD_UA3REO_SOF(USBD_HandleTypeDef *pdev);
+static uint8_t USBD_UA3REO_IsoINIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum);
+static uint8_t USBD_UA3REO_IsoOutIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum);
 static void AUDIO_REQ_GetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static void AUDIO_REQ_SetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static void IQ_REQ_GetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
@@ -87,7 +87,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x01, /* bConfigurationValue: Configuration value */
 		0x00, /* iConfiguration: Index of string descriptor describing the configuration */
 		0xC0, /* bmAttributes: self powered */
-		0xFA, /* MaxPower 500 mA */
+		0x32, /* MaxPower 100 mA */
 
 		//---------------------------------------------------------------------------
 		// DEBUG/KEY PORT
@@ -95,7 +95,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		//------------------------------
 		0x08,					 // bLength
 		0x0B,					 // bDescriptorType
-		0x00,					 // bFirstInterface
+		DEBUG_INTERFACE_IDX,					 // bFirstInterface
 		0x02,					 // bInterfaceCount
 		0x02,					 // bFunctionClass      (Communication Device Class)
 		0x02,					 // bFunctionSubClass   (Abstract Control Model - ACM)
@@ -126,7 +126,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x24, /* bDescriptorType: CS_INTERFACE */
 		0x01, /* bDescriptorSubtype: Call Management Func Desc */
 		0x00, /* bmCapabilities: D0+D1 */
-		0x01, /* bDataInterface: 1 */
+		(DEBUG_INTERFACE_IDX + 1), /* bDataInterface: 1 */
 
 		/*ACM Functional Descriptor*/
 		0x04, /* bFunctionLength */
@@ -138,8 +138,8 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x05, /* bFunctionLength */
 		0x24, /* bDescriptorType: CS_INTERFACE */
 		0x06, /* bDescriptorSubtype: Union func desc */
-		0x00, /* bMasterInterface: Communication class interface */
-		0x01, /* bSlaveInterface0: Data Class Interface */
+		DEBUG_INTERFACE_IDX, /* bMasterInterface: Communication class interface */
+		(DEBUG_INTERFACE_IDX + 1), /* bSlaveInterface0: Data Class Interface */
 
 		//---------------------------------------------------------------------------
 
@@ -150,7 +150,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x03,						 /* bmAttributes: Interrupt */
 		LOBYTE(CDC_CMD_PACKET_SIZE), /* wMaxPacketSize: */
 		HIBYTE(CDC_CMD_PACKET_SIZE),
-		0x10, /* bInterval: */
+		0xFF, /* bInterval: */
 
 		/*Data class interface descriptor*/
 		0x09,					   /* bLength: Endpoint Descriptor size */
@@ -170,7 +170,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02,								 /* bmAttributes: Bulk */
 		LOBYTE(CDC_DATA_FS_MAX_PACKET_SIZE), /* wMaxPacketSize: */
 		HIBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),
-		0x01, /* bInterval: ignore for Bulk transfer */
+		0x00, /* bInterval: ignore for Bulk transfer */
 
 		/*Endpoint IN Descriptor*/
 		0x07,								 /* bLength: Endpoint Descriptor size */
@@ -179,7 +179,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02,								 /* bmAttributes: Bulk */
 		LOBYTE(CDC_DATA_FS_MAX_PACKET_SIZE), /* wMaxPacketSize: */
 		HIBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),
-		0x01, /* bInterval: ignore for Bulk transfer */
+		0x00, /* bInterval: ignore for Bulk transfer */
 
 		//---------------------------------------------------------------------------
 
@@ -188,7 +188,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		//------------------------------
 		0x08,					 // bLength
 		0x0B,					 // bDescriptorType
-		0x02,					 // bFirstInterface
+		CAT_INTERFACE_IDX,					 // bFirstInterface
 		0x02,					 // bInterfaceCount
 		0x02,					 // bFunctionClass      (Communication Device Class)
 		0x02,					 // bFunctionSubClass   (Abstract Control Model - ACM)
@@ -219,7 +219,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x24, /* bDescriptorType: CS_INTERFACE */
 		0x01, /* bDescriptorSubtype: Call Management Func Desc */
 		0x00, /* bmCapabilities: D0+D1 */
-		0x03, /* bDataInterface: 1 */
+		(CAT_INTERFACE_IDX + 1), /* bDataInterface: 1 */
 
 		/*ACM Functional Descriptor*/
 		0x04, /* bFunctionLength */
@@ -231,8 +231,8 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x05, /* bFunctionLength */
 		0x24, /* bDescriptorType: CS_INTERFACE */
 		0x06, /* bDescriptorSubtype: Union func desc */
-		0x02, /* bMasterInterface: Communication class interface */
-		0x03, /* bSlaveInterface0: Data Class Interface */
+		CAT_INTERFACE_IDX, /* bMasterInterface: Communication class interface */
+		(CAT_INTERFACE_IDX + 1), /* bSlaveInterface0: Data Class Interface */
 
 		//---------------------------------------------------------------------------
 
@@ -243,7 +243,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x03,						 /* bmAttributes: Interrupt */
 		LOBYTE(CDC_CMD_PACKET_SIZE), /* wMaxPacketSize: */
 		HIBYTE(CDC_CMD_PACKET_SIZE),
-		0x10, /* bInterval: */
+		0xFF, /* bInterval: */
 
 		/*Data class interface descriptor*/
 		0x09,					 /* bLength: Endpoint Descriptor size */
@@ -263,7 +263,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02,								 /* bmAttributes: Bulk */
 		LOBYTE(CDC_DATA_FS_MAX_PACKET_SIZE), /* wMaxPacketSize: */
 		HIBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),
-		0x01, /* bInterval: ignore for Bulk transfer */
+		0x00, /* bInterval: ignore for Bulk transfer */
 
 		/*Endpoint IN Descriptor*/
 		0x07,								 /* bLength: Endpoint Descriptor size */
@@ -272,7 +272,7 @@ __ALIGN_BEGIN static const uint8_t USBD_UA3REO_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ
 		0x02,								 /* bmAttributes: Bulk */
 		LOBYTE(CDC_DATA_FS_MAX_PACKET_SIZE), /* wMaxPacketSize: */
 		HIBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),
-		0x01, /* bInterval: ignore for Bulk transfer */
+		0x00, /* bInterval: ignore for Bulk transfer */
 
 		//---------------------------------------------------------------------------
 
@@ -914,165 +914,192 @@ static uint8_t USBD_UA3REO_DeInit(USBD_HandleTypeDef *pdev)
  * @param  req: usb requests
  * @retval status
  */
+
 static uint8_t USBD_DEBUG_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
-	USB_LastActiveTime = HAL_GetTick();
-	USBD_DEBUG_HandleTypeDef *hcdc_debug = (USBD_DEBUG_HandleTypeDef *)pdev->pClassDataDEBUG;
-	uint8_t ifalt = 0U;
-	uint16_t status_info = 0U;
-	uint8_t ret = USBD_OK;
+  USBD_DEBUG_HandleTypeDef *hcdc = (USBD_DEBUG_HandleTypeDef *)pdev->pClassDataDEBUG;
+  uint16_t len;
+  uint8_t ifalt = 0U;
+  uint16_t status_info = 0U;
+  USBD_StatusTypeDef ret = USBD_OK;
 
-	switch (req->bmRequest & USB_REQ_TYPE_MASK)
-	{
-	case USB_REQ_TYPE_CLASS:
-		if (req->wLength)
-		{
-			if (req->bmRequest & 0x80U)
-			{
-				((USBD_DEBUG_ItfTypeDef *)pdev->pUserDataDEBUG)->Control(req->bRequest, (uint8_t *)(void *)hcdc_debug->data, req->wLength);
-				USBD_CtlSendData(pdev, (uint8_t *)(void *)hcdc_debug->data, req->wLength);
-			}
-			else
-			{
-				hcdc_debug->CmdOpCode = req->bRequest;
-				hcdc_debug->CmdLength = (uint8_t)req->wLength;
-				USBD_CtlPrepareRx(pdev, (uint8_t *)(void *)hcdc_debug->data, req->wLength);
-			}
-		}
-		else
-		{
-			((USBD_DEBUG_ItfTypeDef *)pdev->pUserDataDEBUG)->Control(req->bRequest, (uint8_t *)(void *)req, req->wLength);
-		}
-		break;
+  if (hcdc == NULL)
+  {
+    return (uint8_t)USBD_FAIL;
+  }
 
-	case USB_REQ_TYPE_STANDARD:
-		switch (req->bRequest)
-		{
-		case USB_REQ_GET_STATUS:
-			if (pdev->dev_state == USBD_STATE_CONFIGURED)
-			{
-				USBD_CtlSendData(pdev, (uint8_t *)(void *)&status_info, 2U);
-			}
-			else
-			{
-				USBD_CtlError(pdev);
-				ret = USBD_FAIL;
-			}
-			break;
+  switch (req->bmRequest & USB_REQ_TYPE_MASK)
+  {
+    case USB_REQ_TYPE_CLASS:
+      if (req->wLength != 0U)
+      {
+        if ((req->bmRequest & 0x80U) != 0U)
+        {
+          ((USBD_DEBUG_ItfTypeDef *)pdev->pUserDataDEBUG)->Control(req->bRequest, (uint8_t *)hcdc->data, req->wLength);
 
-		case USB_REQ_GET_INTERFACE:
-			if (pdev->dev_state == USBD_STATE_CONFIGURED)
-			{
-				USBD_CtlSendData(pdev, &ifalt, 1U);
-			}
-			else
-			{
-				USBD_CtlError(pdev);
-				ret = USBD_FAIL;
-			}
-			break;
+          len = MIN(CDC_REQ_MAX_DATA_SIZE, req->wLength);
+          (void)USBD_CtlSendData(pdev, (uint8_t *)hcdc->data, len);
+        }
+        else
+        {
+          hcdc->CmdOpCode = req->bRequest;
+          hcdc->CmdLength = (uint8_t)MIN(req->wLength, USB_MAX_EP0_SIZE);
 
-		case USB_REQ_SET_INTERFACE:
-			if (pdev->dev_state != USBD_STATE_CONFIGURED)
-			{
-				USBD_CtlError(pdev);
-				ret = USBD_FAIL;
-			}
-			break;
+          (void)USBD_CtlPrepareRx(pdev, (uint8_t *)hcdc->data, hcdc->CmdLength);
+        }
+      }
+      else
+      {
+        ((USBD_DEBUG_ItfTypeDef *)pdev->pUserDataDEBUG)->Control(req->bRequest,
+                                                                         (uint8_t *)req, 0U);
+      }
+      break;
 
-		default:
-			USBD_CtlError(pdev);
-			ret = USBD_FAIL;
-			break;
-		}
-		break;
+    case USB_REQ_TYPE_STANDARD:
+      switch (req->bRequest)
+      {
+        case USB_REQ_GET_STATUS:
+          if (pdev->dev_state == USBD_STATE_CONFIGURED)
+          {
+            (void)USBD_CtlSendData(pdev, (uint8_t *)&status_info, 2U);
+          }
+          else
+          {
+            USBD_CtlError(pdev, req);
+            ret = USBD_FAIL;
+          }
+          break;
 
-	default:
-		USBD_CtlError(pdev);
-		ret = USBD_FAIL;
-		break;
-	}
-	return ret;
+        case USB_REQ_GET_INTERFACE:
+          if (pdev->dev_state == USBD_STATE_CONFIGURED)
+          {
+            (void)USBD_CtlSendData(pdev, &ifalt, 1U);
+          }
+          else
+          {
+            USBD_CtlError(pdev, req);
+            ret = USBD_FAIL;
+          }
+          break;
+
+        case USB_REQ_SET_INTERFACE:
+          if (pdev->dev_state != USBD_STATE_CONFIGURED)
+          {
+            USBD_CtlError(pdev, req);
+            ret = USBD_FAIL;
+          }
+          break;
+
+        case USB_REQ_CLEAR_FEATURE:
+          break;
+
+        default:
+          USBD_CtlError(pdev, req);
+          ret = USBD_FAIL;
+          break;
+      }
+      break;
+
+    default:
+      USBD_CtlError(pdev, req);
+      ret = USBD_FAIL;
+      break;
+  }
+
+  return (uint8_t)ret;
 }
 
 static uint8_t USBD_CAT_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
-	USBD_CAT_HandleTypeDef *hcdc_cat = (USBD_CAT_HandleTypeDef *)pdev->pClassDataCAT;
-	uint8_t ifalt = 0U;
-	uint16_t status_info = 0U;
-	uint8_t ret = USBD_OK;
+  USBD_CAT_HandleTypeDef *hcdc = (USBD_CAT_HandleTypeDef *)pdev->pClassDataCAT;
+  uint16_t len;
+  uint8_t ifalt = 0U;
+  uint16_t status_info = 0U;
+  USBD_StatusTypeDef ret = USBD_OK;
 
-	switch (req->bmRequest & USB_REQ_TYPE_MASK)
-	{
-	case USB_REQ_TYPE_CLASS:
-		if (req->wLength)
-		{
-			if (req->bmRequest & 0x80U)
-			{
-				((USBD_CAT_ItfTypeDef *)pdev->pUserDataCAT)->Control(req->bRequest, (uint8_t *)(void *)hcdc_cat->data);
-				USBD_CtlSendData(pdev, (uint8_t *)(void *)hcdc_cat->data, req->wLength);
-			}
-			else
-			{
-				hcdc_cat->CmdOpCode = req->bRequest;
-				hcdc_cat->CmdLength = (uint8_t)req->wLength;
-				USBD_CtlPrepareRx(pdev, (uint8_t *)(void *)hcdc_cat->data, req->wLength);
-			}
-		}
-		else
-		{
-			((USBD_CAT_ItfTypeDef *)pdev->pUserDataCAT)->Control(req->bRequest, (uint8_t *)(void *)req);
-		}
-		break;
+  if (hcdc == NULL)
+  {
+    return (uint8_t)USBD_FAIL;
+  }
 
-	case USB_REQ_TYPE_STANDARD:
-		switch (req->bRequest)
-		{
-		case USB_REQ_GET_STATUS:
-			if (pdev->dev_state == USBD_STATE_CONFIGURED)
-			{
-				USBD_CtlSendData(pdev, (uint8_t *)(void *)&status_info, 2U);
-			}
-			else
-			{
-				USBD_CtlError(pdev);
-				ret = USBD_FAIL;
-			}
-			break;
+  switch (req->bmRequest & USB_REQ_TYPE_MASK)
+  {
+    case USB_REQ_TYPE_CLASS:
+      if (req->wLength != 0U)
+      {
+        if ((req->bmRequest & 0x80U) != 0U)
+        {
+          ((USBD_CAT_ItfTypeDef *)pdev->pUserDataCAT)->Control(req->bRequest, (uint8_t *)hcdc->data, req->wLength);
 
-		case USB_REQ_GET_INTERFACE:
-			if (pdev->dev_state == USBD_STATE_CONFIGURED)
-			{
-				USBD_CtlSendData(pdev, &ifalt, 1U);
-			}
-			else
-			{
-				USBD_CtlError(pdev);
-				ret = USBD_FAIL;
-			}
-			break;
+          len = MIN(CDC_REQ_MAX_DATA_SIZE, req->wLength);
+          (void)USBD_CtlSendData(pdev, (uint8_t *)hcdc->data, len);
+        }
+        else
+        {
+          hcdc->CmdOpCode = req->bRequest;
+          hcdc->CmdLength = (uint8_t)MIN(req->wLength, USB_MAX_EP0_SIZE);
 
-		case USB_REQ_SET_INTERFACE:
-			if (pdev->dev_state != USBD_STATE_CONFIGURED)
-			{
-				USBD_CtlError(pdev);
-				ret = USBD_FAIL;
-			}
-			break;
+          (void)USBD_CtlPrepareRx(pdev, (uint8_t *)hcdc->data, hcdc->CmdLength);
+        }
+      }
+      else
+      {
+        ((USBD_CAT_ItfTypeDef *)pdev->pUserDataCAT)->Control(req->bRequest, (uint8_t *)req, 0U);
+      }
+      break;
 
-		default:
-			USBD_CtlError(pdev);
-			ret = USBD_FAIL;
-			break;
-		}
-		break;
+    case USB_REQ_TYPE_STANDARD:
+      switch (req->bRequest)
+      {
+        case USB_REQ_GET_STATUS:
+          if (pdev->dev_state == USBD_STATE_CONFIGURED)
+          {
+            (void)USBD_CtlSendData(pdev, (uint8_t *)&status_info, 2U);
+          }
+          else
+          {
+            USBD_CtlError(pdev, req);
+            ret = USBD_FAIL;
+          }
+          break;
 
-	default:
-		USBD_CtlError(pdev);
-		ret = USBD_FAIL;
-		break;
-	}
-	return ret;
+        case USB_REQ_GET_INTERFACE:
+          if (pdev->dev_state == USBD_STATE_CONFIGURED)
+          {
+            (void)USBD_CtlSendData(pdev, &ifalt, 1U);
+          }
+          else
+          {
+            USBD_CtlError(pdev, req);
+            ret = USBD_FAIL;
+          }
+          break;
+
+        case USB_REQ_SET_INTERFACE:
+          if (pdev->dev_state != USBD_STATE_CONFIGURED)
+          {
+            USBD_CtlError(pdev, req);
+            ret = USBD_FAIL;
+          }
+          break;
+
+        case USB_REQ_CLEAR_FEATURE:
+          break;
+
+        default:
+          USBD_CtlError(pdev, req);
+          ret = USBD_FAIL;
+          break;
+      }
+      break;
+
+    default:
+      USBD_CtlError(pdev, req);
+      ret = USBD_FAIL;
+      break;
+  }
+
+  return (uint8_t)ret;
 }
 
 static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
@@ -1097,7 +1124,7 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *
 			break;
 
 		default:
-			USBD_CtlError(pdev);
+			USBD_CtlError(pdev, req);
 			ret = USBD_FAIL;
 			break;
 		}
@@ -1113,7 +1140,7 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1134,7 +1161,7 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1149,25 +1176,25 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *
 				else
 				{
 					/* Call the error management function (command will be nacked */
-					USBD_CtlError(pdev);
+					USBD_CtlError(pdev, req);
 					ret = USBD_FAIL;
 				}
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
 
 		default:
-			USBD_CtlError(pdev);
+			USBD_CtlError(pdev, req);
 			ret = USBD_FAIL;
 			break;
 		}
 		break;
 	default:
-		USBD_CtlError(pdev);
+		USBD_CtlError(pdev, req);
 		ret = USBD_FAIL;
 		break;
 	}
@@ -1197,7 +1224,7 @@ static uint8_t USBD_IQ_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req
 			break;
 
 		default:
-			USBD_CtlError(pdev);
+			USBD_CtlError(pdev, req);
 			ret = USBD_FAIL;
 			break;
 		}
@@ -1213,7 +1240,7 @@ static uint8_t USBD_IQ_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1234,7 +1261,7 @@ static uint8_t USBD_IQ_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1249,25 +1276,25 @@ static uint8_t USBD_IQ_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req
 				else
 				{
 					/* Call the error management function (command will be nacked */
-					USBD_CtlError(pdev);
+					USBD_CtlError(pdev, req);
 					ret = USBD_FAIL;
 				}
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
 
 		default:
-			USBD_CtlError(pdev);
+			USBD_CtlError(pdev, req);
 			ret = USBD_FAIL;
 			break;
 		}
 		break;
 	default:
-		USBD_CtlError(pdev);
+		USBD_CtlError(pdev, req);
 		ret = USBD_FAIL;
 		break;
 	}
@@ -1296,7 +1323,7 @@ uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1308,13 +1335,13 @@ uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
 
 		default:
-			USBD_CtlError(pdev);
+			USBD_CtlError(pdev, req);
 			ret = USBD_FAIL;
 			break;
 		}
@@ -1330,7 +1357,7 @@ uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1342,7 +1369,7 @@ uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1354,7 +1381,7 @@ uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 			}
 			else
 			{
-				USBD_CtlError(pdev);
+				USBD_CtlError(pdev, req);
 				ret = USBD_FAIL;
 			}
 			break;
@@ -1374,14 +1401,14 @@ uint8_t USBD_MSC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 			break;
 
 		default:
-			USBD_CtlError(pdev);
+			USBD_CtlError(pdev, req);
 			ret = USBD_FAIL;
 			break;
 		}
 		break;
 
 	default:
-		USBD_CtlError(pdev);
+		USBD_CtlError(pdev, req);
 		ret = USBD_FAIL;
 		break;
 	}
@@ -1685,7 +1712,7 @@ static uint8_t USBD_UA3REO_EP0_RxReady(USBD_HandleTypeDef *pdev)
 	// CAT
 	if ((pdev->pUserDataCAT != NULL) && (hcdc_cat->CmdOpCode != 0xFFU))
 	{
-		((USBD_CAT_ItfTypeDef *)pdev->pUserDataCAT)->Control(hcdc_cat->CmdOpCode, (uint8_t *)(void *)hcdc_cat->data);
+		((USBD_CAT_ItfTypeDef *)pdev->pUserDataCAT)->Control(hcdc_cat->CmdOpCode, (uint8_t *)(void *)hcdc_cat->data, 0);
 		hcdc_cat->CmdOpCode = 0xFFU;
 	}
 	// AUDIO
@@ -1715,12 +1742,12 @@ static uint8_t USBD_UA3REO_EP0_TxReady(void)
 	return USBD_OK;
 }
 
-static uint8_t USBD_UA3REO_IsoINIncomplete(void)
+static uint8_t USBD_UA3REO_IsoINIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
 	return USBD_OK;
 }
 
-static uint8_t USBD_UA3REO_IsoOutIncomplete(void)
+static uint8_t USBD_UA3REO_IsoOutIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
 	return USBD_OK;
 }
@@ -2049,7 +2076,7 @@ static void IQ_REQ_SetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *re
 }
 #endif
 
-static uint8_t USBD_UA3REO_SOF(void)
+static uint8_t USBD_UA3REO_SOF(USBD_HandleTypeDef *pdev)
 {
 	USB_LastActiveTime = HAL_GetTick();
 	return USBD_OK;

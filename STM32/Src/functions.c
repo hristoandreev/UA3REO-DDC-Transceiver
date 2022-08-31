@@ -188,6 +188,14 @@ uint32_t getTXPhraseFromFrequency(float64_t freq) // calculate the frequency fro
 		return 0;
 	bool inverted = false;
 	int32_t _freq = (int32_t)freq;
+	
+	TRX_TX_Harmonic = 1;
+	if (_freq > MAX_TX_FREQ_HZ) { // harmonics mode
+		while (_freq > MAX_TX_FREQ_HZ) {
+			_freq /= 3; // third-harmonics
+			TRX_TX_Harmonic += 3;
+		}
+	}
 
 	uint8_t nyquist = _freq / (DAC_CLOCK / 2);
 	if (nyquist == 0) // <99.84mhz (good 0mhz - 79.872mhz) 0-0.4 dac freq
@@ -308,8 +316,11 @@ void shiftTextLeft(char *string, uint_fast16_t shiftLength)
 
 float32_t getMaxTXAmplitudeOnFreq(uint32_t freq)
 {
-	if (freq > MAX_TX_FREQ_HZ)
-		return 0.0f;
+	if (freq > MAX_TX_FREQ_HZ) { // harmonics mode
+		while (freq > MAX_TX_FREQ_HZ) {
+			freq /= 3.0f; // third-harmonics
+		}
+	}
 
 	uint16_t calibrate_level = 0;
 
@@ -335,24 +346,27 @@ float32_t getMaxTXAmplitudeOnFreq(uint32_t freq)
 		calibrate_level = CALIBRATE.rf_out_power_cb;
 	else if (freq < 40.0 * 1000000)
 		calibrate_level = CALIBRATE.rf_out_power_10m;
-	else if (freq < 80.0 * 1000000)
+	else if (freq < 60.0 * 1000000)
 		calibrate_level = CALIBRATE.rf_out_power_6m;
+	else if (freq < 110.0 * 1000000)
+		calibrate_level = CALIBRATE.rf_out_power_4m;
 	else
 		calibrate_level = CALIBRATE.rf_out_power_2m;
 
-	if (calibrate_level > 200) // dac driver bias
+	if (calibrate_level > 100)
+		calibrate_level = 100;
+	
+	if (CALIBRATE.DAC_driver_mode == 2) // dac driver bias
 	{
-		calibrate_level -= 200;
 		TRX_DAC_DRV_A0 = false;
 		TRX_DAC_DRV_A1 = false;
 	}
-	else if (calibrate_level > 100) // dac driver bias 75%
+	else if (CALIBRATE.DAC_driver_mode == 1) // dac driver bias 75%
 	{
-		calibrate_level -= 100;
 		TRX_DAC_DRV_A0 = true;
 		TRX_DAC_DRV_A1 = false;
 	}
-	else if (calibrate_level > 0) // dac driver bias 50%
+	else if (CALIBRATE.DAC_driver_mode == 0) // dac driver bias 50%
 	{
 		TRX_DAC_DRV_A0 = false;
 		TRX_DAC_DRV_A1 = true;
@@ -977,7 +991,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 	float32_t *pOut_I = pDst_I;
 	float32_t *pOut_Q = pDst_Q;
 
-	for (uint32_t stage = 0; stage < I->numStages; stage++)
+	uint32_t stage = I->numStages;
+	while (stage > 0)
 	{
 		float32_t b0 = pCoeffs[0];
 		float32_t b1 = pCoeffs[1];
@@ -991,7 +1006,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 		float32_t d1_Q = pState_Q[0];
 		float32_t d2_Q = pState_Q[1];
 
-		for (uint32_t sample = 0; sample < blockSize; sample++)
+		uint32_t sample = blockSize;
+		while (sample > 0)
 		{
 			float32_t Xn1_I = *pIn_I++;
 			float32_t Xn1_Q = *pIn_Q++;
@@ -1007,6 +1023,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 
 			*pOut_I++ = acc1_I;
 			*pOut_Q++ = acc1_Q;
+			
+			sample--;
 		}
 
 		pState_I[0] = d1_I;
@@ -1020,6 +1038,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 		pIn_Q = pDst_Q;
 		pOut_I = pDst_I;
 		pOut_Q = pDst_Q;
+		
+		stage--;
 	}
 }
 

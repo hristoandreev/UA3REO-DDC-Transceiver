@@ -8,10 +8,14 @@
 #include "functions.h"
 #include "lcd.h"
 
+#ifndef STM32F407xx
+
 #if (defined(LAY_800x480))
 #define CWDECODER_STRLEN (57) // length of decoded string (7 on start - status)
 #elif (defined(LAY_480x320))
 #define CWDECODER_STRLEN (30) // length of decoded string (7 on start - status)
+#elif (defined(LAY_320x240))
+#define CWDECODER_STRLEN (26 - 7) // length of decoded string (7 on start - status)
 #elif (defined(LAY_160x128))
 #define CWDECODER_STRLEN (26 - 7) // length of decoded string (7 on start - status)
 #endif
@@ -42,4 +46,5 @@ extern char CW_Decoder_Text[CWDECODER_STRLEN + 1];
 extern void CWDecoder_Init(void);                   // initialize the CW decoder
 extern void CWDecoder_Process(float32_t *bufferIn); // start CW decoder for the data block
 
+#endif
 #endif

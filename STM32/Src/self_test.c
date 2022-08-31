@@ -52,7 +52,7 @@ void SELF_TEST_Start(void)
 	LastATT_DB = TRX.ATT_DB;
 
     TRX.ADC_RAND = true;
-	
+
 	SELF_TEST_old_autogainer = TRX.AutoGain;
 	SELF_TEST_old_freq = CurrentVFO->Freq;
 	SELF_TEST_current_page = selfTest_Base;
@@ -142,8 +142,8 @@ void SELF_TEST_Draw(void)
 		}
 
 		// WM8731 test
-		LCDDriver_printText("WM8731", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
-		SELF_TEST_printResult(WM8731_test_result, pos_y);
+		LCDDriver_printText("CODEC", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+		SELF_TEST_printResult(CODEC_test_result, pos_y);
 		pos_y += margin_bottom;
 		
 		#if !defined(FRONTPANEL_LITE)
@@ -713,7 +713,7 @@ void SELF_TEST_EncRotate(int8_t direction)
 	if (SELF_TEST_current_page >= selfTest_END)
 	{
 		SELF_TEST_current_page = selfTest_END - 1;
-		FRONTPANEL_BUTTONHANDLER_SERVICES(0);
+		BUTTONHANDLER_SERVICES(0);
 	}
 
 	LCD_UpdateQuery.SystemMenuRedraw = true;

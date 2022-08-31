@@ -15,7 +15,7 @@
 #include "front_unit.h"
 #include "rf_unit.h"
 #include "fpga.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "audio_processor.h"
 #include "agc.h"
 #include "fft.h"
@@ -104,7 +104,7 @@ void EVENTS_do_USB_FIFO(void) // 1000 hz
   // unmute after transition process end
   if (TRX_Temporary_Mute_StartTime > 0 && (HAL_GetTick() - TRX_Temporary_Mute_StartTime) > 100)
   {
-    WM8731_UnMute();
+    CODEC_UnMute();
     TRX_Temporary_Mute_StartTime = 0;
   }
 }
@@ -204,8 +204,8 @@ void EVENTS_do_EVERY_10ms(void) // 100 hz
     TRX_Inited = false;
     LCD_busy = true;
     HAL_Delay(10);
-    WM8731_Mute();
-    WM8731_CleanBuffer();
+    CODEC_Mute();
+    CODEC_CleanBuffer();
     LCDDriver_Fill(COLOR_BLACK);
     LCD_showInfo("GOOD BYE!", false);
     SaveSettings();
@@ -387,7 +387,7 @@ void EVENTS_do_EVERY_100ms(void) // 10 hz
 #endif
 
 	// reset error flags
-	WM8731_Buffer_underrun = false;
+	CODEC_Buffer_underrun = false;
 	FPGA_Buffer_underrun = false;
 	RX_USB_AUDIO_underrun = false;
 	APROC_IFGain_Overflow = false;
@@ -467,7 +467,7 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 	if (TRX.Debug_Type == TRX_DEBUG_SYSTEM)
 	{
 		//Print debug
-		uint32_t dbg_WM8731_DMA_samples = (uint32_t)((float32_t)WM8731_DMA_samples / 2.0f * dbg_coeff);
+		uint32_t dbg_WM8731_DMA_samples = (uint32_t)((float32_t)CODEC_DMA_samples / 2.0f * dbg_coeff);
 		uint32_t dbg_AUDIOPROC_samples = (uint32_t)((float32_t)AUDIOPROC_samples * dbg_coeff);
 		float32_t *FPGA_Audio_Buffer_RX1_I_current = !FPGA_RX_Buffer_Current ? (float32_t *)&FPGA_Audio_Buffer_RX1_I_A : (float32_t *)&FPGA_Audio_Buffer_RX1_I_B;
 		float32_t *FPGA_Audio_Buffer_RX1_Q_current = !FPGA_RX_Buffer_Current ? (float32_t *)&FPGA_Audio_Buffer_RX1_Q_A : (float32_t *)&FPGA_Audio_Buffer_RX1_Q_B;
@@ -484,22 +484,28 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 		//Print Debug info
 		println("FPGA Samples: ", dbg_FPGA_samples);            //~96000
 		println("Audio DMA samples: ", dbg_WM8731_DMA_samples); //~48000
+		print_flush();
 		println("Audioproc blocks: ", dbg_AUDIOPROC_samples);
 		println("CPU Load: ", cpu_load);
+		print_flush();
 		println("RF/STM32 Temperature: ", (int16_t)TRX_RF_Temperature, " / ", (int16_t)TRX_STM32_TEMPERATURE);
 		println("STM32 Voltage: ", TRX_STM32_VREF);
+		print_flush();
 		println("TIM6 delay: ", dbg_tim6_delay);
 		println("FFT FPS: ", FFT_FPS);
+		print_flush();
 		println("First byte of RX-FPGA I/Q: ", dbg_FPGA_Audio_Buffer_I_tmp, " / ", dbg_FPGA_Audio_Buffer_Q_tmp); //first byte of IQ
 		println("IQ Phase error: ", TRX_IQ_phase_error);                                                         //first byte of Q
+		print_flush();
 		println("USB Audio RX/TX samples: ", dbg_RX_USB_AUDIO_SAMPLES, " / ", dbg_TX_USB_AUDIO_SAMPLES);         //~48000
 		println("ADC MIN/MAX Amplitude: ", TRX_ADC_MINAMPLITUDE, " / ", TRX_ADC_MAXAMPLITUDE);
-		//print_bin16(TRX_ADC_MINAMPLITUDE, true); print_str(" / "); print_bin16(TRX_ADC_MAXAMPLITUDE, false);
+		print_flush();
 		println("VCXO Error: ", TRX_VCXO_ERROR);
 		#if HRDW_HAS_WIFI
 		println("WIFI State: ", WIFI_State);
 		#endif
 		println("");
+		print_flush();
 		PrintProfilerResult();
 	}
 	
@@ -511,13 +517,13 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 	tim6_delay = HAL_GetTick();
 	FPGA_samples = 0;
 	AUDIOPROC_samples = 0;
-	WM8731_DMA_samples = 0;
+	CODEC_DMA_samples = 0;
 	FFT_FPS_Last = FFT_FPS;
 	FFT_FPS = 0;
 	RX_USB_AUDIO_SAMPLES = 0;
 	TX_USB_AUDIO_SAMPLES = 0;
 	FPGA_NeedSendParams = true;
-	WM8731_Beeping = false;
+	CODEC_Beeping = false;
 
 //redraw lcd to fix problem
 #ifdef LCD_HX8357B

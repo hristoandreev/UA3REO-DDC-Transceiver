@@ -9,7 +9,7 @@
 #include "BiquadDesigner/biquad.h"
 
 #ifdef STM32F407xx
-	#define IQ_HILBERT_TAPS_RX 102														 // Hilbert filter order RX
+	#define IQ_HILBERT_TAPS_RX 101														 // Hilbert filter order RX
 	#define IIR_LPF_STAGES 8									 // order of IIR LPF filters
 	#define IIR_HPF_STAGES 3														 // order of IIR HPF filters
 	#define IIR_DECIMATOR_FILTER_STAGES 5											 // order of decimator filter
@@ -43,9 +43,9 @@
 #define AM_LPF_COUNT 20
 #define NFM_LPF_COUNT 12
 
-#define MAX_HPF_WIDTH 600
-#define MAX_LPF_WIDTH_CW 1000
-#define MAX_LPF_WIDTH_SSB 3400
+#define MAX_HPF_WIDTH 3000
+#define MAX_LPF_WIDTH_CW 2000
+#define MAX_LPF_WIDTH_SSB 3500
 #define MAX_LPF_WIDTH_AM 20000
 #define MAX_LPF_WIDTH_NFM 44000
 

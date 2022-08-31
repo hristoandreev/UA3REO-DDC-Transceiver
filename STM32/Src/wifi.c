@@ -619,7 +619,7 @@ void WIFI_Process(void)
 							println("[WIFI] GOT IP: ", WIFI_IP);
 							WIFI_IP_Gotted = true;
 							if (LCD_systemMenuOpened)
-								LCD_UpdateQuery.SystemMenuRedraw = true;
+								LCD_UpdateQuery.SystemMenuInfolines = true;
 						}
 					}
 				}
@@ -714,7 +714,7 @@ static bool WIFI_ListAP_Sync(void)
 		if (istr != NULL) // OK
 		{
 			if (WIFI_FoundedAP_Index > 0)
-				LCD_UpdateQuery.SystemMenuRedraw = true;
+				LCD_UpdateQuery.SystemMenuInfolines = true;
 
 			return true;
 		}
@@ -1166,7 +1166,9 @@ static void WIFI_printImage_Propagination_callback(void)
 				{
 					LCDDriver_printImage_RLECompressed_StartStream(LCD_WIDTH / 2 - width / 2, LCD_HEIGHT / 2 - height / 2, width, height);
 					WIFI_RLEStreamBuffer_part = 0;
-					WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php?part=0", WIFI_printImage_stream_callback, false, false);
+					char buff[64] = {0};
+					sprintf(buff, "/trx_services/propagination.php?part=0&width=%u&height=%u", LCD_WIDTH, LCD_HEIGHT);
+					WIFI_getHTTPpage("ua3reo.ru", buff, WIFI_printImage_stream_callback, false, false);
 				}
 			}
 		}
@@ -1363,7 +1365,9 @@ void WIFI_getPropagination(void)
 		
 		return;
 	}
-	WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php", WIFI_printImage_Propagination_callback, false, false);
+	char buff[64] = {0};
+	sprintf(buff, "/trx_services/propagination.php?width=%u&height=%u", LCD_WIDTH, LCD_HEIGHT);
+	WIFI_getHTTPpage("ua3reo.ru", buff, WIFI_printImage_Propagination_callback, false, false);
 }
 
 void WIFI_getDayNightMap(void)

@@ -476,7 +476,7 @@ void SDCOMM_FLASH_BIN_handler(void)
 		dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
 		println("[FLASH] File Opened");
 		TRX_Mute = true;
-		WM8731_CleanBuffer();
+		CODEC_CleanBuffer();
 
 		// SCB_DisableICache();
 		// SCB_DisableDCache();
@@ -540,12 +540,14 @@ void SDCOMM_FLASH_BIN_handler(void)
 						// println("[FLASH] Flashing error: ", res, " ", HAL_FLASH_GetError());
 						return;
 					}
+
 					// Check the written value
-					if (*(uint32_t *)LastPGAddress != *(uint32_t *)(SD_workbuffer_A + block_addr))
-					{
-						LCD_showInfo("Flash Verify error", true);
-						return;
-					}
+					//if (*(uint32_t *)LastPGAddress != *(uint32_t *)(SD_workbuffer_A + block_addr))
+					//{
+						//LCD_showInfo("Flash Verify error", true);
+						//return;
+					//}
+
 					// println("[FLASH] Block flashed: ", LastPGAddress);
 					// print_flush();
 
@@ -651,7 +653,7 @@ void SDCOMM_FLASH_JIC_handler(bool restart)
 		dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
 		println("[FLASH] File Opened");
 		TRX_Mute = true;
-		WM8731_CleanBuffer();
+		CODEC_CleanBuffer();
 
 		FPGA_bus_stop = true;
 		HAL_Delay(100);
@@ -948,9 +950,11 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.InputType_DIGI", (uint32_t *)&TRX.InputType_DIGI, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.AutoGain", (uint32_t *)&TRX.AutoGain, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.SPLIT_Enabled", (uint32_t *)&TRX.SPLIT_Enabled, SYSMENU_BOOLEAN);
+#if HRDW_HAS_DUAL_RX
 			SD_WRITE_SETT_LINE("TRX.Dual_RX", (uint32_t *)&TRX.Dual_RX, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.Encoder_Accelerate", (uint32_t *)&TRX.Encoder_Accelerate, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Dual_RX_Type", (uint32_t *)&TRX.Dual_RX_Type, SYSMENU_UINT8);
+#endif
+			SD_WRITE_SETT_LINE("TRX.Encoder_Accelerate", (uint32_t *)&TRX.Encoder_Accelerate, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_STRING("TRX.CALLSIGN", TRX.CALLSIGN);
 			SD_WRITE_SETT_STRING("TRX.LOCATOR", TRX.LOCATOR);
 			SD_WRITE_SETT_LINE("TRX.Custom_Transverter_Enabled", (uint32_t *)&TRX.Custom_Transverter_Enabled, SYSMENU_BOOLEAN);
@@ -964,6 +968,8 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.Transverter_3cm", (uint32_t *)&TRX.Transverter_3cm, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Auto_Input_Switch", (uint32_t *)&TRX.Auto_Input_Switch, SYSMENU_BOOLEAN);
 			// AUDIO
+			SD_WRITE_SETT_LINE("TRX.Volume", (uint32_t *)&TRX.Volume, SYSMENU_UINT16);
+			SD_WRITE_SETT_LINE("TRX.Volume_Step", (uint32_t *)&TRX.Volume_Step, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.IF_Gain", (uint32_t *)&TRX.IF_Gain, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.AGC_GAIN_TARGET2", (uint32_t *)&TRX.AGC_GAIN_TARGET, SYSMENU_INT8);
 			SD_WRITE_SETT_LINE("TRX.MIC_GAIN", (uint32_t *)&TRX.MIC_GAIN, SYSMENU_UINT8);
@@ -1115,6 +1121,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.CICFIR_GAINER_384K_3", (uint32_t *)&CALIBRATE.CICFIR_GAINER_384K_val, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.DAC_GAINER_3", (uint32_t *)&CALIBRATE.DAC_GAINER_val, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.TXCICFIR_GAINER_3", (uint32_t *)&CALIBRATE.TXCICFIR_GAINER_val, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.DAC_driver_mode", (uint32_t *)&CALIBRATE.DAC_driver_mode, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_2200m", (uint32_t *)&CALIBRATE.rf_out_power_2200m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_160m", (uint32_t *)&CALIBRATE.rf_out_power_160m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_80m", (uint32_t *)&CALIBRATE.rf_out_power_80m, SYSMENU_UINT8);
@@ -1127,6 +1134,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_cb", (uint32_t *)&CALIBRATE.rf_out_power_cb, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_10m", (uint32_t *)&CALIBRATE.rf_out_power_10m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_6m", (uint32_t *)&CALIBRATE.rf_out_power_6m, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_4m", (uint32_t *)&CALIBRATE.rf_out_power_4m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_2m", (uint32_t *)&CALIBRATE.rf_out_power_2m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.smeter_calibration_hf", (uint32_t *)&CALIBRATE.smeter_calibration_hf, SYSMENU_INT16);
 			SD_WRITE_SETT_LINE("CALIBRATE.smeter_calibration_vhf", (uint32_t *)&CALIBRATE.smeter_calibration_vhf, SYSMENU_INT16);
@@ -1157,8 +1165,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.SWR_REF_Calibration_6M", (uint32_t *)&CALIBRATE.SWR_REF_Calibration_6M, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.SWR_FWD_Calibration_VHF", (uint32_t *)&CALIBRATE.SWR_FWD_Calibration_VHF, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.SWR_REF_Calibration_VHF", (uint32_t *)&CALIBRATE.SWR_REF_Calibration_VHF, SYSMENU_FLOAT32);
-			SD_WRITE_SETT_LINE("CALIBRATE.MAX_RF_POWER", (uint32_t *)&CALIBRATE.MAX_RF_POWER, SYSMENU_UINT8);
-			SD_WRITE_SETT_LINE("CALIBRATE.VCXO_correction", (uint32_t *)&CALIBRATE.VCXO_correction, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.VCXO_correction", (uint32_t *)&CALIBRATE.VCXO_correction, SYSMENU_INT16);
 			SD_WRITE_SETT_LINE("CALIBRATE.FAN_MEDIUM_START", (uint32_t *)&CALIBRATE.FAN_MEDIUM_START, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.FAN_MEDIUM_STOP", (uint32_t *)&CALIBRATE.FAN_MEDIUM_STOP, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.FAN_FULL_START", (uint32_t *)&CALIBRATE.FAN_FULL_START, SYSMENU_UINT8);
@@ -1167,6 +1174,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.FM_DEVIATION_SCALE", (uint32_t *)&CALIBRATE.FM_DEVIATION_SCALE, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.SSB_POWER_ADDITION", (uint32_t *)&CALIBRATE.SSB_POWER_ADDITION, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.AM_MODULATION_INDEX", (uint32_t *)&CALIBRATE.AM_MODULATION_INDEX, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.MAX_RF_POWER_ON_METER", (uint32_t *)&CALIBRATE.MAX_RF_POWER_ON_METER, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.TUNE_MAX_POWER", (uint32_t *)&CALIBRATE.TUNE_MAX_POWER, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.RTC_Coarse_Calibration", (uint32_t *)&CALIBRATE.RTC_Coarse_Calibration, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.RTC_Calibration", (uint32_t *)&CALIBRATE.RTC_Calibration, SYSMENU_INT16);
@@ -1183,6 +1191,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_CB", (uint32_t *)&CALIBRATE.EXT_CB, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_10m", (uint32_t *)&CALIBRATE.EXT_10m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_6m", (uint32_t *)&CALIBRATE.EXT_6m, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.EXT_4m", (uint32_t *)&CALIBRATE.EXT_4m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_FM", (uint32_t *)&CALIBRATE.EXT_FM, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_2m", (uint32_t *)&CALIBRATE.EXT_2m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_70cm", (uint32_t *)&CALIBRATE.EXT_70cm, SYSMENU_UINT8);
@@ -1205,6 +1214,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_CB", (uint32_t *)&CALIBRATE.NOTX_CB, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_10m", (uint32_t *)&CALIBRATE.NOTX_10m, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_6m", (uint32_t *)&CALIBRATE.NOTX_6m, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_4m", (uint32_t *)&CALIBRATE.NOTX_4m, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_FM", (uint32_t *)&CALIBRATE.NOTX_FM, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_2m", (uint32_t *)&CALIBRATE.NOTX_2m, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_70cm", (uint32_t *)&CALIBRATE.NOTX_70cm, SYSMENU_BOOLEAN);
@@ -1450,12 +1460,14 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.AutoGain = bval;
 	if (strcmp(name, "TRX.SPLIT_Enabled") == 0)
 		TRX.SPLIT_Enabled = bval;
+#if HRDW_HAS_DUAL_RX
 	if (strcmp(name, "TRX.Dual_RX") == 0)
 		TRX.Dual_RX = bval;
-	if (strcmp(name, "TRX.Encoder_Accelerate") == 0)
-		TRX.Encoder_Accelerate = bval;
 	if (strcmp(name, "TRX.Dual_RX_Type") == 0)
 		TRX.Dual_RX_Type = (DUAL_RX_TYPE)uintval;
+#endif
+	if (strcmp(name, "TRX.Encoder_Accelerate") == 0)
+		TRX.Encoder_Accelerate = bval;
 	if (strcmp(name, "TRX.CALLSIGN") == 0)
 	{
 		dma_memset(TRX.CALLSIGN, 0x00, sizeof(TRX.CALLSIGN));
@@ -1495,6 +1507,10 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 	if (strcmp(name, "TRX.Auto_Input_Switch") == 0)
 		TRX.Auto_Input_Switch = bval;
 	// AUDIO
+	if (strcmp(name, "TRX.Volume") == 0)
+		TRX.Volume = (uint16_t)uintval;
+	if (strcmp(name, "TRX.Volume_Step") == 0)
+		TRX.Volume_Step = (uint8_t)uintval;
 	if (strcmp(name, "TRX.IF_Gain") == 0)
 		TRX.IF_Gain = (uint8_t)uintval;
 	if (strcmp(name, "TRX.AGC_GAIN_TARGET2") == 0)
@@ -1832,6 +1848,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.TXCICFIR_GAINER_val = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.DAC_GAINER_3") == 0)
 		CALIBRATE.DAC_GAINER_val = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.DAC_driver_mode") == 0)
+		CALIBRATE.DAC_driver_mode = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_2200m") == 0)
 		CALIBRATE.rf_out_power_2200m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_160m") == 0)
@@ -1856,6 +1874,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.rf_out_power_10m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_6m") == 0)
 		CALIBRATE.rf_out_power_6m = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.rf_out_power_4m") == 0)
+		CALIBRATE.rf_out_power_4m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_2m") == 0)
 		CALIBRATE.rf_out_power_2m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.smeter_calibration_hf") == 0)
@@ -1916,10 +1936,10 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.SWR_FWD_Calibration_VHF = floatval;
 	if (strcmp(name, "CALIBRATE.SWR_REF_Calibration_VHF") == 0)
 		CALIBRATE.SWR_REF_Calibration_VHF = floatval;
-	if (strcmp(name, "CALIBRATE.MAX_RF_POWER") == 0)
-		CALIBRATE.MAX_RF_POWER = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.MAX_RF_POWER_ON_METER") == 0)
+		CALIBRATE.MAX_RF_POWER_ON_METER = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.VCXO_correction") == 0)
-		CALIBRATE.VCXO_correction = (int8_t)intval;
+		CALIBRATE.VCXO_correction = (int16_t)intval;
 	if (strcmp(name, "CALIBRATE.FAN_MEDIUM_START") == 0)
 		CALIBRATE.FAN_MEDIUM_START = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.FAN_MEDIUM_STOP") == 0)
@@ -1969,6 +1989,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.EXT_10m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.EXT_6m") == 0)
 		CALIBRATE.EXT_6m = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.EXT_4m") == 0)
+		CALIBRATE.EXT_4m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.EXT_FM") == 0)
 		CALIBRATE.EXT_FM = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.EXT_2m") == 0)
@@ -2013,6 +2035,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.NOTX_10m = bval;
 	if (strcmp(name, "CALIBRATE.NOTX_6m") == 0)
 		CALIBRATE.NOTX_6m = bval;
+	if (strcmp(name, "CALIBRATE.NOTX_4m") == 0)
+		CALIBRATE.NOTX_4m = bval;
 	if (strcmp(name, "CALIBRATE.NOTX_2m") == 0)
 		CALIBRATE.NOTX_2m = bval;
 	if (strcmp(name, "CALIBRATE.NOTX_70cm") == 0)

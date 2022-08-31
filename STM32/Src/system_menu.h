@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "lcd_driver.h"
 
-#define ENUM_MAX_COUNT 9
+#define ENUM_MAX_COUNT 10
 
 #ifdef LAY_160x128
 #define ENUM_MAX_LENGTH 7
@@ -80,6 +80,7 @@ extern void SYSMENU_AUDIO_SQUELCH_HOTKEY(void);
 extern void SYSMENU_AUDIO_DNR_HOTKEY(void);
 extern void SYSMENU_AUDIO_AGC_HOTKEY(void);
 extern void SYSMENU_SERVICE_FT8_HOTKEY(void);
+extern void SYSMENU_SD_FILEMANAGER_HOTKEY(void);
 extern void SYSMENU_HANDL_SERVICESMENU(int8_t direction);
 extern void SYSMENU_HANDL_AUDIO_SSB_HPF_RX_pass(int8_t direction);
 extern void SYSMENU_HANDL_AUDIO_SSB_HPF_TX_pass(int8_t direction);

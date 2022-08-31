@@ -1,5 +1,5 @@
 #include "audio_processor.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "audio_filters.h"
 #include "agc.h"
 #include "settings.h"
@@ -664,7 +664,7 @@ void processRxAudio(void)
 	// Beep signal
 	static float32_t beep_index = 0;
 	static uint32_t beep_samples = 0;
-	if (WM8731_Beeping)
+	if (CODEC_Beeping)
 	{
 		float32_t old_signal = 0;
 		int32_t out = 0;
@@ -688,12 +688,12 @@ void processRxAudio(void)
 		{
 			beep_index = 0;
 			beep_samples = 0;
-			WM8731_Beeping = false;
+			CODEC_Beeping = false;
 		}
 	}
 
 	// Mute codec
-	if (WM8731_Muting)
+	if (CODEC_Muting)
 	{
 		for (uint32_t pos = 0; pos < AUDIO_BUFFER_HALF_SIZE; pos++)
 		{
@@ -706,7 +706,7 @@ void processRxAudio(void)
 	if (TRX_Inited)
 	{
 		Aligned_CleanDCache_by_Addr((uint32_t *)&APROC_AudioBuffer_out[0], sizeof(APROC_AudioBuffer_out));
-		if (WM8731_DMA_state) // complete
+		if (CODEC_DMA_state) // complete
 		{
 			#if HRDW_HAS_MDMA
 			HAL_MDMA_Start(&HRDW_AUDIO_COPY_MDMA, (uint32_t)&APROC_AudioBuffer_out[0], (uint32_t)&CODEC_Audio_Buffer_RX[AUDIO_BUFFER_SIZE], CODEC_AUDIO_BUFFER_HALF_SIZE * 4, 1); //*2 -> left_right
@@ -738,19 +738,19 @@ void processTxAudio(void)
 		return;
 
 	// sync fpga to audio-codec
-	static bool old_WM8731_DMA_state = false;
-	bool start_WM8731_DMA_state = WM8731_DMA_state;
+	static bool old_CODEC_DMA_state = false;
+	bool start_CODEC_DMA_state = CODEC_DMA_state;
 	
-	if (start_WM8731_DMA_state == old_WM8731_DMA_state)
+	if (start_CODEC_DMA_state == old_CODEC_DMA_state)
 		return;
 	
 	uint32_t dma_index = HRDW_getAudioCodecTX_DMAIndex();
-	if (!start_WM8731_DMA_state && dma_index > (CODEC_AUDIO_BUFFER_SIZE * 2 - 150))
+	if (!start_CODEC_DMA_state && dma_index > (CODEC_AUDIO_BUFFER_SIZE * 2 - 150))
 		return;
-	if (start_WM8731_DMA_state && dma_index > (CODEC_AUDIO_BUFFER_SIZE - 150))
+	if (start_CODEC_DMA_state && dma_index > (CODEC_AUDIO_BUFFER_SIZE - 150))
 		return;
 	
-	old_WM8731_DMA_state = start_WM8731_DMA_state;
+	old_CODEC_DMA_state = start_CODEC_DMA_state;
 
 	// stuff
 	AUDIOPROC_samples++;
@@ -1055,7 +1055,7 @@ void processTxAudio(void)
 		}
 
 		Aligned_CleanDCache_by_Addr((uint32_t *)&APROC_AudioBuffer_out[0], sizeof(APROC_AudioBuffer_out));
-		if (start_WM8731_DMA_state) // compleate
+		if (start_CODEC_DMA_state) // compleate
 		{
 			#if HRDW_HAS_MDMA
 			HAL_MDMA_Start(&HRDW_AUDIO_COPY_MDMA, (uint32_t)&APROC_AudioBuffer_out[0], (uint32_t)&CODEC_Audio_Buffer_RX[AUDIO_BUFFER_SIZE], AUDIO_BUFFER_SIZE * 4, 1);
@@ -1088,7 +1088,7 @@ void processTxAudio(void)
 			int32_t sample = 0;
 			arm_float_to_q31(&point, &sample, 1);
 			int32_t data = convertToSPIBigEndian(sample);
-			if (start_WM8731_DMA_state)
+			if (start_CODEC_DMA_state)
 			{
 				CODEC_Audio_Buffer_RX[AUDIO_BUFFER_SIZE + i * 2] = data;
 				CODEC_Audio_Buffer_RX[AUDIO_BUFFER_SIZE + i * 2 + 1] = data;
@@ -1118,9 +1118,12 @@ void processTxAudio(void)
 	if(TRX_SWR_PROTECTOR && TRX.RF_Power > SWR_PROTECTOR_MAX_POWER)
 		RF_Power_selected = SWR_PROTECTOR_MAX_POWER;
 	
-	float32_t RFpower_amplitude = log10f_fast((RF_Power_selected * 0.9f + 10.0f) / 10.0f) * TRX_MAX_TX_Amplitude;
+	float32_t RFpower_amplitude = 0.0f;
 	if(CALIBRATE.LinearPowerControl) {
 		RFpower_amplitude = (RF_Power_selected / 100.0f) * TRX_MAX_TX_Amplitude;
+	} else {
+		float32_t dbP = rate2dbP(RF_Power_selected / 100.0f);
+		RFpower_amplitude = db2rateV(dbP) * TRX_MAX_TX_Amplitude;
 	}
 	
 	if (RFpower_amplitude < 0.0f || TRX.RF_Power == 0)
@@ -1798,15 +1801,25 @@ static void DemodulateFM(float32_t *data_i, float32_t *data_q, AUDIO_PROC_RX_NUM
 	#endif
 	
 	// *** Squelch Processing ***
-	if (FM_SQL_threshold_dbm > dbm && !DFM->squelched)
+	if (!DFM->squelchSuggested && FM_SQL_threshold_dbm > dbm)
 	{
-		DFM->squelchRate = 1.0f;
-		DFM->squelched = true; // yes, close the squelch
+		
+		DFM->squelchSuggested = true; // yes, close the squelch
+		DFM->squelchSuggested_starttime = HAL_GetTick();
 	}
-	else if (FM_SQL_threshold_dbm <= dbm && DFM->squelched)
+	else if (DFM->squelchSuggested && FM_SQL_threshold_dbm <= dbm)
 	{
-		DFM->squelchRate = 0.01f;
-		DFM->squelched = false; //  yes, open the squelch
+		DFM->squelchSuggested = false; //  yes, open the squelch
+		DFM->squelchSuggested_starttime = HAL_GetTick();
+	}
+	
+	if(DFM->squelched != DFM->squelchSuggested && DFM->squelchSuggested_starttime < HAL_GetTick() - FM_RX_SQL_TIMEOUT_MS) {
+		DFM->squelched = DFM->squelchSuggested;
+		if(DFM->squelched) {
+			DFM->squelchRate = 1.0f;
+		} else {
+			DFM->squelchRate = 0.01f;
+		}
 	}
 	
 	// do IQ demod
@@ -1907,7 +1920,7 @@ static void ModulateFM(uint16_t size, float32_t amplitude)
 	static float32_t fm_mod_accum = 0;
 	static float32_t modulation_index = 0;
 	if (CurrentVFO->LPF_TX_Filter_Width > 0)
-		modulation_index = CurrentVFO->LPF_TX_Filter_Width / (float32_t)TRX_SAMPLERATE * (float32_t)CALIBRATE.FM_DEVIATION_SCALE;
+		modulation_index = CurrentVFO->LPF_TX_Filter_Width / (float32_t)TRX_SAMPLERATE / (float32_t)TRX_TX_Harmonic * (float32_t)CALIBRATE.FM_DEVIATION_SCALE;
 	else
 		modulation_index = (float32_t)CALIBRATE.FM_DEVIATION_SCALE;
 
@@ -2055,7 +2068,7 @@ static void APROC_SD_Play(void)
 			if (TRX_Inited)
 			{
 				Aligned_CleanDCache_by_Addr((uint32_t *)&APROC_AudioBuffer_out[0], sizeof(APROC_AudioBuffer_out));
-				if (WM8731_DMA_state) // complete
+				if (CODEC_DMA_state) // complete
 				{
 					#if HRDW_HAS_MDMA
 					HAL_MDMA_Start(&HRDW_AUDIO_COPY_MDMA, (uint32_t)&APROC_AudioBuffer_out[0], (uint32_t)&CODEC_Audio_Buffer_RX[AUDIO_BUFFER_SIZE], CODEC_AUDIO_BUFFER_HALF_SIZE * 4, 1); //*2 -> left_right
@@ -2319,11 +2332,21 @@ void APROC_doVOX(void) {
 	static uint32_t VOX_LastSignalTime = 0;
 	static bool VOX_applied = false;
 	
-	static q31_t rms = 0;
+#ifndef STM32F407xx
+	q31_t rms = 0;
 	arm_rms_q31(CODEC_Audio_Buffer_TX, CODEC_AUDIO_BUFFER_HALF_SIZE, &rms);
+#else
+	float32_t rms = 0;
+	for(uint32_t i = 0 ; i < CODEC_AUDIO_BUFFER_HALF_SIZE; i++) {
+		float32_t sample = convertToSPIBigEndian(CODEC_Audio_Buffer_TX[i]);
+		rms += sample * sample;
+	}
+	rms = sqrtf(rms / (float32_t)CODEC_AUDIO_BUFFER_HALF_SIZE);
+#endif
+	
 	float32_t full_scale_rate = (float32_t)rms / CODEC_BITS_FULL_SCALE;
 	float32_t VOX_dbFS = rate2dbV(full_scale_rate);
-	//println("VOX dbFS: ", VOX_dbFS);
+	// println("VOX dbFS: ", VOX_dbFS);
 	
 	if(VOX_dbFS > TRX.VOX_THRESHOLD)
 		VOX_LastSignalTime = current_tick;

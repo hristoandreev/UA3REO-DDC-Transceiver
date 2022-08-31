@@ -35,6 +35,7 @@ typedef const struct
 	const uint16_t STATUS_SMETER_FM_SQL;
 	const uint16_t STATUS_MODE;
 	const uint16_t STATUS_ERR;
+	const uint16_t STATUS_INFO_BORDER;
 	const uint16_t BANDMAP_CW;
 	const uint16_t BANDMAP_SSB;
 	const uint16_t BANDMAP_DIGI;
@@ -71,10 +72,10 @@ typedef const struct
 	const uint16_t WINDOWS_BORDER;
 	const uint16_t WINDOWS_BG;
 	const uint16_t KEYBOARD_BG;
-	const uint16_t IFGAIN_BG;
-	const uint16_t IFGAIN_FG;
-	const uint16_t AFGAIN_BG;
-	const uint16_t AFGAIN_FG;
+    const uint16_t IFGAIN_BAR_BG;
+    const uint16_t IFGAIN_BAR_FG;
+    const uint16_t AFGAIN_BAR_BG;
+    const uint16_t AFGAIN_BAR_FG;
 } STRUCT_COLOR_THEME;
 
 static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
@@ -111,6 +112,7 @@ static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
 		.STATUS_SMETER_FM_SQL = rgb888torgb565(30, 139, 28),
 		.STATUS_MODE = rgb888torgb565(249, 205, 46),
 		.STATUS_ERR = COLOR_RED,
+		.STATUS_INFO_BORDER = COLOR_RED,
 		.BANDMAP_CW = rgb888torgb565(50, 50, 255),
 		.BANDMAP_SSB = rgb888torgb565(50, 237, 255),
 		.BANDMAP_DIGI = rgb888torgb565(255, 50, 50),
@@ -140,17 +142,17 @@ static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
 		.FREQ_B_INACTIVE = rgb888torgb565(100, 100, 100),
 		.STATUS_LABEL_ACTIVE = rgb888torgb565(32, 191, 17),
 		.STATUS_LABEL_INACTIVE = rgb888torgb565(90, 90, 90),
-		.BUTTON_BACK = rgb888torgb565(30, 30, 30),
+		.BUTTON_BACK = rgb888torgb565(10, 10, 10),
 		.BUTTON_BORDER = rgb888torgb565(105, 105, 105),
 		.BUTTON_LIGHTER_ACTIVE = rgb888torgb565(32, 191, 17),
 		.BUTTON_LIGHTER_INACTIVE = rgb888torgb565(90, 90, 90),
 		.WINDOWS_BORDER = rgb888torgb565(249, 205, 46),
 		.WINDOWS_BG = COLOR_BLACK,
 		.KEYBOARD_BG = rgb888torgb565(20, 20, 20),
-		.IFGAIN_BG = rgb888torgb565(20, 20, 20),
-		.IFGAIN_FG = rgb888torgb565(255, 0, 0),
-		.AFGAIN_BG = rgb888torgb565(20, 20, 20),
-		.AFGAIN_FG = rgb888torgb565(0, 255, 0),
+        .IFGAIN_BAR_BG = rgb888torgb565(20, 20, 20),
+        .IFGAIN_BAR_FG = rgb888torgb565(255, 0, 0),
+        .AFGAIN_BAR_BG = rgb888torgb565(20, 20, 20),
+        .AFGAIN_BAR_FG = rgb888torgb565(0, 255, 0),
 	},
 	// 1 - white
 	{
@@ -185,6 +187,7 @@ static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
 		.STATUS_SMETER_FM_SQL = rgb888torgb565(30, 139, 28),
 		.STATUS_MODE = rgb888torgb565(150, 130, 50),
 		.STATUS_ERR = COLOR_RED,
+		.STATUS_INFO_BORDER = COLOR_RED,
 		.BANDMAP_CW = rgb888torgb565(100, 100, 250),
 		.BANDMAP_SSB = rgb888torgb565(60, 225, 241),
 		.BANDMAP_DIGI = rgb888torgb565(255, 50, 50),
@@ -214,17 +217,17 @@ static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
 		.FREQ_B_INACTIVE = rgb888torgb565(100, 100, 100),
 		.STATUS_LABEL_ACTIVE = rgb888torgb565(32, 191, 17),
 		.STATUS_LABEL_INACTIVE = rgb888torgb565(90, 90, 90),
-		.BUTTON_BACK = rgb888torgb565(30, 30, 30),
+		.BUTTON_BACK = rgb888torgb565(10, 10, 10),
 		.BUTTON_BORDER = rgb888torgb565(105, 105, 105),
 		.BUTTON_LIGHTER_ACTIVE = rgb888torgb565(32, 191, 17),
 		.BUTTON_LIGHTER_INACTIVE = rgb888torgb565(90, 90, 90),
 		.WINDOWS_BORDER = rgb888torgb565(249, 205, 46),
 		.WINDOWS_BG = COLOR_BLACK,
 		.KEYBOARD_BG = rgb888torgb565(20, 20, 20),
-		.IFGAIN_BG = rgb888torgb565(129, 135, 247),
-		.IFGAIN_FG = rgb888torgb565(255, 0, 0),
-		.AFGAIN_BG = rgb888torgb565(129, 135, 247),
-		.AFGAIN_FG = rgb888torgb565(0, 255, 0),
+        .IFGAIN_BAR_BG = rgb888torgb565(129, 135, 247),
+        .IFGAIN_BAR_FG = rgb888torgb565(255, 0, 0),
+        .AFGAIN_BAR_BG = rgb888torgb565(129, 135, 247),
+        .AFGAIN_BAR_FG = rgb888torgb565(0, 255, 0),
 	},
 
 	{
@@ -262,6 +265,7 @@ static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
 		.STATUS_SMETER_FM_SQL = rgb888torgb565(30, 139, 28),
 		.STATUS_MODE = rgb888torgb565(249, 205, 46),
 		.STATUS_ERR = COLOR_RED,
+		.STATUS_INFO_BORDER = COLOR_RED,
 		.BANDMAP_CW = rgb888torgb565(50, 50, 255),
 		.BANDMAP_SSB = rgb888torgb565(50, 237, 255),
 		.BANDMAP_DIGI = rgb888torgb565(255, 50, 50),
@@ -294,17 +298,17 @@ static const STRUCT_COLOR_THEME COLOR_THEMES[3] = {
 
 		.STATUS_LABEL_ACTIVE = rgb888torgb565(32, 191, 17),
 		.STATUS_LABEL_INACTIVE = rgb888torgb565(90, 90, 90),
-		.BUTTON_BACK = rgb888torgb565(30, 30, 30),
+		.BUTTON_BACK = rgb888torgb565(10, 10, 10),
 		.BUTTON_BORDER = rgb888torgb565(105, 105, 105),
 		.BUTTON_LIGHTER_ACTIVE = rgb888torgb565(32, 191, 17),
 		.BUTTON_LIGHTER_INACTIVE = rgb888torgb565(90, 90, 90),
 		.WINDOWS_BORDER = rgb888torgb565(249, 205, 46),
 		.WINDOWS_BG = COLOR_BLACK,
 		.KEYBOARD_BG = rgb888torgb565(20, 20, 20),
-        .IFGAIN_BG = rgb888torgb565(129, 135, 247),
-        .IFGAIN_FG = rgb888torgb565(255, 0, 0),
-        .AFGAIN_BG = rgb888torgb565(129, 135, 247),
-        .AFGAIN_FG = rgb888torgb565(0, 255, 0),
+        .IFGAIN_BAR_BG = rgb888torgb565(129, 135, 247),
+        .IFGAIN_BAR_FG = rgb888torgb565(255, 0, 0),
+        .AFGAIN_BAR_BG = rgb888torgb565(129, 135, 247),
+        .AFGAIN_BAR_FG = rgb888torgb565(0, 255, 0),
 	}};
 
 #define COLOR_THEMES_COUNT 3

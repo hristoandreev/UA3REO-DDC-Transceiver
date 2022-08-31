@@ -14,8 +14,9 @@ When transmitting, the process occurs in the opposite order, only at the end of 
 
 ## Specifications
 
-* Receiving frequencies: 0 MHz - 750 MHz
-* Transmission frequencies: 0 MHz - 160 MHz
+* Receiving frequencies: 0 MHz - 750 MHz with fading each 61.44 Mhz
+* Transmission frequencies: 0 MHz - 80 MHz, 120 MHz - 160 MHz
+* Transmission frequencies in harmonics mode (CW, FM): 360 Mhz - 480 Mhz
 * TX power (QRP version): 7W+ (HF), 5W (VHF)
 * TX power (QRP++ DB5AT version): 20W (HF), 7W (VHF)
 * TX power (RU4PN version): 100W (HF), 50W+ (VHF)
@@ -168,6 +169,8 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 ### AUDIO Settings
 
+* **Volume** - AF gain
+* **Volume step** - AF gain step by ENC2 (X1, Lite)
 * **IF Gain, dB** - IF gain
 * **AGC Gain target, LKFS** - Maximum AGC gain (Maximum volume with AGC on)
 * **Mic Gain** - Microphone gain
@@ -276,6 +279,7 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 ### SD Card
 
+* **File Manager** - Show SD Card file manager, support WAV playback and deleteing files, listening and broadcasting recordings, as well as updating firmware from a memory card
 * **USB SD Card Reader** - Enable USB SD Card reader
 * **Export Settings** - Export settings and calibration data to SD card
 * **Import Settings** - Import settings and calibration data from SD card
@@ -295,13 +299,13 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **CICCOMP Shift** - Bit shift after CIC compensator
 * **TX CICCOMP Shift** - Bit shift after TX CIC compensator
 * **DAC Shift** - Bit shift of the output to the DAC
+* **DAC Driver Mode** - DAC Driver OPA2673 bias mode (2 = 100% bias, 1 = 75% bias, 0 = 50% bias)
 * **RF GAIN xxx** - Calibration of the maximum output power for each range. RF GAIN 0-100% - 50% driver bias, 101-200% - 75% driver bias, 201-300% - 100% driver bias.
 * **S METER** - S-meter calibration
 * **ADC OFFSET** - ADC offset calibration
 * **LPF END** - LPF filter parameters
 * **HPF START** - HPF filter parameters
 * **BPF x** - Bandpass filter parameters
-* **MAX RF Power** - Maximim RF power (for indication)
 * **SWR FWD/REF RATE** - Adjustment of the transformation ratio of the SWR meter (forward / return)
 * **VCXO Correction** - Frequency adjustment of the reference oscillator
 * **FAN Medium start** - Temperature of the PA for starting the fan at medium speed
@@ -312,7 +316,8 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **SSB Power addition** - Addition of RF power in SSB power, %
 * **FM Deviation Scale** - Set TX FM Deviation Scale
 * **AM Modulation Index** - Set TX AM Modulation Scale
-* **TUNE Max Power** - Maximum RF power in Tune mode
+* **MAX PWR on Meter** - Maximim RF power (for indication)
+* **MAX Power in TUNE** - Maximum RF power in Tune mode
 * **RTC COARSE CALIBR** - Very coarse clock crystal calibration
 * **RTC FINE CALIBR** - Clock crystal calibration, one division is 0.954 ppm
 * **EXT xxx** - External port control by band (EXT3, EXT2, EXT1, EXT0) - open drain
@@ -326,6 +331,7 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **LNA Compensation** - Compensates the S-meter value when the LNA is turned on, dBm
 * **TSignal Balance** - Sets the power balance between signals in Two signal tune mode
 * **Linear Pwr Control** - Sets a linear way to change the signal amplitude when adjusting the power (if disabled - logarithmic)
+* **Flash GT911** - Starting the touchpad update procedure according to LCD screen resolution
 
 ### Set Clock Time
 
@@ -378,10 +384,6 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 ### RDA Statistics 
 
 * Print statistics from RDA award (from internet)
-
-### File Manager 
-
-* Show SD Card file manager, support WAV playback and deleteing files, listening and broadcasting recordings, as well as updating firmware from a memory card
 
 ### Record CQ message
 
