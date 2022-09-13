@@ -64,16 +64,23 @@ static uint8_t getBPFByFreq(uint32_t freq)
 		return 5;
 	if (freq >= CALIBRATE.RFU_BPF_6_START && freq < CALIBRATE.RFU_BPF_6_END)
 		return 6;
-	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D)
+	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D || CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
 	{
 		if (freq >= CALIBRATE.RFU_BPF_7_START && freq < CALIBRATE.RFU_BPF_7_END)
 			return 7;
 	}
-	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT)
+	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
 	{
 		if (freq >= CALIBRATE.RFU_BPF_8_START && freq < CALIBRATE.RFU_BPF_8_END)
 			return 8;
 	}
+    if (CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
+    {
+        if (freq >= CALIBRATE.RFU_BPF_9_START && freq < CALIBRATE.RFU_BPF_9_END)
+            return 9;
+        if (freq >= CALIBRATE.RFU_HPF_START)
+            return 10;
+    }
 	if (CALIBRATE.RF_unit_type == RF_UNIT_QRP || CALIBRATE.RF_unit_type == RF_UNIT_RU4PN)
 	{
 		if (freq >= CALIBRATE.RFU_HPF_START)
@@ -1369,6 +1376,151 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 		HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(RFUNIT_OE_GPIO_Port, RFUNIT_OE_Pin, GPIO_PIN_RESET);
 	}
+
+    // LZ1HAA Version RF Unit ///////////////////////////////////////////////////////////////////////
+    if (CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
+    {
+        static volatile uint32_t data = 0;
+        if (TRX_Tune && CurrentVFO->Freq <= 70000000)
+            RF_UNIT_ProcessATU();
+
+        HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_RESET); // latch
+        MINI_DELAY
+        for (uint8_t registerNumber = 0; registerNumber < 24; registerNumber++)
+        {
+            HAL_GPIO_WritePin(RFUNIT_CLK_GPIO_Port, RFUNIT_CLK_Pin, GPIO_PIN_RESET); // data block
+            MINI_DELAY
+            HAL_GPIO_WritePin(RFUNIT_DATA_GPIO_Port, RFUNIT_DATA_Pin, GPIO_PIN_RESET); // data
+            MINI_DELAY
+            if (!clean)
+            {
+                //============================ ATT ===================================
+
+                // IC5-7
+//                if (registerNumber == 0) continue;
+                // IC5-6
+//                if (registerNumber == 1) continue;
+                // IC5-5 ATT_ON_16
+                if (registerNumber == 2 && !(TRX.ATT && att_val_16)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-4 ATT_ON_8
+                if (registerNumber == 3 && !(TRX.ATT && att_val_8)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-3 ATT_ON_4
+                if (registerNumber == 4 && !(TRX.ATT && att_val_4)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-2 ATT_ON_2
+                if (registerNumber == 5 && !(TRX.ATT && att_val_2)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-1 ATT_ON_1
+                if (registerNumber == 6 && !(TRX.ATT && att_val_1)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-0 ATT_ON_0.5
+                if (registerNumber == 7 && !(TRX.ATT && att_val_05)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                //========================== END ATT =================================
+
+                // IC4-7
+//                if (registerNumber == 8) continue;
+
+                // IC4-6 TX_PTT_OUT
+                if (registerNumber == 9 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-5 LNA_ON
+                if (registerNumber == 10 && (!TRX_on_TX && TRX.LNA)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-4 LPF_ON
+                if (registerNumber == 11 && (TRX.RF_Filters && (CurrentVFO->Freq <= CALIBRATE.RFU_LPF_END) && !dualrx_lpf_disabled)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-3 BPF_OFF
+                if (registerNumber == 12 && !(TRX.RF_Filters && !dualrx_bpf_disabled && bpf != 255)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-2 BAND HPF
+                if (registerNumber == 13 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 10)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-1 BAND_OUT_9
+                if (registerNumber == 14 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 9)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-0 BAND_OUT_8
+                if (registerNumber == 15 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 8)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-7 BAND_OUT_7
+                if (registerNumber == 16 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 7)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-6 BAND_OUT_6
+                if (registerNumber == 17 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 6)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-5 BAND_OUT_5
+                if (registerNumber == 18 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 5)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-4 BAND_OUT_4
+                if (registerNumber == 19 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 4)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-3 BAND_OUT_3
+                if (registerNumber == 20 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 3)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-2 BAND_OUT_2
+                if (registerNumber == 21 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 2)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-1 BAND_OUT_1
+                if (registerNumber == 22 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 1)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-0 BAND_OUT_0
+                if (registerNumber == 23 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 0)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+            }
+            MINI_DELAY
+            HAL_GPIO_WritePin(RFUNIT_CLK_GPIO_Port, RFUNIT_CLK_Pin, GPIO_PIN_SET);
+            MINI_DELAY
+        }
+        MINI_DELAY
+        HAL_GPIO_WritePin(RFUNIT_CLK_GPIO_Port, RFUNIT_CLK_Pin, GPIO_PIN_RESET);
+        MINI_DELAY
+        HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(RFUNIT_OE_GPIO_Port, RFUNIT_OE_Pin, GPIO_PIN_RESET);
+    }
 }
 
 void RF_UNIT_ProcessSensors(void)

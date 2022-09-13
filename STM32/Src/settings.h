@@ -322,6 +322,7 @@ typedef enum
 	RF_UNIT_BIG,
 	RF_UNIT_SPLIT,
 	RF_UNIT_RU4PN,
+    RF_UNIT_LZ1HAA,
 	RF_UNIT_WF_100D,
 } TRX_RF_UNIT_TYPE;
 
@@ -627,6 +628,8 @@ extern struct TRX_CALIBRATE
 	uint32_t RFU_BPF_7_END;
 	uint32_t RFU_BPF_8_START;
 	uint32_t RFU_BPF_8_END;
+    uint32_t RFU_BPF_9_START;
+	uint32_t RFU_BPF_9_END;
 	int16_t RTC_Calibration;
 	uint8_t DAC_driver_mode;
 	uint8_t rf_out_power_2200m;
