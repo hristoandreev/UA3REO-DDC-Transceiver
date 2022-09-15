@@ -10,7 +10,7 @@
 #include "bands.h"
 #include "front_unit.h"
 
-const char version_string[19] = "5.0.0-dev";
+const char version_string[19] = "5.0.0";
 
 const char ota_config_frontpanel[] = OTA_CONFIG_FRONT_PANEL;
 const char ota_config_lcd[] = OTA_CONFIG_LCD;
@@ -179,7 +179,7 @@ void LoadSettings(bool clear)
 		TRX.FRQ_FAST_STEP = 100;			// frequency tuning step by the main encoder in FAST mode
 		TRX.FRQ_ENC_STEP = 25000;			// frequency tuning step by main add. encoder
 		TRX.FRQ_ENC_FAST_STEP = 50000;		// frequency tuning step by main add. encoder in FAST mode
-		TRX.FRQ_CW_STEP_DIVIDER = 10;		// Step divider for CW mode
+		TRX.FRQ_CW_STEP_DIVIDER = 4;		// Step divider for CW mode
 		TRX.Debug_Type = TRX_DEBUG_OFF;		// Debug output to DEBUG / UART port
 		TRX.BandMapEnabled = true;			// automatic change of mode according to the range map
 		TRX.InputType_MAIN = TRX_INPUT_MIC; // type of input to transfer (SSB/FM/AM)
@@ -280,7 +280,7 @@ void LoadSettings(bool clear)
 		TRX.CW_DotToDashRate = 3.0f;   // Dot To Dash length rate
 		TRX.CW_Iambic = false;		   // CW Iambic Keyer
 		TRX.CW_Invert = false;		   // CW dash/dot inversion
-		TRX.CW_PTT_Type = KEY_PTT;	   // CW PTT type (Key / External tangent ptt)
+		TRX.CW_PTT_Type = KEY_AND_EXT_PTT;	   // CW PTT type (Key / External tangent ptt)
 		// SCREEN
 		TRX.ColorThemeId = 0;	// Selected Color theme
 		TRX.LayoutThemeId = 0;	// Selected Layout theme
@@ -338,7 +338,7 @@ void LoadSettings(bool clear)
 		TRX.FFT_DXCluster_Azimuth = false; // Add azimut to callsign
 		TRX.FFT_DXCluster_Timeout = 5;	   // DXCluser timeout in minutes
 		TRX.Show_Sec_VFO = false;		   // Show secondary VFO on FFT
-		TRX.FFT_Scale_Type = 0;			   // Scale type (0 - amplitude, 1 - dbm)
+		TRX.FFT_Scale_Type = 1;			   // Scale type (0 - amplitude, 1 - squared, 2 - dbm)
 		TRX.AnalogMeterShowPWR = false;	// false - SWR, true - PWR
 		for (uint8_t i = 0; i < FUNCBUTTONS_COUNT; i++)
 			TRX.FuncButtons[i] = i;

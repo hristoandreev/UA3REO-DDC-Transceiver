@@ -8,7 +8,7 @@
 #include "bands.h"
 #include "hardware.h"
 
-#define SETT_VERSION 57						  // Settings config version
+#define SETT_VERSION 58						  // Settings config version
 #define CALIB_VERSION 49					  // Calibration config version
 #define TRX_SAMPLERATE 48000				  // audio stream sampling rate during processing and TX (NOT RX!)
 #define MAX_TX_AMPLITUDE_MULT 0.85f				  // Maximum amplitude when transmitting to FPGA
@@ -34,8 +34,8 @@
 #define NORMAL_SWR_SAVED 1.5f				  // ATU SWR target for saved settings
 #define NORMAL_SWR_TUNE 1.2f				  // ATU SWR target for new tune
 #define IDLE_LCD_BRIGHTNESS 5				  // Low brightness for IDLE mode (dimmer)
-#define CW_ADD_GAIN_IF 35.0f				  // additional IF gain in CW
-#define CW_ADD_GAIN_AF 6.0f					  // additional AF gain in CW
+#define CW_ADD_GAIN_IF 40.0f				  // additional IF gain in CW
+#define CW_ADD_GAIN_AF 10.0f					  // additional AF gain in CW
 #define TX_LPF_TIMEOUT (180 * 1000)			  // TX LPF On Timeout, millisec (3 min)
 
 //#define ADC_BITS 16																						// ADC bit depth
@@ -338,6 +338,7 @@ typedef enum
 {
 	KEY_PTT,
 	EXT_PTT,
+	KEY_AND_EXT_PTT,
 } CW_PTT_TYPE;
 
 // ENC2 FUNC MODE
