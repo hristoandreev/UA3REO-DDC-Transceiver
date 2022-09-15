@@ -4123,20 +4123,20 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
         CALIBRATE.RFU_BPF_1_END = 2500 * 1000;		   // 160m
         CALIBRATE.RFU_BPF_2_START = 2500 * 1000;	   // 80m
         CALIBRATE.RFU_BPF_2_END = 4000 * 1000;		   // 80m
-        CALIBRATE.RFU_BPF_3_START = 4000 * 1000;	   // 40m
-        CALIBRATE.RFU_BPF_3_END = 6000 * 1000;		   // 40m
-        CALIBRATE.RFU_BPF_4_START = 6000 * 1000;	   // 30m
-        CALIBRATE.RFU_BPF_4_END = 7500 * 1000;		   // 30m
-        CALIBRATE.RFU_BPF_5_START = 7500 * 1000;	   // 20,17m
-        CALIBRATE.RFU_BPF_5_END = 12500 * 1000;		   // 20,17m
-        CALIBRATE.RFU_BPF_6_START = 12500 * 1000;	   // 15,12,10,6m
-        CALIBRATE.RFU_BPF_6_END = 15000 * 1000;		   // 15,12,10,6m
-        CALIBRATE.RFU_BPF_7_START = 15000 * 1000;				   // disabled on qrp version
-        CALIBRATE.RFU_BPF_7_END = 20000 * 1000;				   // disabled on qrp version
-        CALIBRATE.RFU_BPF_8_START = 20000 * 1000;				   // disabled on qrp version
-        CALIBRATE.RFU_BPF_8_END = 30000 * 1000;				   // disabled on qrp version
-        CALIBRATE.RFU_BPF_9_START = 30000 * 1000;				   // disabled on qrp version
-        CALIBRATE.RFU_BPF_9_END = 55000 * 1000;				   // disabled on qrp version
+        CALIBRATE.RFU_BPF_3_START = 4000 * 1000;	   // 60m
+        CALIBRATE.RFU_BPF_3_END = 6000 * 1000;		   // 60m
+        CALIBRATE.RFU_BPF_4_START = 6000 * 1000;	   // 40m
+        CALIBRATE.RFU_BPF_4_END = 7500 * 1000;		   // 40m
+        CALIBRATE.RFU_BPF_5_START = 7500 * 1000;	   // 30m
+        CALIBRATE.RFU_BPF_5_END = 12500 * 1000;		   // 30m
+        CALIBRATE.RFU_BPF_6_START = 12500 * 1000;	   // 20m
+        CALIBRATE.RFU_BPF_6_END = 15000 * 1000;		   // 20m
+        CALIBRATE.RFU_BPF_7_START = 15000 * 1000;      // 16m
+        CALIBRATE.RFU_BPF_7_END = 20000 * 1000;        // 16m
+        CALIBRATE.RFU_BPF_8_START = 20000 * 1000;      // 15m, 10m
+        CALIBRATE.RFU_BPF_8_END = 30000 * 1000;        // 15m, 10m
+        CALIBRATE.RFU_BPF_9_START = 30000 * 1000;      // 6m
+        CALIBRATE.RFU_BPF_9_END = 55000 * 1000;        // 6m
     }
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
