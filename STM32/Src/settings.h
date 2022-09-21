@@ -318,6 +318,7 @@ typedef enum
 // RF UNIT TYPE
 typedef enum
 {
+    RF_UNIT_NONE,
 	RF_UNIT_QRP,
 	RF_UNIT_BIG,
 	RF_UNIT_SPLIT,

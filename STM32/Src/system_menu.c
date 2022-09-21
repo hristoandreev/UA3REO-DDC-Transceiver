@@ -773,7 +773,7 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] =
 		{"Encoder on falling", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENCODER_ON_FALLING, SYSMENU_HANDL_CALIB_ENCODER_ON_FALLING},
 		{"Encoder acceleration", SYSMENU_UINT8, NULL, &CALIBRATE.ENCODER_ACCELERATION, SYSMENU_HANDL_CALIB_ENCODER_ACCELERATION},
 #if !defined(FRONTPANEL_LITE)
-		{"RF-Unit Type", SYSMENU_ENUM, NULL, &CALIBRATE.RF_unit_type, SYSMENU_HANDL_CALIB_RF_unit_type, {"QRP", "BIG", "SPLIT", "RU4PN", "LZ1HAA","WF-100D"}},
+		{"RF-Unit Type", SYSMENU_ENUM, NULL, &CALIBRATE.RF_unit_type, SYSMENU_HANDL_CALIB_RF_unit_type, {"NONE", "QRP", "BIG", "SPLIT", "RU4PN", "LZ1HAA","WF-100D"}},
 #endif
 #if defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D)
 		{"Tangent Type", SYSMENU_ENUM, NULL, &CALIBRATE.TangentType, SYSMENU_HANDL_CALIB_TangentType, {"MH-36", "MH-48"}},
@@ -4058,8 +4058,8 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 {
 	if (CALIBRATE.RF_unit_type > 0 || direction > 0)
 		CALIBRATE.RF_unit_type += direction;
-	if (CALIBRATE.RF_unit_type > 4)
-		CALIBRATE.RF_unit_type = 4;
+	if (CALIBRATE.RF_unit_type > 5)
+		CALIBRATE.RF_unit_type = 5;
 
 	if (CALIBRATE.RF_unit_type == RF_UNIT_QRP)
 	{
@@ -6754,8 +6754,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_LPF(void)
 		return false;
 	case RF_UNIT_SPLIT:
 		return false;
-    case RF_UNIT_LZ1HAA:
-        return true;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6775,8 +6777,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_HPF(void)
 		return false;
 	case RF_UNIT_SPLIT:
 		return false;
-    case RF_UNIT_LZ1HAA:
-        return true;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6796,8 +6800,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_BPF_8(void)
 		return true;
 	case RF_UNIT_SPLIT:
 		return true;
-    case RF_UNIT_LZ1HAA:
-        return true;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6817,8 +6823,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_BPF_9(void)
 		return true;
 	case RF_UNIT_SPLIT:
 		return true;
-    case RF_UNIT_LZ1HAA:
-        return true;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6840,6 +6848,8 @@ static bool SYSMENU_HANDL_CHECK_HAS_BPF_10(void)
             return false;
         case RF_UNIT_LZ1HAA:
             return true;
+				default:
+						return false;
     }
 
     return false;
@@ -6859,8 +6869,10 @@ bool SYSMENU_HANDL_CHECK_HAS_ATU(void)
 		return true;
 	case RF_UNIT_SPLIT:
 		return true;
-    case RF_UNIT_LZ1HAA:
-        return false;
+  case RF_UNIT_LZ1HAA:
+    return false;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6880,8 +6892,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_RFFILTERS_BYPASS(void)
 		return false;
 	case RF_UNIT_SPLIT:
 		return false;
-    case RF_UNIT_LZ1HAA:
-        return true;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
