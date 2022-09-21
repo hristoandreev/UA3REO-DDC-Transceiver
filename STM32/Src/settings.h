@@ -8,8 +8,8 @@
 #include "bands.h"
 #include "hardware.h"
 
-#define SETT_VERSION 58						  // Settings config version
-#define CALIB_VERSION 49					  // Calibration config version
+#define SETT_VERSION 61						  // Settings config version
+#define CALIB_VERSION 50					  // Calibration config version
 #define TRX_SAMPLERATE 48000				  // audio stream sampling rate during processing and TX (NOT RX!)
 #define MAX_TX_AMPLITUDE_MULT 0.85f				  // Maximum amplitude when transmitting to FPGA
 #define AGC_CLIPPING 6.0f					  // Limit over target in AGC, dB
@@ -34,7 +34,7 @@
 #define NORMAL_SWR_SAVED 1.5f				  // ATU SWR target for saved settings
 #define NORMAL_SWR_TUNE 1.2f				  // ATU SWR target for new tune
 #define IDLE_LCD_BRIGHTNESS 5				  // Low brightness for IDLE mode (dimmer)
-#define CW_ADD_GAIN_IF 40.0f				  // additional IF gain in CW
+#define CW_ADD_GAIN_IF 30.0f				  // additional IF gain in CW
 #define CW_ADD_GAIN_AF 10.0f					  // additional AF gain in CW
 #define TX_LPF_TIMEOUT (180 * 1000)			  // TX LPF On Timeout, millisec (3 min)
 
@@ -376,7 +376,7 @@ typedef struct
 	bool AGC;
 	bool SQL;
 	bool BEST_ATU_T;
-    TRX_IQ_SAMPLERATE_VALUE SAMPLERATE;
+  TRX_IQ_SAMPLERATE_VALUE SAMPLERATE;
 } BAND_SAVED_SETTINGS_TYPE;
 
 extern struct TRX_SETTINGS
@@ -385,6 +385,9 @@ extern struct TRX_SETTINGS
 	bool NeedGoToBootloader;
 	// TRX
 	float32_t ATT_DB;
+#if HRDW_HAS_VGA
+	float32_t VGA_GAIN;
+#endif
 	uint32_t FRQ_STEP;
 	uint32_t FRQ_FAST_STEP;
 	uint32_t FRQ_ENC_STEP;
@@ -437,8 +440,10 @@ extern struct TRX_SETTINGS
 	bool Auto_Input_Switch;
 	char CALLSIGN[MAX_CALLSIGN_LENGTH];
 	char LOCATOR[MAX_CALLSIGN_LENGTH];
+	char URSI_CODE[MAX_CALLSIGN_LENGTH];
 	// AUDIO
 	float32_t CTCSS_Freq;
+	float32_t MIC_GAIN_DB;
 	uint16_t Volume;
 	uint16_t RX_AGC_Hold;
 	uint16_t CW_LPF_Filter;
@@ -454,7 +459,6 @@ extern struct TRX_SETTINGS
 	uint16_t VOX_TIMEOUT;
 	uint8_t Volume_Step;
 	uint8_t IF_Gain;
-	uint8_t MIC_GAIN;
 	uint8_t MIC_REVERBER;
 	uint8_t DNR1_SNR_THRESHOLD;
 	uint8_t DNR2_SNR_THRESHOLD;
@@ -632,6 +636,11 @@ extern struct TRX_CALIBRATE
     uint32_t RFU_BPF_9_START;
 	uint32_t RFU_BPF_9_END;
 	int16_t RTC_Calibration;
+	int16_t VCXO_correction;
+	uint16_t TX_StartDelay;
+	int16_t smeter_calibration_hf;
+	int16_t smeter_calibration_vhf;
+	int16_t adc_offset;
 	uint8_t DAC_driver_mode;
 	uint8_t rf_out_power_2200m;
 	uint8_t rf_out_power_160m;
@@ -647,10 +656,6 @@ extern struct TRX_CALIBRATE
 	uint8_t rf_out_power_6m;
 	uint8_t rf_out_power_4m;
 	uint8_t rf_out_power_2m;
-	uint16_t TX_StartDelay;
-	int16_t smeter_calibration_hf;
-	int16_t smeter_calibration_vhf;
-	int16_t adc_offset;
 	uint8_t ENCODER_DEBOUNCE;
 	uint8_t ENCODER2_DEBOUNCE;
 	uint8_t ENCODER_SLOW_RATE;
@@ -696,7 +701,8 @@ extern struct TRX_CALIBRATE
 	uint8_t EXT_TRANSV_3cm;
 	uint8_t ATU_AVERAGING;
 	uint8_t TwoSignalTune_Balance;
-	int16_t VCXO_correction;
+	uint8_t IF_GAIN_MIN;
+	uint8_t IF_GAIN_MAX;
 	int8_t LNA_compensation;
 	TRX_RF_UNIT_TYPE RF_unit_type;
 	TRX_TANGENT_TYPE TangentType;

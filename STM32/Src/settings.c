@@ -10,7 +10,7 @@
 #include "bands.h"
 #include "front_unit.h"
 
-const char version_string[19] = "5.0.0";
+const char version_string[19] = "5.1.0";
 
 const char ota_config_frontpanel[] = OTA_CONFIG_FRONT_PANEL;
 const char ota_config_lcd[] = OTA_CONFIG_LCD;
@@ -149,6 +149,9 @@ void LoadSettings(bool clear)
 		TRX.ATT = false;					  // attenuator
 		TRX.ATT_DB = 12.0f;					  // suppress the attenuator
 		TRX.ATT_STEP = 6.0f;				  // step of tuning the attenuator
+#if HRDW_HAS_VGA
+		TRX.VGA_GAIN = 21.0f;				// VGA Gain, dB
+#endif
 		TRX.RF_Filters = true;				  // LPF / HPF / BPF
 		TRX.ANT_selected = false;					  // ANT-1
 		TRX.ANT_mode = false;					  // RX=TX
@@ -198,6 +201,7 @@ void LoadSettings(bool clear)
 		TRX.Encoder_Accelerate = true;	  // Accelerate Encoder on fast rate
 		strcpy(TRX.CALLSIGN, "HamRad");	  // Callsign
 		strcpy(TRX.LOCATOR, "LO02RR");	  // Locator
+		strcpy(TRX.URSI_CODE, "SO148");	  // URSI Ionogramm location CODE https://digisonde.com/index.html#stationmap-section
 		TRX.Custom_Transverter_Enabled = false;  // Enable transverter mode
 		TRX.Transverter_Offset_Mhz = 144; // Offset from VFO
 #ifdef FRONTPANEL_LITE
@@ -220,8 +224,8 @@ void LoadSettings(bool clear)
 		TRX.Volume_Step = 5;			 // AF Volume step by sec encoder
 		TRX.IF_Gain = 15;					 // IF gain, dB (before all processing and AGC)
 		TRX.AGC_GAIN_TARGET = -30;			 // Maximum (target) AGC gain
-		TRX.MIC_GAIN = 3;					 // Microphone gain
-		TRX.MIC_Boost = true;				 // +20db mic amplifier
+		TRX.MIC_GAIN_DB = 3.0f;					 // Microphone gain, dB
+		TRX.MIC_Boost = true;				 // +20dB mic amplifier
 		TRX.MIC_NOISE_GATE = -120;			 // Mic noise gate
 		TRX.RX_EQ_LOW = 0;					 // Receiver Equalizer (Low)
 		TRX.RX_EQ_MID = 0;					 // Receiver EQ (mids)
@@ -310,7 +314,7 @@ void LoadSettings(bool clear)
 		TRX.FFT_Automatic = true;  // Automatic FFT Scale
 		TRX.FFT_Sensitivity = 8;   // Threshold of FFT autocalibrate
 		TRX.FFT_Speed = 3;		   // FFT Speed
-		TRX.FFT_Averaging = 8;	   // averaging the FFT to make it smoother
+		TRX.FFT_Averaging = 10;	   // averaging the FFT to make it smoother
 #ifdef STM32F407xx
 		TRX.FFT_Averaging = 6;
 #endif
@@ -700,6 +704,8 @@ void LoadCalibration(bool clear)
 		CALIBRATE.LNA_compensation = 0; // Compensation for LNA, db
 		CALIBRATE.TwoSignalTune_Balance = 50; //balance of signals on twosignal-tune
 		CALIBRATE.LinearPowerControl = false; //linear or logrithmic power control
+		CALIBRATE.IF_GAIN_MIN = 0;			// min limit for if gain regulator
+		CALIBRATE.IF_GAIN_MAX = 40;			// max limit for if gain regulator
 
 		// Default memory channels
 		for (uint8_t i = 0; i < MEMORY_CHANNELS_COUNT; i++)

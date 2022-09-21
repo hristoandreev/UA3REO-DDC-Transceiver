@@ -957,6 +957,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.Encoder_Accelerate", (uint32_t *)&TRX.Encoder_Accelerate, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_STRING("TRX.CALLSIGN", TRX.CALLSIGN);
 			SD_WRITE_SETT_STRING("TRX.LOCATOR", TRX.LOCATOR);
+			SD_WRITE_SETT_STRING("TRX.URSI_CODE", TRX.URSI_CODE);
 			SD_WRITE_SETT_LINE("TRX.Custom_Transverter_Enabled", (uint32_t *)&TRX.Custom_Transverter_Enabled, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Transverter_Offset_Mhz", (uint32_t *)&TRX.Transverter_Offset_Mhz, SYSMENU_UINT16);
 			SD_WRITE_SETT_LINE("TRX.ATU_Enabled", (uint32_t *)&TRX.ATU_Enabled, SYSMENU_BOOLEAN);
@@ -972,7 +973,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.Volume_Step", (uint32_t *)&TRX.Volume_Step, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.IF_Gain", (uint32_t *)&TRX.IF_Gain, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.AGC_GAIN_TARGET2", (uint32_t *)&TRX.AGC_GAIN_TARGET, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_GAIN", (uint32_t *)&TRX.MIC_GAIN, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_GAIN_DB", (uint32_t *)&TRX.MIC_GAIN_DB, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("TRX.MIC_Boost", (uint32_t *)&TRX.MIC_Boost, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.MIC_NOISE_GATE", (uint32_t *)&TRX.MIC_NOISE_GATE, SYSMENU_INT8);
 			SD_WRITE_SETT_LINE("TRX.RX_EQ_LOW", (uint32_t *)&TRX.RX_EQ_LOW, SYSMENU_INT8);
@@ -1235,6 +1236,17 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.CAT_Type", (uint32_t *)&CALIBRATE.CAT_Type, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.TwoSignalTune_Balance", (uint32_t *)&CALIBRATE.TwoSignalTune_Balance, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.LinearPowerControl", (uint32_t *)&CALIBRATE.LinearPowerControl, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("CALIBRATE.IF_GAIN_MIN", (uint32_t *)&CALIBRATE.IF_GAIN_MIN, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.IF_GAIN_MAX", (uint32_t *)&CALIBRATE.IF_GAIN_MAX, SYSMENU_UINT8);
+			
+			// Func buttons settings
+			char buff[64] = {0};
+			for (uint8_t i = 0; i < FUNCBUTTONS_COUNT; i++)
+			{
+				sprintf(buff, "TRX.FuncButtons[%d]", i);
+				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.FuncButtons[i], SYSMENU_UINT8);
+			}
+			
 			// Bands settings
 			/*char buff[64] = {0};
 			for (uint8_t i = 0; i < BANDS_COUNT; i++)
@@ -1488,6 +1500,14 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 //		strncpy(TRX.LOCATOR, value, lens);
 		memcpy(TRX.LOCATOR, value, lens);
 	}
+	if (strcmp(name, "TRX.URSI_CODE") == 0)
+	{
+		dma_memset(TRX.URSI_CODE, 0x00, sizeof(TRX.URSI_CODE));
+		uint32_t lens = strlen(value);
+		if (lens > sizeof(TRX.URSI_CODE) - 1)
+			lens = sizeof(TRX.URSI_CODE) - 1;
+		strncpy(TRX.URSI_CODE, value, lens);
+	}
 	if (strcmp(name, "TRX.Custom_Transverter_Enabled") == 0)
 		TRX.Custom_Transverter_Enabled = bval;
 	if (strcmp(name, "TRX.Transverter_Offset_Mhz") == 0)
@@ -1517,8 +1537,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.IF_Gain = (uint8_t)uintval;
 	if (strcmp(name, "TRX.AGC_GAIN_TARGET2") == 0)
 		TRX.AGC_GAIN_TARGET = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_GAIN") == 0)
-		TRX.MIC_GAIN = (uint8_t)uintval;
+	if (strcmp(name, "TRX.MIC_GAIN_DB") == 0)
+		TRX.MIC_GAIN_DB = floatval;
 	if (strcmp(name, "TRX.MIC_Boost") == 0)
 		TRX.MIC_Boost = bval;
 	if (strcmp(name, "TRX.MIC_NOISE_GATE") == 0)
@@ -2077,7 +2097,20 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.TwoSignalTune_Balance = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.LinearPowerControl") == 0)
 		CALIBRATE.LinearPowerControl = bval;
+	if (strcmp(name, "CALIBRATE.IF_GAIN_MIN") == 0)
+		CALIBRATE.IF_GAIN_MIN = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.IF_GAIN_MAX") == 0)
+		CALIBRATE.IF_GAIN_MAX = (uint8_t)uintval;
 
+	// Func buttons settings
+	char buff[64] = {0};
+	for (uint8_t i = 0; i < FUNCBUTTONS_COUNT; i++)
+	{
+		sprintf(buff, "TRX.FuncButtons[%d]", i);
+		if (strcmp(name, buff) == 0)
+			TRX.FuncButtons[i] = (uint8_t)uintval;
+	}
+	
 	// Bands settings
 	/*char buff[64] = {0};
 	for (uint8_t i = 0; i < BANDS_COUNT; i++)

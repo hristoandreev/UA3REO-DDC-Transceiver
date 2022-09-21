@@ -154,8 +154,8 @@ PERIPH_FrontPanel_Button PERIPH_FrontPanel_Buttons[] = {
 	{.port = 1, .channel = 3, .type = FUNIT_CTRL_BUTTON, .tres_min = 354, .tres_max = 492, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 2, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, // SB20 F3
 	{.port = 1, .channel = 3, .type = FUNIT_CTRL_BUTTON, .tres_min = 492, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 1, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, // SB21 F2
 
-	{.port = 1, .channel = 4, .type = FUNIT_CTRL_BUTTON, .tres_min = 117, .tres_max = 250, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_MENU, .holdHandler = BUTTONHANDLER_MENUHOLD},	  // SB22 MENU
-	{.port = 1, .channel = 4, .type = FUNIT_CTRL_BUTTON, .tres_min = 250, .tres_max = 354, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_TUNE, .holdHandler = BUTTONHANDLER_TUNE},		  // SB13 TUNE ATU
+	{.port = 1, .channel = 4, .type = FUNIT_CTRL_BUTTON, .tres_min = 117, .tres_max = 231, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_MENU, .holdHandler = BUTTONHANDLER_MENUHOLD},	  // SB22 MENU
+	{.port = 1, .channel = 4, .type = FUNIT_CTRL_BUTTON, .tres_min = 231, .tres_max = 354, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_TUNE, .holdHandler = BUTTONHANDLER_TUNE},		  // SB13 TUNE ATU
 	{.port = 1, .channel = 4, .type = FUNIT_CTRL_BUTTON, .tres_min = 354, .tres_max = 492, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_MUTE, .holdHandler = BUTTONHANDLER_MUTE_AFAMP}, // SB14 MUTE
 	{.port = 1, .channel = 4, .type = FUNIT_CTRL_BUTTON, .tres_min = 492, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH},	  // SB15 F1
 
@@ -690,7 +690,7 @@ void FRONTPANEL_Process(void)
 
 	static uint32_t fu_debug_lasttime = 0;
 	uint16_t buttons_count = sizeof(PERIPH_FrontPanel_Buttons) / sizeof(PERIPH_FrontPanel_Button);
-	uint16_t mcp3008_value = 0;
+	uint32_t mcp3008_value = 0;
 
 	// process buttons
 	for (uint16_t b = 0; b < buttons_count; b++)
@@ -712,19 +712,31 @@ void FRONTPANEL_Process(void)
 
 // get state from ADC MCP3008 (10bit - 1024values)
 #ifdef HRDW_MCP3008_1
-		if (button->port == 1)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
-		else
+		if (button->port == 1) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value /= 3;
+		} else
 #endif
 #ifdef HRDW_MCP3008_2
-			if (button->port == 2)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
-		else
+		if (button->port == 2) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value /= 3;
+		} else
 #endif
 #ifdef HRDW_MCP3008_3
-			if (button->port == 3)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
-		else
+		if (button->port == 3) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value /= 3;
+		} else
 #endif
 			continue;
 
@@ -834,12 +846,12 @@ void FRONTPANEL_CheckButton(PERIPH_FrontPanel_Button *button, uint16_t mcp3008_v
 		{
 			TRX_RIT = 0;
 			TRX_XIT = 0;
-			TRX.IF_Gain = (uint8_t)(0.0f + ((1023.0f - IF_GAIN_mcp3008_averaged) * 60.0f / 1023.0f));
+			TRX.IF_Gain = (uint8_t)(CALIBRATE.IF_GAIN_MIN + ((1023.0f - IF_GAIN_mcp3008_averaged) * (float32_t)(CALIBRATE.IF_GAIN_MAX - CALIBRATE.IF_GAIN_MIN) / 1023.0f));
 		}
 
 		if (TRX.FineRITTune) // IF only
 		{
-			TRX.IF_Gain = (uint8_t)(0.0f + ((1023.0f - IF_GAIN_mcp3008_averaged) * 60.0f / 1023.0f));
+			TRX.IF_Gain = (uint8_t)(CALIBRATE.IF_GAIN_MIN + ((1023.0f - IF_GAIN_mcp3008_averaged) * (float32_t)(CALIBRATE.IF_GAIN_MAX - CALIBRATE.IF_GAIN_MIN) / 1023.0f));
 		}
 	}
 

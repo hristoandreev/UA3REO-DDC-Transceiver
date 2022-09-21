@@ -38,8 +38,6 @@ static int32_t ENCODER_slowler = 0;
 static uint32_t ENCODER_AValDeb = 0;
 static uint32_t ENCODER2_AValDeb = 0;
 
-#define FRONTPANEL_LITE_ALEX false
-
 #if !FRONTPANEL_LITE_ALEX
 PERIPH_FrontPanel_Button PERIPH_FrontPanel_Buttons[] = {
 	//buttons
@@ -449,10 +447,10 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 	if (TRX.ENC2_func_mode == ENC_FUNC_SET_IF) // IF
 	{
 		TRX.IF_Gain += direction * 1;
-		if (TRX.IF_Gain < 1)
-			TRX.IF_Gain = 1;
-		if (TRX.IF_Gain > 80)
-			TRX.IF_Gain = 80;
+		if (TRX.IF_Gain < CALIBRATE.IF_GAIN_MIN)
+			TRX.IF_Gain = CALIBRATE.IF_GAIN_MIN;
+		if (TRX.IF_Gain > CALIBRATE.IF_GAIN_MAX)
+			TRX.IF_Gain = CALIBRATE.IF_GAIN_MAX;
 		
 		LCD_UpdateQuery.StatusInfoBar = true;
 	}
@@ -643,7 +641,7 @@ void FRONTPANEL_Process(void)
 
 	static uint32_t fu_debug_lasttime = 0;
 	uint16_t buttons_count = sizeof(PERIPH_FrontPanel_Buttons) / sizeof(PERIPH_FrontPanel_Button);
-	uint16_t mcp3008_value = 0;
+	uint32_t mcp3008_value = 0;
 
 	// process buttons
 	for (uint16_t b = 0; b < buttons_count; b++)
@@ -665,19 +663,31 @@ void FRONTPANEL_Process(void)
 
 // get state from ADC MCP3008 (10bit - 1024values)
 #ifdef HRDW_MCP3008_1
-		if (button->port == 1)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
-		else
+		if (button->port == 1) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value /= 3;
+		} else
 #endif
 #ifdef HRDW_MCP3008_2
-			if (button->port == 2)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
-		else
+		if (button->port == 2) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value /= 3;
+		} else
 #endif
 #ifdef HRDW_MCP3008_3
-			if (button->port == 3)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
-		else
+		if (button->port == 3) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value /= 3;
+		} else
 #endif
 			continue;
 
