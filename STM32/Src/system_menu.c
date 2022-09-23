@@ -1610,7 +1610,8 @@ static void SYSMENU_HANDL_TRX_SetLocator(int8_t direction)
 
 static void SYSMENU_HANDL_TRX_SetURSICode(int8_t direction)
 {
-#pragma unused(direction)
+    (void) direction;
+
 	sysmenu_trx_setURSICode_menu_opened = true;
 	SYSMENU_TRX_DrawURSICodeMenu(true);
 	LCD_UpdateQuery.SystemMenuRedraw = true;
