@@ -1948,7 +1948,7 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
         CALIBRATE.RFU_BPF_9_START = uintval;
     if (strcmp(name, "CALIBRATE.RFU_BPF_9_END") == 0)
         CALIBRATE.RFU_BPF_9_END = uintval;
-	if (strcmp(name, "CALIBRATE.RFU_HPF_START") == 0)
+    if (strcmp(name, "CALIBRATE.RFU_HPF_START") == 0)
 		CALIBRATE.RFU_HPF_START = uintval;
 	if (strcmp(name, "CALIBRATE.SWR_FWD_Calibration_HF") == 0)
 		CALIBRATE.SWR_FWD_Calibration_HF = floatval;
