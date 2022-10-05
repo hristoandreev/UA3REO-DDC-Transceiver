@@ -22,9 +22,9 @@
 
 // settings
 #define ADC_CLOCK 122880000					  // ADC generator frequency
-#define DAC_CLOCK 188160000					  // DAC generator frequency
+#define DAC_CLOCK 110400000					  // DAC generator frequency
 #define MAX_RX_FREQ_HZ 750000000			  // Maximum receive frequency (from the ADC datasheet)
-#define MAX_TX_FREQ_HZ DAC_CLOCK			  // Maximum transmission frequency
+#define MAX_TX_FREQ_HZ (DAC_CLOCK * 2)			  // Maximum transmission frequency
 #define ADC_FULL_SCALE 65536 // maximum signal amplitude in the ADC // powf (2, ADC_BITS)
 #define FLOAT_FULL_SCALE_POW 4
 #define DCDC_FREQ_0 960000
@@ -32,7 +32,7 @@
 #define ADC_INPUT_IMPEDANCE 200.0f // 50ohm -> 1:4 trans
 #define ADC_RANGE 2.25f
 #define ADC_RANGE_PGA 1.5f
-#define ADC_LNA_GAIN_DB 20.0f
+#define ADC_LNA_GAIN_DB 25.0f
 #define ADC_DRIVER_GAIN_DB 25.5f
 #define ADC_PGA_GAIN_DB 3.522f
 

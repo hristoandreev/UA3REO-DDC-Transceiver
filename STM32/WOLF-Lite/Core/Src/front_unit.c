@@ -86,6 +86,12 @@ const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS
 	{.name = "WPM", .work_in_menu = true, .clickHandler = BUTTONHANDLER_WPM, .holdHandler = BUTTONHANDLER_WPM, .checkBool = NULL},
 	{.name = "MUTE", .work_in_menu = false, .clickHandler = BUTTONHANDLER_MUTE, .holdHandler = BUTTONHANDLER_MUTE_AFAMP, .checkBool = (uint32_t *)&TRX.AutoGain},
 	{.name = "LOCK", .work_in_menu = true, .clickHandler = BUTTONHANDLER_LOCK, .holdHandler = BUTTONHANDLER_LOCK, .checkBool = (uint32_t *)&TRX.Locked},
+
+	{.name = "A/B", .work_in_menu = false, .clickHandler = BUTTONHANDLER_AsB, .holdHandler = BUTTONHANDLER_AsB, .checkBool = NULL},
+	{.name = "B=A", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ArB, .holdHandler = BUTTONHANDLER_ArB, .checkBool = NULL},
+	{.name = "RIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_RIT, .holdHandler = BUTTONHANDLER_XIT, .checkBool = (uint32_t *)&TRX.RIT_Enabled},
+	{.name = "SPLIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SPLIT, .holdHandler = BUTTONHANDLER_SPLIT, .checkBool = (uint32_t *)&TRX.SPLIT_Enabled},
+	{.name = "SNAP", .work_in_menu = true, .clickHandler = BUTTONHANDLER_SNAP, .holdHandler = BUTTONHANDLER_AUTO_SNAP, .checkBool = (uint32_t *)&TRX.Auto_Snap},
 };
 #endif
 
@@ -257,6 +263,8 @@ static void FRONTPANEL_ENCODER_Rotated(float32_t direction) // rotated encoder, 
 			TRX.RF_Power += direction;
 		if (TRX.RF_Power > 100)
 			TRX.RF_Power = 100;
+		
+		ATU_TunePowerStabilized = false;
 
 		char sbuff[32] = {0};
 		sprintf(sbuff, "Power: %u", TRX.RF_Power);
@@ -451,6 +459,10 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 			TRX.IF_Gain = CALIBRATE.IF_GAIN_MIN;
 		if (TRX.IF_Gain > CALIBRATE.IF_GAIN_MAX)
 			TRX.IF_Gain = CALIBRATE.IF_GAIN_MAX;
+		
+		int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+		if (band > 0)
+			TRX.BANDS_SAVED_SETTINGS[band].IF_Gain = TRX.IF_Gain;
 		
 		LCD_UpdateQuery.StatusInfoBar = true;
 	}

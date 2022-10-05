@@ -1,8 +1,8 @@
 # Transceiver "Wolf"
 DDC-DUC SDR Tranceiver project https://ua3reo.ru/tag/transiver-ua3reo/
-Community telegram channel: https://t.me/TRX_Wolf
 
-На русском https://github.com/XGudron/UA3REO-DDC-Transceiver/blob/master/README.ru-RU.md
+* Community telegram channel: https://t.me/TRX_Wolf
+* На русском https://github.com/XGudron/UA3REO-DDC-Transceiver/blob/master/README.ru-RU.md
 
 ## Principle of operation
 
@@ -15,7 +15,7 @@ When transmitting, the process occurs in the opposite order, only at the end of 
 ## Specifications
 
 * Receiving frequencies: 0 MHz - 750 MHz with fading each 61.44 Mhz
-* Transmission frequencies: 0 MHz - 80 MHz, 120 MHz - 160 MHz
+* Transmission frequencies: 0 MHz - 200 MHz with fading on 55, 110, 165 Mhz
 * Transmission frequencies in harmonics mode (CW, FM): 360 Mhz - 480 Mhz
 * TX power (QRP version): 7W+ (HF), 5W (VHF)
 * TX power (QRP++ DB5AT version): 20W (HF), 7W (VHF)
@@ -143,12 +143,14 @@ WiFi module ESP-01 must have fresh firmware with SDK 3.0.4 and higher, and AT co
 * **Freq Step FAST** - Frequency step by the main encoder in FAST mode
 * **Freq Step ENC2** - Frequency tuning step by main add. encoder
 * **Freq Step ENC2 FAST** - Frequency step by main add. encoder in FAST mode
+* **Freq Step WFM, kHz** - Frequency step by main encoder in WFM mode
 * **CW Freq Step divider** - Frequency step divider for CW mode
 * **Encoder Accelerate** - Accelerate encoder on fast rates
 * **Att step, dB** - Attenuator tuning step
 * **Attenuation, dB** - Current attenuation
 * **DEBUG Type** - Output of debug and service information to USB / UART ports
 * **Auto Input Switch** - Auto input switch (PTT - mix, CAT - USB)
+* **Auto Snap** - Automaticly track and snap to near signal frequency (CW mode)
 * **Input Type** - Select audio input (microphone, line in, USB)
 * **Callsign** - User callsign
 * **Locator** - User QTH locator

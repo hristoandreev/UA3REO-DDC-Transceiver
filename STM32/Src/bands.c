@@ -1025,10 +1025,11 @@ SRAM4 BAND_MAP BANDS[BANDS_COUNT] =
 			.name = "6cm",
 			.selectable = false,
 			.broadcast = false,
-			.startFreq = 5650000000,
-			.endFreq = 5850000000,
+			.startFreq = 5760000000, //5650000000
+			.endFreq = 5762000000, //5850000000
 			.regions = (const REGION_MAP[1]){
-				{.startFreq = 5650000000, .endFreq = 5850000000, .mode = TRX_MODE_USB},
+				//{.startFreq = 5650000000, .endFreq = 5850000000, .mode = TRX_MODE_USB},
+				{.startFreq = 5760000000, .endFreq = 5762000000, .mode = TRX_MODE_CW},
 			},
 			.regionsCount = 1,
 			.channels = NULL,
@@ -1061,17 +1062,17 @@ int8_t getBandFromFreq(uint64_t freq, bool nearest)
 	if (nearest)
 	{
 		int8_t near_band = 0;
-		int32_t near_diff = 999999999;
+		int64_t near_diff = 99999999999;
 		for (int8_t b = 0; b < BANDS_COUNT; b++)
 		{
-			if (abs((int32_t)BANDS[b].startFreq - (int32_t)freq) < near_diff)
+			if (llabs((int64_t)BANDS[b].startFreq - (int64_t)freq) < near_diff)
 			{
-				near_diff = abs((int32_t)BANDS[b].startFreq - (int32_t)freq);
+				near_diff = llabs((int64_t)BANDS[b].startFreq - (int64_t)freq);
 				near_band = b;
 			}
-			if (abs((int32_t)BANDS[b].endFreq - (int32_t)freq) < near_diff)
+			if (llabs((int64_t)BANDS[b].endFreq - (int64_t)freq) < near_diff)
 			{
-				near_diff = abs((int32_t)BANDS[b].endFreq - (int32_t)freq);
+				near_diff = llabs((int64_t)BANDS[b].endFreq - (int64_t)freq);
 				near_band = b;
 			}
 		}

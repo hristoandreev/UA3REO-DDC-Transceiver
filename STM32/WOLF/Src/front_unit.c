@@ -32,7 +32,7 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction);
 static void FRONTPANEL_ENCODER2_Rotated(int8_t direction);
 static void FRONTPANEL_ENC2SW_click_handler(uint32_t parameter);
 static void FRONTPANEL_ENC2SW_hold_handler(uint32_t parameter);
-static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num);
+static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num, uint8_t count);
 
 static int32_t ENCODER_slowler = 0;
 static uint32_t ENCODER_AValDeb = 0;
@@ -55,7 +55,7 @@ PERIPH_FrontPanel_Button PERIPH_FrontPanel_Buttons[] = {
 	{.port = 2, .channel = 4, .type = FUNIT_CTRL_BUTTON, .tres_min = 0, .tres_max = MCP3008_SINGLE_THRESHOLD, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_NOTCH, .holdHandler = BUTTONHANDLER_NOTCH_MANUAL}, // NOTCH-MANUAL
 	{.port = 2, .channel = 3, .type = FUNIT_CTRL_BUTTON, .tres_min = 0, .tres_max = MCP3008_SINGLE_THRESHOLD, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_SPLIT, .holdHandler = BUTTONHANDLER_RIT},		 // SPLIT-RIT
 	{.port = 2, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 0, .tres_max = MCP3008_SINGLE_THRESHOLD, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_PLAY, .holdHandler = BUTTONHANDLER_REC},			 // REC-PLAY
-	{.port = 2, .channel = 1, .type = FUNIT_CTRL_BUTTON, .tres_min = 0, .tres_max = MCP3008_SINGLE_THRESHOLD, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_SERVICES, .holdHandler = BUTTONHANDLER_SERVICES},	 // SERVICES
+	{.port = 2, .channel = 1, .type = FUNIT_CTRL_BUTTON, .tres_min = 0, .tres_max = MCP3008_SINGLE_THRESHOLD, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_SERVICES, .holdHandler = BUTTONHANDLER_SNAP},	 // SERVICES-SNAP
 	{.port = 2, .channel = 0, .type = FUNIT_CTRL_BUTTON, .tres_min = 0, .tres_max = MCP3008_SINGLE_THRESHOLD, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_MENU, .holdHandler = BUTTONHANDLER_LOCK},			 // MENU-LOCK
 
 	{.port = 3, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 0, .tres_max = MCP3008_SINGLE_THRESHOLD, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_WPM, .holdHandler = BUTTONHANDLER_KEYER},			// WPM-KEYER
@@ -99,7 +99,7 @@ const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS
 	{.name = "B=A", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ArB, .holdHandler = BUTTONHANDLER_ArB},
 	{.name = "TUNE", .work_in_menu = true, .clickHandler = BUTTONHANDLER_TUNE, .holdHandler = BUTTONHANDLER_TUNE},
 	{.name = "POWER", .work_in_menu = true, .clickHandler = BUTTONHANDLER_RF_POWER, .holdHandler = BUTTONHANDLER_RF_POWER},
-	{.name = "ANT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ANT, .holdHandler = BUTTONHANDLER_ANT},
+	{.name = "SNAP", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SNAP, .holdHandler = BUTTONHANDLER_AUTO_SNAP},
 	{.name = "RIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_RIT, .holdHandler = BUTTONHANDLER_RIT},
 	{.name = "SERVICE", .work_in_menu = true, .clickHandler = BUTTONHANDLER_SERVICES, .holdHandler = BUTTONHANDLER_SERVICES},
 	{.name = "MENU", .work_in_menu = true, .clickHandler = BUTTONHANDLER_MENU, .holdHandler = BUTTONHANDLER_MENU},
@@ -135,6 +135,7 @@ const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS
 	{.name = "FT8", .work_in_menu = false, .clickHandler = BUTTONHANDLER_FT8, .holdHandler = BUTTONHANDLER_FT8},
 	{.name = "VOX", .work_in_menu = true, .clickHandler = BUTTONHANDLER_VOX, .holdHandler = BUTTONHANDLER_VOX},
 	{.name = "FILES", .work_in_menu = false, .clickHandler = BUTTONHANDLER_FILEMANAGER, .holdHandler = BUTTONHANDLER_FILEMANAGER},
+	{.name = "ANT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ANT, .holdHandler = BUTTONHANDLER_ANT},
 };
 #endif
 
@@ -181,7 +182,7 @@ const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS
 	{.name = "B=A", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ArB, .holdHandler = BUTTONHANDLER_ArB},
 	{.name = "WPM", .work_in_menu = true, .clickHandler = BUTTONHANDLER_WPM, .holdHandler = BUTTONHANDLER_WPM},
 	{.name = "POWER", .work_in_menu = true, .clickHandler = BUTTONHANDLER_RF_POWER, .holdHandler = BUTTONHANDLER_RF_POWER},
-	{.name = "ANT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ANT, .holdHandler = BUTTONHANDLER_ANT},
+	{.name = "SNAP", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SNAP, .holdHandler = BUTTONHANDLER_AUTO_SNAP},
 	{.name = "RIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_RIT, .holdHandler = BUTTONHANDLER_RIT},
 	{.name = "PLAY", .work_in_menu = false, .clickHandler = BUTTONHANDLER_PLAY, .holdHandler = BUTTONHANDLER_FILEMANAGER},
 	{.name = "REC", .work_in_menu = false, .clickHandler = BUTTONHANDLER_REC, .holdHandler = BUTTONHANDLER_REC},
@@ -213,6 +214,7 @@ const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS
 	{.name = "SQL", .work_in_menu = true, .clickHandler = BUTTONHANDLER_SQUELCH, .holdHandler = BUTTONHANDLER_SQUELCH},
 	{.name = "VOX", .work_in_menu = true, .clickHandler = BUTTONHANDLER_VOX, .holdHandler = BUTTONHANDLER_VOX},
 	{.name = "FILES", .work_in_menu = false, .clickHandler = BUTTONHANDLER_FILEMANAGER, .holdHandler = BUTTONHANDLER_FILEMANAGER},
+	{.name = "ANT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ANT, .holdHandler = BUTTONHANDLER_ANT},
 };
 #endif
 
@@ -348,6 +350,8 @@ static void FRONTPANEL_ENCODER_Rotated(float32_t direction) // rotated encoder, 
 			TRX.RF_Power += direction;
 		if (TRX.RF_Power > 100)
 			TRX.RF_Power = 100;
+
+		ATU_TunePowerStabilized = false;
 
 		char sbuff[32] = {0};
 		sprintf(sbuff, "Power: %u", TRX.RF_Power);
@@ -635,7 +639,7 @@ void FRONTPANEL_Init(void)
 {
 	uint16_t test_value = 0;
 #ifdef HRDW_MCP3008_1
-	test_value = FRONTPANEL_ReadMCP3008_Value(0, 1);
+	test_value = FRONTPANEL_ReadMCP3008_Value(0, 1, 1);
 	if (test_value == 65535)
 	{
 		FRONTPanel_MCP3008_1_Enabled = false;
@@ -644,7 +648,7 @@ void FRONTPANEL_Init(void)
 	}
 #endif
 #ifdef HRDW_MCP3008_2
-	test_value = FRONTPANEL_ReadMCP3008_Value(0, 2);
+	test_value = FRONTPANEL_ReadMCP3008_Value(0, 2, 1);
 	if (test_value == 65535)
 	{
 		FRONTPanel_MCP3008_2_Enabled = false;
@@ -653,7 +657,7 @@ void FRONTPANEL_Init(void)
 	}
 #endif
 #ifdef HRDW_MCP3008_3
-	test_value = FRONTPANEL_ReadMCP3008_Value(0, 3);
+	test_value = FRONTPANEL_ReadMCP3008_Value(0, 3, 1);
 	if (test_value == 65535)
 	{
 		FRONTPanel_MCP3008_3_Enabled = false;
@@ -714,27 +718,20 @@ void FRONTPANEL_Process(void)
 #ifdef HRDW_MCP3008_1
 		if (button->port == 1) {
 			mcp3008_value = 0;
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
-			mcp3008_value /= 3;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1, 5);
 		} else
 #endif
 #ifdef HRDW_MCP3008_2
 		if (button->port == 2) {
 			mcp3008_value = 0;
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2, 5);
 			mcp3008_value /= 3;
 		} else
 #endif
 #ifdef HRDW_MCP3008_3
 		if (button->port == 3) {
 			mcp3008_value = 0;
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
-			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3, 5);
 			mcp3008_value /= 3;
 		} else
 #endif
@@ -945,25 +942,28 @@ void FRONTPANEL_CheckButton(PERIPH_FrontPanel_Button *button, uint16_t mcp3008_v
 	}
 }
 
-static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num)
+static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num, uint8_t count)
 {
 	uint8_t outData[3] = {0};
 	uint8_t inData[3] = {0};
-	uint16_t mcp3008_value = 0;
+	uint32_t mcp3008_value = 0;
 
-	outData[0] = 0x18 | channel;
-	bool res = false;
-	if(adc_num == 1) res = HRDW_FrontUnit_SPI(outData, inData, 3, false);
+	for(uint8_t i = 0; i < count; i++) {
+		outData[0] = 0x18 | channel;
+		bool res = false;
+		if(adc_num == 1) res = HRDW_FrontUnit_SPI(outData, inData, 3, false);
 #if HRDW_MCP3008_2
-	if(adc_num == 2) res = HRDW_FrontUnit2_SPI(outData, inData, 3, false);
+		if(adc_num == 2) res = HRDW_FrontUnit2_SPI(outData, inData, 3, false);
 #endif
 
 #if HRDW_MCP3008_3
-	if(adc_num == 3) res = HRDW_FrontUnit3_SPI(outData, inData, 3, false);
+		if(adc_num == 3) res = HRDW_FrontUnit3_SPI(outData, inData, 3, false);
 #endif
-	if (res == false)
-		return 65535;
-	mcp3008_value = (uint16_t)(0 | ((inData[1] & 0x3F) << 4) | (inData[2] & 0xF0 >> 4));
+		if (res == false)
+			return 65535;
+		mcp3008_value += (uint16_t)(0 | ((inData[1] & 0x3F) << 4) | (inData[2] & 0xF0 >> 4));
+	}
+	mcp3008_value /= count;
 
 	return mcp3008_value;
 }

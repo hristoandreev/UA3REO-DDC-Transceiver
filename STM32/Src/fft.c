@@ -8,6 +8,7 @@
 #include "cw_decoder.h"
 #include "wifi.h"
 #include "trx_manager.h"
+#include "snap.h"
 
 // Public variables
 bool FFT_need_fft = true;						   // need to prepare data for display on the screen
@@ -88,7 +89,7 @@ static bool fft_charge_copying = false;
 static uint8_t FFT_meanBuffer_index = 0;
 static uint32_t FFT_ChargeBuffer_collected = 0;
 static uint64_t FFT_lastFFTChargeBufferFreq = 0;
-//static uint8_t FFTOutput_mean_count[FFT_SIZE] = {0};
+static uint8_t FFTOutput_mean_count[FFT_SIZE] = {0};
 static float32_t minAmplValue_averaged = 0;
 static float32_t FFT_minDBM = 0;
 static float32_t FFT_maxDBM = 0;
@@ -428,12 +429,12 @@ void FFT_doFFT(void)
 
 	arm_cfft_f32(FFT_Inst, FFTInput, 0, 1);
 
-	// dBm scale
+	// FFT scale
 	if (TRX.FFT_Scale_Type == 1) // Squared scale
 		arm_cmplx_mag_squared_f32(FFTInput, FFTInput, FFT_SIZE);
 	else // ampl or dbm scale
 		arm_cmplx_mag_f32(FFTInput, FFTInput, FFT_SIZE);
-
+	
 	// Debug VAD
 	/*dma_memset(FFTInput, 0x00, sizeof(FFTInput));
 	for (uint_fast16_t i = 0; i < FFT_SIZE; i++)
@@ -463,6 +464,9 @@ void FFT_doFFT(void)
 	dma_memcpy(&FFTInput[FFT_SIZE], &FFTInput[0], sizeof(float32_t) * (FFT_SIZE / 2));			  // left - > tmp
 	dma_memcpy(&FFTInput[0], &FFTInput[FFT_SIZE / 2], sizeof(float32_t) * (FFT_SIZE / 2));		  // right - > left
 	dma_memcpy(&FFTInput[FFT_SIZE / 2], &FFTInput[FFT_SIZE], sizeof(float32_t) * (FFT_SIZE / 2)); // tmp - > right
+	
+	// Send to Snap
+	SNAP_FillBuffer(FFTInput);
 
 	// Compress the calculated FFT to visible
 	dma_memcpy(&FFTInput[0], &FFTInput[FFT_SIZE / 2 - FFT_USEFUL_SIZE / 2], sizeof(float32_t) * FFT_USEFUL_SIZE); // useful fft part
@@ -553,7 +557,7 @@ void FFT_doFFT(void)
 
 	// Averaging values
 	dma_memset(FFTOutput_mean, 0x00, sizeof(FFTOutput_mean));
-	//dma_memset(FFTOutput_mean_count, 0x00, sizeof(FFTOutput_mean_count));
+	dma_memset(FFTOutput_mean_count, 0x00, sizeof(FFTOutput_mean_count));
 
 	for (uint_fast16_t avg_idx = 0; avg_idx < max_mean; avg_idx++)
 	{
@@ -568,16 +572,22 @@ void FFT_doFFT(void)
 			if (new_x > -1 && new_x < LAYOUT->FFT_PRINT_SIZE)
 			{
 				FFTOutput_mean[i] += FFT_meanBuffer[avg_idx][new_x];
-				//FFTOutput_mean_count[i]++;
+				FFTOutput_mean_count[i]++;
 			}
 		}
 	}
 
-	for (uint_fast16_t i = 0; i < LAYOUT->FFT_PRINT_SIZE; i++)
-	{
-		//if (FFTOutput_mean_count[i] > 1)
-			//FFTOutput_mean[i] /= (float32_t)FFTOutput_mean_count[i];
-		FFTOutput_mean[i] /= max_mean;
+	if (TRX.FFT_Scale_Type == 2) { //dBm scale
+		for (uint_fast16_t i = 0; i < LAYOUT->FFT_PRINT_SIZE; i++) {
+			if (FFTOutput_mean_count[i] > 1) {
+				FFTOutput_mean[i] /= (float32_t)FFTOutput_mean_count[i];
+			}
+		}
+	}
+	else { //ampl, squared scales
+		for (uint_fast16_t i = 0; i < LAYOUT->FFT_PRINT_SIZE; i++) {
+			FFTOutput_mean[i] /= max_mean;
+		}
 	}
 
 	if (averaging > 0)
@@ -1742,7 +1752,7 @@ void FFT_afterPrintFFT(void)
 	// continue DMA draw?
 	if (print_fft_dma_estimated_size > 0)
 	{
-#ifdef LCD_TYPE_FSMC
+#if LCD_TYPE_FSMC
 		if (print_fft_dma_estimated_size <= DMA_MAX_BLOCK)
 		{
 			HAL_DMA_Start_IT(&HRDW_LCD_FSMC_COPY_DMA, (uint32_t)&print_output_buffer[0] + print_fft_dma_position * 2, LCD_FSMC_DATA_ADDR, print_fft_dma_estimated_size);
@@ -1757,7 +1767,7 @@ void FFT_afterPrintFFT(void)
 		}
 		return;
 #endif
-#ifdef LCD_TYPE_SPI
+#if LCD_TYPE_SPI
 		if (HRDW_LCD_SPI.Init.DataSize != SPI_DATASIZE_16BIT)
 		{
 			HRDW_LCD_SPI.Init.DataSize = SPI_DATASIZE_16BIT;
@@ -2221,7 +2231,7 @@ static void FFT_fill_color_palette(void) // Fill FFT Color Gradient On Initializ
 
 static inline int32_t getFreqPositionOnFFT(uint64_t freq, bool full_pos)
 {
-	int32_t pos = (int32_t)((float32_t)LAYOUT->FFT_PRINT_SIZE / 2 + (float32_t)((float32_t)freq - (float32_t)CurrentVFO->Freq) / hz_in_pixel * (float32_t)fft_zoom);
+	int32_t pos = (int32_t)((float64_t)LAYOUT->FFT_PRINT_SIZE / 2.0f + (float64_t)((float64_t)freq - (float64_t)CurrentVFO->Freq) / hz_in_pixel * (float64_t)fft_zoom);
 	if (!full_pos && (pos < 0 || pos >= LAYOUT->FFT_PRINT_SIZE))
 		return -1;
 	if (TRX.FFT_Lens) // lens correction
@@ -2229,9 +2239,9 @@ static inline int32_t getFreqPositionOnFFT(uint64_t freq, bool full_pos)
 	return pos;
 }
 
-uint32_t getFreqOnFFTPosition(uint16_t position)
+uint64_t getFreqOnFFTPosition(uint16_t position)
 {
-	return (uint32_t)((int32_t)CurrentVFO->Freq + (int32_t)(-((float32_t)LAYOUT->FFT_PRINT_SIZE * (hz_in_pixel / (float32_t)fft_zoom) / 2.0f) + (float32_t)position * (hz_in_pixel / (float32_t)fft_zoom)));
+	return (uint64_t)((int64_t)CurrentVFO->Freq + (int64_t)(-((float64_t)LAYOUT->FFT_PRINT_SIZE * (hz_in_pixel / (float64_t)fft_zoom) / 2.0f) + (float64_t)position * (hz_in_pixel / (float64_t)fft_zoom)));
 }
 
 static uint32_t FFT_getLensCorrection(uint32_t normal_distance_from_center)
@@ -2280,8 +2290,10 @@ static uint32_t FFT_getLensCorrection(uint32_t normal_distance_from_center)
 static float32_t getDBFromFFTAmpl(float32_t ampl)
 {
 	float32_t db = 0.0f;
+	
 	if (TRX.FFT_Scale_Type == 0 || TRX.FFT_Scale_Type == 2) //ampl / dbm scale
 		db = rate2dbP(powf(ampl / (float32_t)FFT_SIZE, 2) / 50.0f / 0.001f) + FFT_DBM_COMPENSATION; // roughly... because window and other...
+	
 	if (TRX.FFT_Scale_Type == 1) //squared scale
 		db = rate2dbP(ampl / (float32_t)FFT_SIZE / 50.0f) + FFT_DBM_COMPENSATION; // roughly... because window and other...
 	
@@ -2299,7 +2311,14 @@ static float32_t getDBFromFFTAmpl(float32_t ampl)
 static float32_t getFFTAmplFromDB(float32_t ampl)
 {
 	float32_t result;
-	float32_t power = db2rateP(ampl - FFT_DBM_COMPENSATION + (TRX.ADC_Driver ? ADC_DRIVER_GAIN_DB : 0.0f) - ((CurrentVFO->Freq < 70000000) ? CALIBRATE.smeter_calibration_hf : CALIBRATE.smeter_calibration_vhf)) * 0.001f * 50.0f;
-	arm_sqrt_f32(power, &result);
+	
+	if (TRX.FFT_Scale_Type == 0 || TRX.FFT_Scale_Type == 2) { //ampl / dbm scale
+		float32_t power = db2rateP(ampl - FFT_DBM_COMPENSATION + (TRX.ADC_Driver ? ADC_DRIVER_GAIN_DB : 0.0f) - ((CurrentVFO->Freq < 70000000) ? CALIBRATE.smeter_calibration_hf : CALIBRATE.smeter_calibration_vhf)) * 0.001f * 50.0f;
+		arm_sqrt_f32(power, &result);
+	}
+	if (TRX.FFT_Scale_Type == 1) { //squared scale
+		result = db2rateP(ampl - FFT_DBM_COMPENSATION + (TRX.ADC_Driver ? ADC_DRIVER_GAIN_DB : 0.0f) - ((CurrentVFO->Freq < 70000000) ? CALIBRATE.smeter_calibration_hf : CALIBRATE.smeter_calibration_vhf)) * 50.0f;
+	}
+	
 	return result * (float32_t)FFT_SIZE;
 }

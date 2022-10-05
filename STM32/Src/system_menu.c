@@ -36,6 +36,7 @@ static void SYSMENU_HANDL_TRX_RFFilters(int8_t direction);
 static void SYSMENU_HANDL_TRX_INPUT_TYPE_MAIN(int8_t direction);
 static void SYSMENU_HANDL_TRX_INPUT_TYPE_DIGI(int8_t direction);
 static void SYSMENU_HANDL_TRX_Auto_Input_Switch(int8_t direction);
+static void SYSMENU_HANDL_TRX_Auto_Snap(int8_t direction);
 static void SYSMENU_HANDL_TRX_RIT_INTERVAL(int8_t direction);
 static void SYSMENU_HANDL_TRX_XIT_INTERVAL(int8_t direction);
 static void SYSMENU_HANDL_TRX_SAMPLERATE_MAIN(int8_t direction);
@@ -44,6 +45,7 @@ static void SYSMENU_HANDL_TRX_FRQ_STEP(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_FAST_STEP(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_ENC_STEP(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP(int8_t direction);
+static void SYSMENU_HANDL_TRX_FRQ_ENC_WFM_STEP_KHZ(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_CW_STEP_DIVIDER(int8_t direction);
 static void SYSMENU_HANDL_TRX_ENC_ACCELERATE(int8_t direction);
 static void SYSMENU_HANDL_TRX_ATT_STEP(int8_t direction);
@@ -187,8 +189,10 @@ static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON28(int8_t direction);
 #if FUNCBUTTONS_COUNT > 28
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON29(int8_t direction);
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON30(int8_t direction);
+#if FUNCBUTTONS_COUNT > 30
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON31(int8_t direction);
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON32(int8_t direction);
+#endif
 #endif
 
 static void SYSMENU_HANDL_DECODERS_CW_Decoder(int8_t direction);
@@ -221,6 +225,7 @@ static void SYSMENU_HANDL_WIFI_UpdateFW(int8_t direction);
 
 #if HRDW_HAS_SD
 static void SYSMENU_HANDL_SD_Filemanager(int8_t direction);
+static void SYSMENU_HANDL_SD_FormatDialog(int8_t direction);
 static void SYSMENU_HANDL_SD_Format(int8_t direction);
 static void SYSMENU_HANDL_SD_ExportSettingsDialog(int8_t direction);
 static void SYSMENU_HANDL_SD_ExportSettings(int8_t direction);
@@ -493,19 +498,22 @@ const static struct sysmenu_item_handler sysmenu_trx_handlers[] =
 		{"Freq Step FAST", SYSMENU_UINT32R, NULL, &TRX.FRQ_FAST_STEP, SYSMENU_HANDL_TRX_FRQ_FAST_STEP},
 		{"Freq Step ENC2", SYSMENU_UINT32R, NULL, &TRX.FRQ_ENC_STEP, SYSMENU_HANDL_TRX_FRQ_ENC_STEP},
 		{"Freq Step ENC2 FAST", SYSMENU_UINT32R, NULL, &TRX.FRQ_ENC_FAST_STEP, SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP},
+		{"Freq Step WFM, kHz", SYSMENU_UINT32R, NULL, &TRX.FRQ_ENC_WFM_STEP_KHZ, SYSMENU_HANDL_TRX_FRQ_ENC_WFM_STEP_KHZ},
 		{"CW Freq Step divider", SYSMENU_UINT8, NULL, &TRX.FRQ_CW_STEP_DIVIDER, SYSMENU_HANDL_TRX_FRQ_CW_STEP_DIVIDER},
 		{"Encoder Accelerate", SYSMENU_BOOLEAN, NULL, &TRX.Encoder_Accelerate, SYSMENU_HANDL_TRX_ENC_ACCELERATE},
 		{"Att step, dB", SYSMENU_UINT8, NULL, &TRX.ATT_STEP, SYSMENU_HANDL_TRX_ATT_STEP},
-        {"Attenuation, dB", SYSMENU_FLOAT32, NULL, &TRX.ATT_DB, SYSMENU_HANDL_TRX_ATT_DB},
+		{"Attenuation, dB", SYSMENU_FLOAT32, NULL, &TRX.ATT_DB, SYSMENU_HANDL_TRX_ATT_DB},
 #if HRDW_HAS_VGA
         {"VGA Gain, dB", SYSMENU_FLOAT32, NULL, &TRX.VGA_GAIN, SYSMENU_HANDL_TRX_VGA_GAIN},
 #endif
-        {"DEBUG Console", SYSMENU_ENUM, NULL, &TRX.Debug_Type, SYSMENU_HANDL_TRX_DEBUG_TYPE, {"OFF", "SYSTEM", "WIFI", "BUTTONS", "TOUCH", "CAT"}},
+		{"DEBUG Console", SYSMENU_ENUM, NULL, &TRX.Debug_Type, SYSMENU_HANDL_TRX_DEBUG_TYPE, {"OFF", "SYSTEM", "WIFI", "BUTTONS", "TOUCH", "CAT"}},
 		{"Auto Input Switch", SYSMENU_BOOLEAN, NULL, &TRX.Auto_Input_Switch, SYSMENU_HANDL_TRX_Auto_Input_Switch},
+		{"Auto Snap", SYSMENU_BOOLEAN, NULL, &TRX.Auto_Snap, SYSMENU_HANDL_TRX_Auto_Snap},
 		{"Input Type MAIN", SYSMENU_ENUM, NULL, &TRX.InputType_MAIN, SYSMENU_HANDL_TRX_INPUT_TYPE_MAIN, {"MIC", "LINE", "USB"}},
 		{"Input Type DIGI", SYSMENU_ENUM, NULL, &TRX.InputType_DIGI, SYSMENU_HANDL_TRX_INPUT_TYPE_DIGI, {"MIC", "LINE", "USB"}},
 		{"Callsign", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_TRX_SetCallsign},
 		{"Locator", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_TRX_SetLocator},
+		{"URSI Code", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_TRX_SetURSICode},
 		{"Transverter 70cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_70cm, SYSMENU_HANDL_TRX_TRANSV_70CM},
 		{"Transverter 23cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_23cm, SYSMENU_HANDL_TRX_TRANSV_23CM},
 		{"Transverter 13cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_13cm, SYSMENU_HANDL_TRX_TRANSV_13CM},
@@ -644,6 +652,7 @@ const static struct sysmenu_item_handler sysmenu_screen_handlers[] =
 		{"FFT Compressor", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Compressor, SYSMENU_HANDL_SCREEN_FFT_Compressor},
 		{"FFT Averaging", SYSMENU_UINT8, NULL, &TRX.FFT_Averaging, SYSMENU_HANDL_SCREEN_FFT_Averaging},
 		{"FFT Window", SYSMENU_ENUMR, NULL, &TRX.FFT_Window, SYSMENU_HANDL_SCREEN_FFT_Window, {"", "Dolph", "Blckman", "Nutall", "BlNutll", "Hann", "Hamming", "No"}},
+		{"FFT Scale Type", SYSMENU_ENUM, NULL, &TRX.FFT_Scale_Type, SYSMENU_HANDL_SCREEN_FFT_Scale_Type, {"Ampl", "Squared", "dBm"}},
 #if HRDW_HAS_WIFI
 		{"FFT DXCluster", SYSMENU_BOOLEAN, NULL, &TRX.FFT_DXCluster, SYSMENU_HANDL_SCREEN_FFT_DXCluster},
 		{"FFT DXCluster Azimuth", SYSMENU_BOOLEAN, NULL, &TRX.FFT_DXCluster_Azimuth, SYSMENU_HANDL_SCREEN_FFT_DXCluster_Azimuth},
@@ -652,7 +661,6 @@ const static struct sysmenu_item_handler sysmenu_screen_handlers[] =
 #if !defined(FRONTPANEL_LITE)
 		{"Show Sec VFO", SYSMENU_BOOLEAN, NULL, &TRX.Show_Sec_VFO, SYSMENU_HANDL_SCREEN_Show_Sec_VFO},
 #endif
-		{"FFT Scale Type", SYSMENU_ENUM, NULL, &TRX.FFT_Scale_Type, SYSMENU_HANDL_SCREEN_FFT_Scale_Type, {"Ampl", "Squared", "dBm"}},
 #ifdef HRDW_HAS_FUNCBUTTONS
 		{"Func button 1", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[0], SYSMENU_HANDL_SCREEN_FUNC_BUTTON1},
 		{"Func button 2", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[1], SYSMENU_HANDL_SCREEN_FUNC_BUTTON2},
@@ -686,8 +694,10 @@ const static struct sysmenu_item_handler sysmenu_screen_handlers[] =
 		{"Func button 28", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[27], SYSMENU_HANDL_SCREEN_FUNC_BUTTON28},
 		{"Func button 29", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[28], SYSMENU_HANDL_SCREEN_FUNC_BUTTON29},
 		{"Func button 30", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[29], SYSMENU_HANDL_SCREEN_FUNC_BUTTON30},
+#if (FUNCBUTTONS_ON_PAGE * FUNCBUTTONS_PAGES) > 30
 		{"Func button 31", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[30], SYSMENU_HANDL_SCREEN_FUNC_BUTTON31},
 		{"Func button 32", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[31], SYSMENU_HANDL_SCREEN_FUNC_BUTTON32},
+#endif
 #endif
 #endif
 #endif
@@ -747,7 +757,7 @@ const static struct sysmenu_item_handler sysmenu_sd_handlers[] =
 		{"USB SD Card Reader", SYSMENU_BOOLEAN, NULL, &SD_USBCardReader, SYSMENU_HANDL_SD_USB},
 		{"Export Settings to SD", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_ExportSettingsDialog},
 		{"Import Settings from SD", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_ImportSettingsDialog},
-		{"Format SD card", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_Format},
+		{"Format SD card", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_FormatDialog},
 };
 
 const static struct sysmenu_item_handler sysmenu_sd_export_handlers[] =
@@ -760,6 +770,11 @@ const static struct sysmenu_item_handler sysmenu_sd_import_handlers[] =
 	{
 		{"Back", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_Back},
 		{"Yes, Import Settings", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SD_ImportSettings},
+};
+const static struct sysmenu_item_handler sysmenu_sd_format_handlers[] =
+	{
+		{"Back", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_Back},
+		{"Yes, Format SD Card", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SD_Format},
 };
 #endif
 
@@ -1022,6 +1037,7 @@ static struct sysmenu_menu_wrapper sysmenu_wrappers[] = {
 	{.menu_handler = sysmenu_sd_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_sd_export_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_sd_import_handlers, .currentIndex = 0},
+	{.menu_handler = sysmenu_sd_format_handlers, .currentIndex = 0},
 	#endif
 	{.menu_handler = sysmenu_calibration_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_swr_analyser_handlers, .currentIndex = 0},
@@ -1191,6 +1207,14 @@ static void SYSMENU_HANDL_TRX_Auto_Input_Switch(int8_t direction)
 		TRX.Auto_Input_Switch = true;
 	if (direction < 0)
 		TRX.Auto_Input_Switch = false;
+}
+
+static void SYSMENU_HANDL_TRX_Auto_Snap(int8_t direction)
+{
+	if (direction > 0)
+		TRX.Auto_Snap = true;
+	if (direction < 0)
+		TRX.Auto_Snap = false;
 }
 
 static void SYSMENU_HANDL_TRX_INPUT_TYPE_MAIN(int8_t direction)
@@ -1371,6 +1395,33 @@ static void SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP(int8_t direction)
 			}
 		}
 	TRX.FRQ_ENC_FAST_STEP = freq_steps[0];
+}
+
+static void SYSMENU_HANDL_TRX_FRQ_ENC_WFM_STEP_KHZ(int8_t direction)
+{
+	const uint32_t wfm_freq_steps[] = {1, 5, 10, 25, 50, 100, 500, 1000};
+
+	for (uint8_t i = 0; i < ARRLENTH(wfm_freq_steps); i++)
+		if (TRX.FRQ_ENC_WFM_STEP_KHZ == wfm_freq_steps[i])
+		{
+			if (direction < 0)
+			{
+				if (i > 0)
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[i - 1];
+				else
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[0];
+				return;
+			}
+			else
+			{
+				if (i < (ARRLENTH(wfm_freq_steps) - 1))
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[i + 1];
+				else
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[ARRLENTH(wfm_freq_steps) - 1];
+				return;
+			}
+		}
+	TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[0];
 }
 
 static void SYSMENU_HANDL_TRX_FRQ_CW_STEP_DIVIDER(int8_t direction)
@@ -3071,6 +3122,7 @@ static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON30(int8_t direction)
 		TRX.FuncButtons[29] = FUNCBUTTONS_COUNT - 1;
 }
 
+#if (FUNCBUTTONS_ON_PAGE * FUNCBUTTONS_PAGES) > 30
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON31(int8_t direction)
 {
 	if (TRX.FuncButtons[30] > 0 || direction > 0)
@@ -3086,6 +3138,7 @@ static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON32(int8_t direction)
 	if (TRX.FuncButtons[31] >= FUNCBUTTONS_COUNT)
 		TRX.FuncButtons[31] = FUNCBUTTONS_COUNT - 1;
 }
+#endif
 #endif
 #endif
 #endif
@@ -3771,6 +3824,15 @@ static void SYSMENU_HANDL_SD_ImportSettingsDialog(int8_t direction)
 
     sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_import_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_sd_import_handlers) / sizeof(sysmenu_sd_import_handlers[0]);
+	sysmenu_onroot = false;
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+}
+static void SYSMENU_HANDL_SD_FormatDialog(int8_t direction)
+{
+	(void) direction;
+
+	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_format_handlers[0];
+	sysmenu_item_count = sizeof(sysmenu_sd_format_handlers) / sizeof(sysmenu_sd_format_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
@@ -4852,13 +4914,6 @@ static void SYSMENU_HANDL_CALIB_VCXO(int8_t direction)
 		CALIBRATE.VCXO_correction = -32750;
 	if (CALIBRATE.VCXO_correction > 32750)
 		CALIBRATE.VCXO_correction = 32750;
-
-	#if (!defined(FRONTPANEL_LITE) && !defined(FRONTPANEL_MINI))
-	if (CALIBRATE.VCXO_correction < -126)
-		CALIBRATE.VCXO_correction = -126;
-	if (CALIBRATE.VCXO_correction > 126)
-		CALIBRATE.VCXO_correction = 126;
-	#endif
 }
 // Tisho
 static void SYSMENU_HANDL_CALIB_FW_AD8307_SLP(int8_t direction)

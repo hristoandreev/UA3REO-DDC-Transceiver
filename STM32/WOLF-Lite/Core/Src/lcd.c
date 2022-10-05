@@ -352,6 +352,8 @@ static void LCD_displayStatusInfoGUI(bool redraw)
 		LCDDriver_Fill_RectWH(0, LAYOUT->STATUS_Y_OFFSET, LCD_WIDTH, LAYOUT->STATUS_HEIGHT, BG_COLOR);
 		if (LAYOUT->STATUS_SMETER_ANALOG)
 			LCDDriver_Fill_RectWH(LAYOUT->STATUS_BAR_X_OFFSET - 2, LAYOUT->STATUS_Y_OFFSET + LAYOUT->STATUS_SMETER_TOP_OFFSET, LAYOUT->STATUS_SMETER_WIDTH + 12, LAYOUT->STATUS_SMETER_ANALOG_HEIGHT, BG_COLOR);
+		
+		LCD_UpdateQuery.StatusInfoBarRedraw = true;
 	}
 
 	if (TRX_on_TX)
@@ -1079,16 +1081,16 @@ static void LCD_displayStatusInfoBar(bool redraw)
 	
 	// NOTCH
 	if (CurrentVFO->AutoNotchFilter)
-		sprintf(buff, "NH:AUTO");
+		sprintf(buff, "NF:AUTO");
 	else if (CurrentVFO->ManualNotchFilter)
 	{
 		if (CurrentVFO->Mode == TRX_MODE_CW)
-			sprintf(buff, "NH:%uhz", TRX.CW_Pitch + CurrentVFO->NotchFC - CurrentVFO->LPF_RX_Filter_Width / 2);
+			sprintf(buff, "NF:%uhz", TRX.CW_Pitch + CurrentVFO->NotchFC - CurrentVFO->LPF_RX_Filter_Width / 2);
 		else
-			sprintf(buff, "NH:%uhz", CurrentVFO->NotchFC);
+			sprintf(buff, "NF:%uhz", CurrentVFO->NotchFC);
 	}
 	else
-		sprintf(buff, "NH:OFF");
+		sprintf(buff, "NF:OFF");
 	
 	static char prev_notch_buff[16] = "";
 	if(redraw || strcmp(prev_notch_buff, buff) != 0) {

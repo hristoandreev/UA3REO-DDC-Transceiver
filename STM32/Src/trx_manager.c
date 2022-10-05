@@ -22,6 +22,7 @@
 #include "sd.h"
 #include "auto_notch.h"
 #include "noise_reduction.h"
+#include "snap.h"
 
 volatile bool TRX_ptt_hard = false;
 volatile bool TRX_ptt_soft = false;
@@ -281,7 +282,7 @@ void TRX_ptt_change(void)
 	}
 }
 
-bool TRX_TX_Disabled(uint32_t freq)
+bool TRX_TX_Disabled(uint64_t freq)
 {
 	bool notx = false;
 	int8_t band = getBandFromFreq(freq, false);
@@ -349,7 +350,23 @@ bool TRX_TX_Disabled(uint32_t freq)
 			notx = true;
 		break;
 	case BANDID_70cm:
-		if (CALIBRATE.NOTX_70cm)
+		if (CALIBRATE.NOTX_70cm && !TRX.Transverter_70cm)
+			notx = true;
+		break;
+	case BANDID_23cm:
+		if (!TRX.Transverter_23cm)
+			notx = true;
+		break;
+	case BANDID_13cm:
+		if (!TRX.Transverter_13cm)
+			notx = true;
+		break;
+	case BANDID_6cm:
+		if (!TRX.Transverter_6cm)
+			notx = true;
+		break;
+	case BANDID_3cm:
+		if (!TRX.Transverter_3cm)
 			notx = true;
 		break;
 	default:
@@ -376,9 +393,20 @@ void TRX_setFrequency(uint64_t _freq, VFO *vfo)
 	vfo->Freq = _freq;
 
 	// set DC-DC Sync freq
-	uint32_t dcdc_offset_0 = abs((int32_t)DCDC_FREQ_0 / 2 - (int32_t)_freq % (int32_t)DCDC_FREQ_0);
-	uint32_t dcdc_offset_1 = abs((int32_t)DCDC_FREQ_1 / 2 - (int32_t)_freq % (int32_t)DCDC_FREQ_1);
-	if (dcdc_offset_0 > dcdc_offset_1)
+	uint64_t dcdc_0_harmonic_num = _freq / DCDC_FREQ_0;
+	uint64_t dcdc_1_harmonic_num = _freq / DCDC_FREQ_1;
+	uint64_t dcdc_0_harmonic_1ow = dcdc_0_harmonic_num * DCDC_FREQ_0;
+	uint64_t dcdc_0_harmonic_high = (dcdc_0_harmonic_num + 1) * DCDC_FREQ_0;
+	uint64_t dcdc_1_harmonic_1ow = dcdc_1_harmonic_num * DCDC_FREQ_1;
+	uint64_t dcdc_1_harmonic_high = (dcdc_1_harmonic_num + 1) * DCDC_FREQ_1;
+	uint64_t dcdc_0_harmonic_1ow_diff = llabs((int64_t)dcdc_0_harmonic_1ow - (int64_t)_freq);
+	uint64_t dcdc_0_harmonic_high_diff = llabs((int64_t)dcdc_0_harmonic_high - (int64_t)_freq);
+	uint64_t dcdc_1_harmonic_1ow_diff = llabs((int64_t)dcdc_1_harmonic_1ow - (int64_t)_freq);
+	uint64_t dcdc_1_harmonic_high_diff = llabs((int64_t)dcdc_1_harmonic_high - (int64_t)_freq);
+	uint64_t dcdc_0_harmonic_nearest = dcdc_0_harmonic_1ow_diff < dcdc_0_harmonic_high_diff ? dcdc_0_harmonic_1ow_diff : dcdc_0_harmonic_high_diff;
+	uint64_t dcdc_1_harmonic_nearest = dcdc_1_harmonic_1ow_diff < dcdc_1_harmonic_high_diff ? dcdc_1_harmonic_1ow_diff : dcdc_1_harmonic_high_diff;
+	
+	if (dcdc_0_harmonic_nearest < dcdc_1_harmonic_nearest)
 		TRX_DCDC_Freq = 1;
 	else
 		TRX_DCDC_Freq = 0;
@@ -691,9 +719,9 @@ void TRX_ProcessScanMode(void)
 	}
 }
 
-static uint32_t setFreqSlowly_target = 0;
+static uint64_t setFreqSlowly_target = 0;
 static bool setFreqSlowly_processing = 0;
-void TRX_setFrequencySlowly(uint32_t target_freq)
+void TRX_setFrequencySlowly(uint64_t target_freq)
 {
 	setFreqSlowly_target = target_freq;
 	setFreqSlowly_processing = true;
@@ -703,7 +731,7 @@ void TRX_setFrequencySlowly_Process(void)
 {
 	if (!setFreqSlowly_processing)
 		return;
-	int32_t diff = CurrentVFO->Freq - setFreqSlowly_target;
+	int64_t diff = CurrentVFO->Freq - setFreqSlowly_target;
 	if (diff > TRX_SLOW_SETFREQ_MIN_STEPSIZE || diff < -TRX_SLOW_SETFREQ_MIN_STEPSIZE)
 	{
 		TRX_setFrequency(CurrentVFO->Freq - diff / 4, CurrentVFO);
@@ -745,11 +773,13 @@ void TRX_DoFrequencyEncoder(float32_t direction, bool secondary_encoder)
 		step = TRX.FRQ_FAST_STEP;
 		if (CurrentVFO->Mode == TRX_MODE_CW)
 			step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
+		if (CurrentVFO->Mode == TRX_MODE_WFM)
+			step = (float64_t)TRX.FRQ_ENC_WFM_STEP_KHZ * 1000.0f;
 		
 		if (secondary_encoder) {
 			step = TRX.FRQ_ENC_FAST_STEP;
 			if (CurrentVFO->Mode == TRX_MODE_WFM)
-				step = step * 2.0;
+				step = (float64_t)TRX.FRQ_ENC_WFM_STEP_KHZ * 1000.0f * 5.0f;
 			if (CurrentVFO->Mode == TRX_MODE_CW)
 				step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
 		}
@@ -768,11 +798,13 @@ void TRX_DoFrequencyEncoder(float32_t direction, bool secondary_encoder)
 		step = TRX.FRQ_STEP;
 		if (CurrentVFO->Mode == TRX_MODE_CW)
 			step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
+		if (CurrentVFO->Mode == TRX_MODE_WFM)
+			step = (float64_t)TRX.FRQ_ENC_WFM_STEP_KHZ * 1000.0f;
 		
 		if (secondary_encoder) {
 			step = TRX.FRQ_ENC_STEP;
 			if (CurrentVFO->Mode == TRX_MODE_WFM)
-				step = step * 2.0;
+				step = (float64_t)TRX.FRQ_ENC_WFM_STEP_KHZ * 1000.0f * 5.0f;
 			if (CurrentVFO->Mode == TRX_MODE_CW)
 				step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
 		}
@@ -1544,7 +1576,10 @@ void BUTTONHANDLER_MENUHOLD(uint32_t parameter)
 void BUTTONHANDLER_MUTE(uint32_t parameter)
 {
 	TRX_Mute = !TRX_Mute;
-	TRX_AFAmp_Mute = false;
+	if (!TRX_Mute) {
+		TRX_AFAmp_Mute = false;
+		CODEC_UnMute_AF_AMP();
+	}
 	LCD_UpdateQuery.TopButtons = true;
 	NeedSaveSettings = true;
 }
@@ -2243,4 +2278,22 @@ void BUTTONHANDLER_VLT(uint32_t parameter)
 	LCD_UpdateQuery.StatusInfoBar = true;
 	LCD_UpdateQuery.TopButtons = true;
 	#endif
+}
+
+void BUTTONHANDLER_SNAP(uint32_t parameter)
+{
+	SNAP_DoSnap(false);
+}
+
+void BUTTONHANDLER_AUTO_SNAP(uint32_t parameter)
+{
+	TRX.Auto_Snap = !TRX.Auto_Snap;
+
+	if (TRX.Auto_Snap)
+		LCD_showTooltip("AUTO SNAP ON");
+	else
+		LCD_showTooltip("AUTO SNAP OFF");
+
+	LCD_UpdateQuery.TopButtons = true;
+	NeedSaveSettings = true;
 }

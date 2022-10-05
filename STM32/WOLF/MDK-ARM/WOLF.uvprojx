@@ -3391,6 +3391,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -3429,6 +3439,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -4936,6 +4956,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -4974,6 +5004,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -6550,6 +6590,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -6588,6 +6638,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -8164,6 +8224,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -8202,6 +8272,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -9778,6 +9858,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -9816,6 +9906,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -11392,6 +11492,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -11430,6 +11540,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -13006,6 +13126,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -13044,6 +13174,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -14551,6 +14691,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -14589,6 +14739,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -16096,6 +16256,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -16134,6 +16304,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>

@@ -29,6 +29,7 @@
 #include "sd.h"
 #include "cw.h"
 #include "functions.h"
+#include "snap.h"
 
 void EVENTS_do_WSPR(void) // 1,4648 hz
 {
@@ -446,13 +447,18 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 	
 	//Check vBAT
 	static bool vbat_checked = false;
-	if(!vbat_checked && TRX_Inited)
+	if(!vbat_checked && TRX_Inited && !LCD_busy)
 	{
 		vbat_checked = true;
 		if(TRX_VBAT_Voltage <= 2.5f)
 		{
 			LCD_showError("Replace BAT", true);
 		}
+	}
+	
+	//Auto Snap
+	if (TRX.Auto_Snap) {
+		SNAP_DoSnap(true);
 	}
 	
 	CPULOAD_Calc(); // Calculate CPU load

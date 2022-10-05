@@ -943,6 +943,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.FRQ_FAST_STEP", (uint32_t *)&TRX.FRQ_FAST_STEP, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("TRX.FRQ_ENC_STEP", (uint32_t *)&TRX.FRQ_ENC_STEP, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("TRX.FRQ_ENC_FAST_STEP", (uint32_t *)&TRX.FRQ_ENC_FAST_STEP, SYSMENU_UINT32);
+			SD_WRITE_SETT_LINE("TRX.FRQ_ENC_WFM_STEP_KHZ", (uint32_t *)&TRX.FRQ_ENC_WFM_STEP_KHZ, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("TRX.FRQ_CW_STEP_DIVIDER", (uint32_t *)&TRX.FRQ_CW_STEP_DIVIDER, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.Debug_Type", (uint32_t *)&TRX.Debug_Type, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.BandMapEnabled", (uint32_t *)&TRX.BandMapEnabled, SYSMENU_BOOLEAN);
@@ -968,6 +969,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.Transverter_6cm", (uint32_t *)&TRX.Transverter_6cm, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Transverter_3cm", (uint32_t *)&TRX.Transverter_3cm, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Auto_Input_Switch", (uint32_t *)&TRX.Auto_Input_Switch, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.Auto_Snap", (uint32_t *)&TRX.Auto_Snap, SYSMENU_BOOLEAN);
 			// AUDIO
 			SD_WRITE_SETT_LINE("TRX.Volume", (uint32_t *)&TRX.Volume, SYSMENU_UINT16);
 			SD_WRITE_SETT_LINE("TRX.Volume_Step", (uint32_t *)&TRX.Volume_Step, SYSMENU_UINT8);
@@ -1460,6 +1462,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.FRQ_ENC_STEP = uintval;
 	if (strcmp(name, "TRX.FRQ_ENC_FAST_STEP") == 0)
 		TRX.FRQ_ENC_FAST_STEP = uintval;
+	if (strcmp(name, "TRX.FRQ_ENC_WFM_STEP_KHZ") == 0)
+		TRX.FRQ_ENC_WFM_STEP_KHZ = uintval;
 	if (strcmp(name, "TRX.FRQ_CW_STEP_DIVIDER") == 0)
 		TRX.FRQ_CW_STEP_DIVIDER = (uint8_t)uintval;
 	if (strcmp(name, "TRX.Debug_Type") == 0)
@@ -1528,6 +1532,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.Transverter_3cm = bval;
 	if (strcmp(name, "TRX.Auto_Input_Switch") == 0)
 		TRX.Auto_Input_Switch = bval;
+	if (strcmp(name, "TRX.Auto_Snap") == 0)
+		TRX.Auto_Snap = bval;
 	// AUDIO
 	if (strcmp(name, "TRX.Volume") == 0)
 		TRX.Volume = (uint16_t)uintval;

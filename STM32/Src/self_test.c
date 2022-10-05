@@ -32,7 +32,6 @@ static uint32_t SELF_TEST_old_freq = SELF_TEST_frequency;
 static bool LastLNA = false;
 static bool LastDRV = false;
 static bool LastPGA = false;
-static bool LastRAND = false;
 static bool LastATT = false;
 static float32_t LastATT_DB = false;
 
@@ -47,12 +46,9 @@ void SELF_TEST_Start(void)
 	LastLNA = TRX.LNA;
 	LastDRV = TRX.ADC_Driver;
 	LastPGA = TRX.ADC_PGA;
-    LastRAND = TRX.ADC_RAND;
 	LastATT = TRX.ATT;
 	LastATT_DB = TRX.ATT_DB;
-
-    TRX.ADC_RAND = true;
-
+	
 	SELF_TEST_old_autogainer = TRX.AutoGain;
 	SELF_TEST_old_freq = CurrentVFO->Freq;
 	SELF_TEST_current_page = selfTest_Base;
@@ -72,7 +68,6 @@ void SELF_TEST_Stop(void)
 	TRX.LNA = LastLNA;
 	TRX.ADC_Driver = LastDRV;
 	TRX.ADC_PGA = LastPGA;
-    TRX.ADC_RAND = LastRAND;
 	TRX.ATT = LastATT;
 	TRX.ATT_DB = LastATT_DB;
 }
@@ -151,13 +146,24 @@ void SELF_TEST_Draw(void)
 		LCDDriver_printText("TCXO", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
 		SELF_TEST_printResult(abs(TRX_VCXO_ERROR) < 10, pos_y);
 		pos_y += margin_bottom;
-        #endif
+		#endif
+
+		// Samplerate test
+		LCDDriver_printText("FPGA Clocks", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+		SELF_TEST_printResult(abs((int32_t)TRX_GetRXSampleRate - (int32_t)dbg_FPGA_samples) < (TRX_GetRXSampleRate * 0.05f), pos_y); //5%
+		pos_y += margin_bottom;
+
+		// redraw loop
+		LCD_UpdateQuery.SystemMenuRedraw = true;
 	}
 
 	if (SELF_TEST_current_page == selfTest_ADC_Bits)
 	{
 		static bool ok[16] = {false};
 		static int8_t prev_adc_state[16] = {0};
+
+		LCDDriver_printText("Insert ANT 14mhz", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+		pos_y += margin_bottom;
 
 		LCDDriver_printText("ADC RAW Data", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
 		sprintf(str, " %d         ", ADC_RAW_IN);
@@ -207,7 +213,7 @@ void SELF_TEST_Draw(void)
 		static uint8_t current_test = 0;
 		static uint32_t current_test_start_time = 0;
 
-		LCDDriver_printText("Testing on 14mhz...", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+		LCDDriver_printText("Insert ANT 14mhz", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
 		pos_y += margin_bottom;
 
 		// predefine
@@ -343,7 +349,7 @@ void SELF_TEST_Draw(void)
 			#if !defined(FRONTPANEL_LITE)
 			LCDDriver_printText("LNA gain", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
 			sprintf(str, " %.2f dB          ", ADC_LNA_db);
-			LCDDriver_printText(str, LCDDriver_GetCurrentXOffset(), pos_y, (ADC_LNA_db > 15.0f && ADC_LNA_db < 30.0f) ? COLOR_GREEN : COLOR_RED, BG_COLOR, font_size);
+			LCDDriver_printText(str, LCDDriver_GetCurrentXOffset(), pos_y, (ADC_LNA_db > 23.0f && ADC_LNA_db < 30.0f) ? COLOR_GREEN : COLOR_RED, BG_COLOR, font_size);
 			#endif
 			pos_y += margin_bottom;
 
@@ -361,7 +367,7 @@ void SELF_TEST_Draw(void)
 		static uint8_t current_test = 0;
 		static uint32_t current_test_start_time = 0;
 
-		LCDDriver_printText("Testing on 14mhz...", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
+		LCDDriver_printText("Insert ANT 14mhz", margin_left, pos_y, FG_COLOR, BG_COLOR, font_size);
 		pos_y += margin_bottom;
 
 		// predefine

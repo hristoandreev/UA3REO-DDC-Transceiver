@@ -10,7 +10,7 @@
 #include "bands.h"
 #include "front_unit.h"
 
-const char version_string[19] = "5.1.0";
+const char version_string[19] = "5.2.0";
 
 const char ota_config_frontpanel[] = OTA_CONFIG_FRONT_PANEL;
 const char ota_config_lcd[] = OTA_CONFIG_LCD;
@@ -182,6 +182,7 @@ void LoadSettings(bool clear)
 		TRX.FRQ_FAST_STEP = 100;			// frequency tuning step by the main encoder in FAST mode
 		TRX.FRQ_ENC_STEP = 25000;			// frequency tuning step by main add. encoder
 		TRX.FRQ_ENC_FAST_STEP = 50000;		// frequency tuning step by main add. encoder in FAST mode
+		TRX.FRQ_ENC_WFM_STEP_KHZ = 100;		// frequency WFM tuning step by the main encoder
 		TRX.FRQ_CW_STEP_DIVIDER = 4;		// Step divider for CW mode
 		TRX.Debug_Type = TRX_DEBUG_OFF;		// Debug output to DEBUG / UART port
 		TRX.BandMapEnabled = true;			// automatic change of mode according to the range map
@@ -219,6 +220,7 @@ void LoadSettings(bool clear)
 		TRX.Transverter_3cm = false;	  // Transvertrs enable (2m IF)
 		TRX.FineRITTune = true;			  // Fine or coarse tune for split/shift
 		TRX.Auto_Input_Switch = false;	  // Auto Mic/USB Switch
+		TRX.Auto_Snap = false;				// Auto track and snap to signal frequency
 		// AUDIO
 		TRX.Volume = 25;					 // AF Volume
 		TRX.Volume_Step = 5;			 // AF Volume step by sec encoder
@@ -337,7 +339,7 @@ void LoadSettings(bool clear)
 		TRX.FFT_HoldPeaks = false;		   // Show FFT Peaks
 		TRX.FFT_3D = 0;					   // FFT 3D mode
 		TRX.FFT_ManualBottom = -130;	   // Minimal threshold for manual FFT scale
-		TRX.FFT_ManualTop = -80;		   // Maximum threshold for manual FFT scale
+		TRX.FFT_ManualTop = -90;		   // Maximum threshold for manual FFT scale
 		TRX.FFT_DXCluster = false;		   // Show DX cluster over FFT
 		TRX.FFT_DXCluster_Azimuth = false; // Add azimut to callsign
 		TRX.FFT_DXCluster_Timeout = 5;	   // DXCluser timeout in minutes
@@ -436,7 +438,8 @@ void LoadSettings(bool clear)
 		TRX.ENC2_func_mode = ENC_FUNC_FAST_STEP;
 
 		LCD_showError("Loaded default settings", true);
-		SaveSettings();
+		SaveSettings(); // save to primary bank
+		SaveSettings(); // save to second bank
 		SaveSettingsToEEPROM();
 	}
 
