@@ -88,6 +88,7 @@ volatile float32_t TRX_VBAT_Voltage = 0.0f;
 volatile uint_fast16_t CW_Key_Timeout_est = 0;
 uint32_t dbg_FPGA_samples = 0;
 uint8_t TRX_TX_Harmonic = 1;
+uint8_t TRX_TX_sendZeroes = 0;
 
 static uint_fast8_t TRX_TXRXMode = 0; // 0 - undef, 1 - rx, 2 - tx, 3 - txrx
 static bool TRX_SPLIT_Applied = false;
@@ -122,6 +123,7 @@ void TRX_Restart_Mode()
 	}
 	else
 	{
+		TRX_TX_sendZeroes = 0;
 		TRX_Start_RX();
 	}
 
@@ -423,6 +425,8 @@ void TRX_setFrequency(uint64_t _freq, VFO *vfo)
 		vfoa_freq = (TRX.Transverter_Offset_Mhz * 1000000) + (vfoa_freq - BANDS[BANDID_6cm].startFreq);
 	if (TRX.Transverter_3cm && getBandFromFreq(vfoa_freq, true) == BANDID_3cm)
 		vfoa_freq = (TRX.Transverter_Offset_Mhz * 1000000) + (vfoa_freq - BANDS[BANDID_3cm].startFreq);
+	
+	CurrentVFO->RealRXFreq = vfoa_freq;
 	TRX_freq_phrase = getRXPhraseFromFrequency(vfoa_freq, 1);
 
 	int64_t vfob_freq = SecondaryVFO->Freq + TRX_RIT;
@@ -437,6 +441,7 @@ void TRX_setFrequency(uint64_t _freq, VFO *vfo)
 	if (TRX.Transverter_3cm && getBandFromFreq(vfob_freq, true) == BANDID_3cm)
 		vfob_freq = (TRX.Transverter_Offset_Mhz * 1000000) + (vfob_freq - BANDS[BANDID_3cm].startFreq);
 
+	SecondaryVFO->RealRXFreq = vfob_freq;
 	TRX_freq_phrase2 = getRXPhraseFromFrequency(vfob_freq, 2);
 
 	int64_t vfo_tx_freq = CurrentVFO->Freq + TRX_XIT;
@@ -540,6 +545,12 @@ void TRX_setMode(uint_fast8_t _mode, VFO *vfo)
 		vfo->HPF_RX_Filter_Width = 0;
 		vfo->HPF_TX_Filter_Width = 0;
 		break;
+	}
+	
+	// reset zoom on WFM
+	if (vfo->Mode != old_mode && vfo->Mode == TRX_MODE_WFM && TRX.FFT_Zoom != 1) {
+		TRX.FFT_Zoom = 1;
+		FFT_Init();
 	}
 
 	// FFT Zoom change
@@ -832,6 +843,8 @@ void BUTTONHANDLER_DOUBLE(uint32_t parameter)
 	LCD_UpdateQuery.StatusInfoGUI = true;
 	NeedReinitAudioFilters = true;
 	#endif
+	
+	LCD_UpdateQuery.TopButtons = true;
 }
 
 void BUTTONHANDLER_DOUBLEMODE(uint32_t parameter)
@@ -847,6 +860,8 @@ void BUTTONHANDLER_DOUBLEMODE(uint32_t parameter)
 	LCD_UpdateQuery.StatusInfoGUI = true;
 	NeedReinitAudioFilters = true;
 	#endif
+	
+	LCD_UpdateQuery.TopButtons = true;
 }
 
 void BUTTONHANDLER_AsB(uint32_t parameter) // A/B
@@ -1619,6 +1634,7 @@ void BUTTONHANDLER_VOX(uint32_t parameter)
 	else
 		LCD_showTooltip("VOX OFF");
 
+	LCD_UpdateQuery.TopButtons = true;
 	NeedSaveSettings = true;
 }
 
@@ -1664,6 +1680,7 @@ void BUTTONHANDLER_SQL(uint32_t parameter)
 void BUTTONHANDLER_SCAN(uint32_t parameter)
 {
 	TRX_ScanMode = !TRX_ScanMode;
+	LCD_UpdateQuery.TopButtons = true;
 }
 
 void BUTTONHANDLER_PLAY(uint32_t parameter)
@@ -1682,6 +1699,8 @@ void BUTTONHANDLER_PLAY(uint32_t parameter)
 	strcat((char *)SD_workbuffer_A, SD_CQ_MESSAGE_FILE);
 	SD_doCommand(SDCOMM_START_PLAY, false);
 	#endif
+	
+	LCD_UpdateQuery.TopButtons = true;
 }
 
 void BUTTONHANDLER_REC(uint32_t parameter)
@@ -1692,6 +1711,8 @@ void BUTTONHANDLER_REC(uint32_t parameter)
 	else
 		SD_NeedStopRecord = true;
 	#endif
+	
+	LCD_UpdateQuery.TopButtons = true;
 }
 
 void BUTTONHANDLER_FUNC(uint32_t parameter)

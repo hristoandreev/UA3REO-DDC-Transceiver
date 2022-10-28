@@ -111,9 +111,11 @@ void print_chr_LCDOnly(char chr)
 
 void print_flush(void)
 {
+	#if HRDW_HAS_USB_DEBUG
 	uint_fast16_t tryes = 0;
 	while (DEBUG_Transmit_FIFO_Events() == USBD_BUSY && tryes < 512)
 		tryes++;
+	#endif
 }
 
 void print_hex(uint8_t data, bool _inline)
@@ -189,13 +191,18 @@ uint32_t getTXPhraseFromFrequency(float64_t freq) // calculate the frequency fro
 	bool inverted = false;
 	int32_t _freq = (int32_t)freq;
 	
-	TRX_TX_Harmonic = 1;
+	uint8_t TRX_TX_Harmonic_new = 0;
 	if (_freq > MAX_TX_FREQ_HZ) { // harmonics mode
 		while (_freq > MAX_TX_FREQ_HZ) {
 			_freq /= 3; // third-harmonics
-			TRX_TX_Harmonic += 3;
+			TRX_TX_Harmonic_new += 3;
 		}
 	}
+	if (TRX_TX_Harmonic_new == 0)
+		TRX_TX_Harmonic = 1;
+	else
+		TRX_TX_Harmonic = TRX_TX_Harmonic_new;
+	
 
 	TRX_DAC_X4 = true;
 	uint8_t nyquist = _freq / (DAC_CLOCK / 2);
@@ -240,7 +247,7 @@ uint32_t getTXPhraseFromFrequency(float64_t freq) // calculate the frequency fro
 
 void addSymbols(char *dest, char *str, uint_fast8_t length, char *symbol, bool toEnd) // add zeroes
 {
-	char res[50] = "";
+	char res[70] = "";
 	strcpy(res, str);
 	while (strlen(res) < length)
 	{
@@ -1102,4 +1109,17 @@ float fast_sqrt(const float x)
   u.x = x;
   u.i = SQRT_MAGIC_F - (u.i >> 1);  // gives initial guess y0
   return x*u.x*(1.5f - xhalf*u.x*u.x);// Newton step, repeating increases accuracy 
+}
+
+uint8_t getPowerFromALC(float32_t alc) {
+	float32_t volt = alc - 1.0f; // 0.0-1.0v - ALC disabled
+	float32_t power = volt * 100.0f / 2.3f; // 1.0v - 3.3v - power 0-100%
+	
+	if (power < 0)
+		return 0;
+	
+	if (power > 100)
+		return 100;
+	
+	return power;
 }

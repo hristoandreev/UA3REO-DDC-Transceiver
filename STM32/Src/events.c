@@ -11,7 +11,7 @@
 #include "usbd_cat_if.h"
 #include "usbd_audio_if.h"
 #include "usbd_ua3reo.h"
-#include "FT8\FT8_main.h"
+#include "FT8/FT8_main.h"
 #include "front_unit.h"
 #include "rf_unit.h"
 #include "fpga.h"
@@ -50,7 +50,7 @@ void EVENTS_do_WIFI(void) // 1000 hz
   {
 		#if HRDW_HAS_WIFI
     // we work with WiFi by timer, or send it if it is turned off (to turn it on, we need a restart)
-    if (TRX.WIFI_Enabled)
+    if (WIFI.Enabled)
       WIFI_Process();
     else
       WIFI_GoSleep();
@@ -69,7 +69,9 @@ void EVENTS_do_FFT(void) // 1000 hz
   if (FFT_need_fft)
     FFT_doFFT();
 
+	#if HRDW_HAS_USB_CAT
   ua3reo_dev_cat_parseCommand();
+	#endif
 }
 
 void EVENTS_do_AUDIO_PROCESSOR(void) // 20 000 hz
@@ -129,6 +131,8 @@ void EVENTS_do_PERIPHERAL(void) // 1000 hz
   //EEPROM SPI
   if (NeedSaveCalibration) // save calibration data to EEPROM
     SaveCalibration();
+	if (NeedSaveWiFi) // save WiFi settings data to EEPROM
+    SaveWiFiSettings();
 
 	#if HRDW_HAS_SD
   //SD-Card SPI
@@ -200,7 +204,7 @@ void EVENTS_do_EVERY_10ms(void) // 100 hz
   prev_pwr_state = HAL_GPIO_ReadPin(PWR_ON_GPIO_Port, PWR_ON_Pin);
 
   if ((HAL_GPIO_ReadPin(PWR_ON_GPIO_Port, PWR_ON_Pin) == GPIO_PIN_RESET) && ((HAL_GetTick() - powerdown_start_delay) > POWERDOWN_TIMEOUT) 
-		&& ((!NeedSaveCalibration && !HRDW_SPI_Locked && !EEPROM_Busy && !LCD_busy) || ((HAL_GetTick() - powerdown_start_delay) > POWERDOWN_FORCE_TIMEOUT)))
+		&& ((!NeedSaveCalibration && !NeedSaveWiFi && !HRDW_SPI_Locked && !EEPROM_Busy && !LCD_busy) || ((HAL_GetTick() - powerdown_start_delay) > POWERDOWN_FORCE_TIMEOUT)))
   {
     TRX_Inited = false;
     LCD_busy = true;
@@ -418,31 +422,33 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 	}
 
 	#if HRDW_HAS_WIFI
-	bool maySendIQ = true;
-	if (!WIFI_IP_Gotted) { //Get resolved IP
-		WIFI_GetIP(NULL);
-		maySendIQ = false;
+	if(!WIFI_download_inprogress) {
+		bool maySendIQ = true;
+		if (!WIFI_IP_Gotted) { //Get resolved IP
+			WIFI_GetIP(NULL);
+			maySendIQ = false;
+		}
+		uint32_t mstime = HAL_GetTick();
+		if (TRX_SNTP_Synced == 0 || (mstime > (SNTP_SYNC_INTERVAL * 1000) && TRX_SNTP_Synced < (mstime - SNTP_SYNC_INTERVAL * 1000))) {//Sync time from internet
+			WIFI_GetSNTPTime(NULL);
+			maySendIQ = false;
+		}
+		if (WIFI.CAT_Server && !WIFI_CAT_server_started) { //start WiFi CAT Server
+			WIFI_StartCATServer(NULL);
+			maySendIQ = false;
+		}
+		if(CALIBRATE.OTA_update && !WIFI_NewFW_checked) {	//check OTA FW updates
+			WIFI_checkFWUpdates();
+			maySendIQ = false;
+		}
+		if(TRX.FFT_DXCluster && ((HAL_GetTick() - TRX_DXCluster_UpdateTime) > DXCLUSTER_UPDATE_TIME || TRX_DXCluster_UpdateTime == 0)) //get and show dx cluster
+		{
+			if(WIFI_getDXCluster_background())
+				TRX_DXCluster_UpdateTime = HAL_GetTick();
+			maySendIQ = false;
+		}
+		WIFI_maySendIQ = maySendIQ;
 	}
-	uint32_t mstime = HAL_GetTick();
-	if (TRX_SNTP_Synced == 0 || (mstime > (SNTP_SYNC_INTERVAL * 1000) && TRX_SNTP_Synced < (mstime - SNTP_SYNC_INTERVAL * 1000))) {//Sync time from internet
-		WIFI_GetSNTPTime(NULL);
-		maySendIQ = false;
-	}
-	if (TRX.WIFI_CAT_SERVER && !WIFI_CAT_server_started) { //start WiFi CAT Server
-		WIFI_StartCATServer(NULL);
-		maySendIQ = false;
-	}
-	if(CALIBRATE.OTA_update && !WIFI_NewFW_checked) {	//check OTA FW updates
-		WIFI_checkFWUpdates();
-		maySendIQ = false;
-	}
-	if(TRX.FFT_DXCluster && ((HAL_GetTick() - TRX_DXCluster_UpdateTime) > DXCLUSTER_UPDATE_TIME || TRX_DXCluster_UpdateTime == 0)) //get and show dx cluster
-	{
-		if(WIFI_getDXCluster_background())
-			TRX_DXCluster_UpdateTime = HAL_GetTick();
-		maySendIQ = false;
-	}
-	WIFI_maySendIQ = maySendIQ;
 	#endif
 	
 	//Check vBAT
