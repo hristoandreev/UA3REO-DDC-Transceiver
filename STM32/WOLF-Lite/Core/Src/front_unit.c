@@ -29,40 +29,16 @@ bool FRONTPanel_MCP3008_3_Enabled = true;
 
 static void FRONTPANEL_ENCODER_Rotated(float32_t direction);
 static void FRONTPANEL_ENCODER2_Rotated(int8_t direction);
-static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num);
 static void FRONTPANEL_ENCODER2_Rotated(int8_t direction);
-
-static void FRONTPANEL_BUTTONHANDLER_MODE_P(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_MODE_N(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_BAND_P(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_BAND_N(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_SAMPLE_N(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_SAMPLE_P(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_WPM(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_KEYER(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_SCAN(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_REC(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_PLAY(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_RIT(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_XIT(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_SPLIT(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_STEP(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_BANDMAP(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_FT8(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_AUTOGAINER(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_UP(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_DOWN(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_FUNC(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_FUNCH(uint32_t parameter);
-static void FRONTPANEL_BUTTONHANDLER_IF(uint32_t parameter);
 static void FRONTPANEL_ENC2SW_click_handler(uint32_t parameter);
 static void FRONTPANEL_ENC2SW_hold_handler(uint32_t parameter);
+static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num);
 
 static int32_t ENCODER_slowler = 0;
 static uint32_t ENCODER_AValDeb = 0;
 static uint32_t ENCODER2_AValDeb = 0;
 
-#ifdef FRONTPANEL_LITE
+#if !FRONTPANEL_LITE_ALEX
 PERIPH_FrontPanel_Button PERIPH_FrontPanel_Buttons[] = {
 	//buttons
 	{.port = 1, .channel = 0, .type = FUNIT_CTRL_BUTTON}, //NONE
@@ -70,56 +46,113 @@ PERIPH_FrontPanel_Button PERIPH_FrontPanel_Buttons[] = {
 	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON}, //NONE
 	{.port = 1, .channel = 3, .type = FUNIT_CTRL_BUTTON}, //NONE
 	{.port = 1, .channel = 4, .type = FUNIT_CTRL_BUTTON}, //NONE
-	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_BAND_P, .holdHandler = FRONTPANEL_BUTTONHANDLER_BAND_N}, //SB1
-	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_MODE_N, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_P}, //SB2
-	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 500, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_FUNC, .holdHandler = FRONTPANEL_BUTTONHANDLER_FUNCH}, //SB3
-	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 3, .clickHandler = FRONTPANEL_BUTTONHANDLER_FUNC, .holdHandler = FRONTPANEL_BUTTONHANDLER_FUNCH}, //SB6
-	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 2, .clickHandler = FRONTPANEL_BUTTONHANDLER_FUNC, .holdHandler = FRONTPANEL_BUTTONHANDLER_FUNCH}, //SB5
-	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 500, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 1, .clickHandler = FRONTPANEL_BUTTONHANDLER_FUNC, .holdHandler = FRONTPANEL_BUTTONHANDLER_FUNCH}, //SB4
-	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 4, .clickHandler = FRONTPANEL_BUTTONHANDLER_FUNC, .holdHandler = FRONTPANEL_BUTTONHANDLER_FUNCH}, //SB7
-	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_MENU, .holdHandler = FRONTPANEL_BUTTONHANDLER_LOCK}, //SB9
+	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_BAND_P, .holdHandler = BUTTONHANDLER_BAND_N}, //SB1
+	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_MODE_N, .holdHandler = BUTTONHANDLER_MODE_P}, //SB2
+	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 500, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB3
+	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 3, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB6
+	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 2, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB5
+	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 500, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 1, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB4
+	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 4, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB7
+	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_MENU, .holdHandler = BUTTONHANDLER_LOCK}, //SB9
 };
 
 const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS_COUNT] = {
-	{.name = "DRV", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_DRV_ONLY, .holdHandler = FRONTPANEL_BUTTONHANDLER_DRV_ONLY, .checkBool = (uint32_t *)&TRX.LNA},
-	{.name = "ATT", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_ATT, .holdHandler = FRONTPANEL_BUTTONHANDLER_ATTHOLD, .checkBool = (uint32_t *)&TRX.ATT},
-	{.name = "BW", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_BW, .holdHandler = FRONTPANEL_BUTTONHANDLER_BW, .checkBool = NULL},
-	{.name = "A/B", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_AsB, .holdHandler = FRONTPANEL_BUTTONHANDLER_AsB, .checkBool = NULL},
-	{.name = "B=A", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_ArB, .holdHandler = FRONTPANEL_BUTTONHANDLER_ArB, .checkBool = NULL},
+	{.name = "DRV", .work_in_menu = false, .clickHandler = BUTTONHANDLER_DRV_ONLY, .holdHandler = BUTTONHANDLER_DRV_ONLY, .checkBool = (uint32_t *)&TRX.LNA},
+	{.name = "ATT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ATT, .holdHandler = BUTTONHANDLER_ATTHOLD, .checkBool = (uint32_t *)&TRX.ATT},
+	{.name = "BW", .work_in_menu = true, .clickHandler = BUTTONHANDLER_BW, .holdHandler = BUTTONHANDLER_BW, .checkBool = NULL},
+	{.name = "A/B", .work_in_menu = false, .clickHandler = BUTTONHANDLER_AsB, .holdHandler = BUTTONHANDLER_AsB, .checkBool = NULL},
+	{.name = "B=A", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ArB, .holdHandler = BUTTONHANDLER_ArB, .checkBool = NULL},
 	
-	{.name = "POWER", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_RF_POWER, .holdHandler = FRONTPANEL_BUTTONHANDLER_RF_POWER, .checkBool = NULL},
-	{.name = "AGC", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_AGC, .holdHandler = FRONTPANEL_BUTTONHANDLER_AGC, .checkBool = (uint32_t *)&TRX.AGC_shadow},
-	{.name = "ZOOM-", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_ZOOM_N, .holdHandler = FRONTPANEL_BUTTONHANDLER_ZOOM_N, .checkBool = NULL},
-	{.name = "ZOOM+", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_ZOOM_P, .holdHandler = FRONTPANEL_BUTTONHANDLER_ZOOM_P, .checkBool = NULL},
-	{.name = "FAST", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_FAST, .holdHandler = FRONTPANEL_BUTTONHANDLER_STEP, .checkBool = (uint32_t *)&TRX.Fast},
+	{.name = "POWER", .work_in_menu = true, .clickHandler = BUTTONHANDLER_RF_POWER, .holdHandler = BUTTONHANDLER_RF_POWER, .checkBool = NULL},
+	{.name = "AGC", .work_in_menu = false, .clickHandler = BUTTONHANDLER_AGC, .holdHandler = BUTTONHANDLER_AGC, .checkBool = (uint32_t *)&TRX.AGC_shadow},
+	{.name = "ZOOM-", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ZOOM_N, .holdHandler = BUTTONHANDLER_ZOOM_N, .checkBool = NULL},
+	{.name = "ZOOM+", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ZOOM_P, .holdHandler = BUTTONHANDLER_ZOOM_P, .checkBool = NULL},
+	{.name = "FAST", .work_in_menu = false, .clickHandler = BUTTONHANDLER_FAST, .holdHandler = BUTTONHANDLER_STEP, .checkBool = (uint32_t *)&TRX.Fast},
 	
-	{.name = "IF", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_IF, .holdHandler = FRONTPANEL_BUTTONHANDLER_IF, .checkBool = NULL},
-	{.name = "NOTCH", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_NOTCH, .holdHandler = FRONTPANEL_BUTTONHANDLER_NOTCH_MANUAL, .checkBool = (uint32_t *)&TRX.Notch_on_shadow},
-	{.name = "DNR", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_DNR, .holdHandler = FRONTPANEL_BUTTONHANDLER_DNR, .checkBool = NULL},
-	{.name = "SQL", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_SQL, .holdHandler = FRONTPANEL_BUTTONHANDLER_SQUELCH, .checkBool = (uint32_t *)&TRX.SQL_shadow},
-	{.name = "RIT", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_RIT, .holdHandler = FRONTPANEL_BUTTONHANDLER_XIT, .checkBool = (uint32_t *)&TRX.RIT_Enabled},
+	{.name = "IF", .work_in_menu = true, .clickHandler = BUTTONHANDLER_IF, .holdHandler = BUTTONHANDLER_IF, .checkBool = NULL},
+	{.name = "NOTCH", .work_in_menu = false, .clickHandler = BUTTONHANDLER_NOTCH, .holdHandler = BUTTONHANDLER_NOTCH_MANUAL, .checkBool = (uint32_t *)&TRX.Notch_on_shadow},
+	{.name = "DNR", .work_in_menu = false, .clickHandler = BUTTONHANDLER_DNR, .holdHandler = BUTTONHANDLER_DNR, .checkBool = NULL},
+	{.name = "SQL", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SQL, .holdHandler = BUTTONHANDLER_SQUELCH, .checkBool = (uint32_t *)&TRX.SQL_shadow},
+	{.name = "RIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_RIT, .holdHandler = BUTTONHANDLER_XIT, .checkBool = (uint32_t *)&TRX.RIT_Enabled},
 	
-	{.name = "BAND-", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_BAND_N, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_N, .checkBool = NULL},
-	{.name = "BAND+", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_BAND_P, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_P, .checkBool = NULL},
-	{.name = "MODE-", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_MODE_N, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_N, .checkBool = NULL},
-	{.name = "MODE+", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_MODE_P, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_P, .checkBool = NULL},	
-	{.name = "TUNE", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_TUNE, .holdHandler = FRONTPANEL_BUTTONHANDLER_TUNE, .checkBool = (uint32_t *)&TRX_Tune},
+	{.name = "BAND-", .work_in_menu = false, .clickHandler = BUTTONHANDLER_BAND_N, .holdHandler = BUTTONHANDLER_MODE_N, .checkBool = NULL},
+	{.name = "BAND+", .work_in_menu = false, .clickHandler = BUTTONHANDLER_BAND_P, .holdHandler = BUTTONHANDLER_MODE_P, .checkBool = NULL},
+	{.name = "MODE-", .work_in_menu = false, .clickHandler = BUTTONHANDLER_MODE_N, .holdHandler = BUTTONHANDLER_MODE_N, .checkBool = NULL},
+	{.name = "MODE+", .work_in_menu = false, .clickHandler = BUTTONHANDLER_MODE_P, .holdHandler = BUTTONHANDLER_MODE_P, .checkBool = NULL},	
+	{.name = "TUNE", .work_in_menu = true, .clickHandler = BUTTONHANDLER_TUNE, .holdHandler = BUTTONHANDLER_TUNE, .checkBool = (uint32_t *)&TRX_Tune},
 	
-	{.name = "SCAN", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_SCAN, .holdHandler = FRONTPANEL_BUTTONHANDLER_SCAN, .checkBool = (uint32_t *)&TRX_ScanMode},
-	{.name = "SERV", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_SERVICES, .holdHandler = FRONTPANEL_BUTTONHANDLER_SERVICES, .checkBool = NULL},	
-	{.name = "WPM", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_WPM, .holdHandler = FRONTPANEL_BUTTONHANDLER_WPM, .checkBool = NULL},
-	{.name = "MUTE", .work_in_menu = false, .clickHandler = FRONTPANEL_BUTTONHANDLER_MUTE, .holdHandler = FRONTPANEL_BUTTONHANDLER_MUTE_AFAMP, .checkBool = (uint32_t *)&TRX.AutoGain},
-	{.name = "LOCK", .work_in_menu = true, .clickHandler = FRONTPANEL_BUTTONHANDLER_LOCK, .holdHandler = FRONTPANEL_BUTTONHANDLER_LOCK, .checkBool = (uint32_t *)&TRX.Locked},
+	{.name = "SCAN", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SCAN, .holdHandler = BUTTONHANDLER_SCAN, .checkBool = (uint32_t *)&TRX_ScanMode},
+	{.name = "SERV", .work_in_menu = true, .clickHandler = BUTTONHANDLER_SERVICES, .holdHandler = BUTTONHANDLER_SERVICES, .checkBool = NULL},	
+	{.name = "WPM", .work_in_menu = true, .clickHandler = BUTTONHANDLER_WPM, .holdHandler = BUTTONHANDLER_WPM, .checkBool = NULL},
+	{.name = "MUTE", .work_in_menu = false, .clickHandler = BUTTONHANDLER_MUTE, .holdHandler = BUTTONHANDLER_MUTE_AFAMP, .checkBool = (uint32_t *)&TRX.AutoGain},
+	{.name = "LOCK", .work_in_menu = true, .clickHandler = BUTTONHANDLER_LOCK, .holdHandler = BUTTONHANDLER_LOCK, .checkBool = (uint32_t *)&TRX.Locked},
+
+	{.name = "A/B", .work_in_menu = false, .clickHandler = BUTTONHANDLER_AsB, .holdHandler = BUTTONHANDLER_AsB, .checkBool = NULL},
+	{.name = "B=A", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ArB, .holdHandler = BUTTONHANDLER_ArB, .checkBool = NULL},
+	{.name = "RIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_RIT, .holdHandler = BUTTONHANDLER_XIT, .checkBool = (uint32_t *)&TRX.RIT_Enabled},
+	{.name = "SPLIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SPLIT, .holdHandler = BUTTONHANDLER_SPLIT, .checkBool = (uint32_t *)&TRX.SPLIT_Enabled},
+	{.name = "SNAP", .work_in_menu = true, .clickHandler = BUTTONHANDLER_SNAP, .holdHandler = BUTTONHANDLER_AUTO_SNAP, .checkBool = (uint32_t *)&TRX.Auto_Snap},
+};
+#endif
+
+#if FRONTPANEL_LITE_ALEX
+PERIPH_FrontPanel_Button PERIPH_FrontPanel_Buttons[] = {
+	//buttons
+	{.port = 1, .channel = 0, .type = FUNIT_CTRL_BUTTON}, //NONE
+	{.port = 1, .channel = 1, .type = FUNIT_CTRL_BUTTON}, //NONE
+	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON}, //NONE
+	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 2, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB1
+	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 1, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB2
+	{.port = 1, .channel = 5, .type = FUNIT_CTRL_BUTTON, .tres_min = 500, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB3
+	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_MENU, .holdHandler = BUTTONHANDLER_LOCK}, //SB6
+	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 4, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB5
+	{.port = 1, .channel = 6, .type = FUNIT_CTRL_BUTTON, .tres_min = 500, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 3, .clickHandler = BUTTONHANDLER_FUNC, .holdHandler = BUTTONHANDLER_FUNCH}, //SB4
+	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 10, .tres_max = 300, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_BAND_P, .holdHandler = BUTTONHANDLER_BAND_N}, //SB7
+	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 500, .tres_max = 700, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_DRV_ONLY, .holdHandler = BUTTONHANDLER_DRV_ONLY}, //SB9
+	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 700, .tres_max = 900, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_ATT, .holdHandler = BUTTONHANDLER_ATTHOLD}, //SB9
+	{.port = 1, .channel = 7, .type = FUNIT_CTRL_BUTTON, .tres_min = 300, .tres_max = 500, .state = false, .prev_state = false, .work_in_menu = true, .parameter = 0, .clickHandler = BUTTONHANDLER_BW, .holdHandler = BUTTONHANDLER_BW}, //SB9
+};
+
+const PERIPH_FrontPanel_FuncButton PERIPH_FrontPanel_FuncButtonsList[FUNCBUTTONS_COUNT] = {
+	{.name = "DRV", .work_in_menu = false, .clickHandler = BUTTONHANDLER_DRV_ONLY, .holdHandler = BUTTONHANDLER_DRV_ONLY, .checkBool = (uint32_t *)&TRX.LNA},
+	{.name = "ATT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ATT, .holdHandler = BUTTONHANDLER_ATTHOLD, .checkBool = (uint32_t *)&TRX.ATT},
+	{.name = "BW", .work_in_menu = true, .clickHandler = BUTTONHANDLER_BW, .holdHandler = BUTTONHANDLER_BW, .checkBool = NULL},
+	{.name = "A/B", .work_in_menu = false, .clickHandler = BUTTONHANDLER_AsB, .holdHandler = BUTTONHANDLER_AsB, .checkBool = NULL},
+	{.name = "B=A", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ArB, .holdHandler = BUTTONHANDLER_ArB, .checkBool = NULL},
+	
+	{.name = "POWER", .work_in_menu = true, .clickHandler = BUTTONHANDLER_RF_POWER, .holdHandler = BUTTONHANDLER_RF_POWER, .checkBool = NULL},
+	{.name = "AGC", .work_in_menu = false, .clickHandler = BUTTONHANDLER_AGC, .holdHandler = BUTTONHANDLER_AGC, .checkBool = (uint32_t *)&TRX.AGC_shadow},
+	{.name = "ZOOM-", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ZOOM_N, .holdHandler = BUTTONHANDLER_ZOOM_N, .checkBool = NULL},
+	{.name = "ZOOM+", .work_in_menu = false, .clickHandler = BUTTONHANDLER_ZOOM_P, .holdHandler = BUTTONHANDLER_ZOOM_P, .checkBool = NULL},
+	{.name = "FAST", .work_in_menu = false, .clickHandler = BUTTONHANDLER_FAST, .holdHandler = BUTTONHANDLER_STEP, .checkBool = (uint32_t *)&TRX.Fast},
+	
+	{.name = "IF", .work_in_menu = true, .clickHandler = BUTTONHANDLER_IF, .holdHandler = BUTTONHANDLER_IF, .checkBool = NULL},
+	{.name = "NOTCH", .work_in_menu = false, .clickHandler = BUTTONHANDLER_NOTCH, .holdHandler = BUTTONHANDLER_NOTCH_MANUAL, .checkBool = (uint32_t *)&TRX.Notch_on_shadow},
+	{.name = "DNR", .work_in_menu = false, .clickHandler = BUTTONHANDLER_DNR, .holdHandler = BUTTONHANDLER_DNR, .checkBool = NULL},
+	{.name = "SQL", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SQL, .holdHandler = BUTTONHANDLER_SQUELCH, .checkBool = (uint32_t *)&TRX.SQL_shadow},
+	{.name = "RIT", .work_in_menu = false, .clickHandler = BUTTONHANDLER_RIT, .holdHandler = BUTTONHANDLER_XIT, .checkBool = (uint32_t *)&TRX.RIT_Enabled},
+	
+	{.name = "BAND-", .work_in_menu = false, .clickHandler = BUTTONHANDLER_BAND_N, .holdHandler = BUTTONHANDLER_MODE_N, .checkBool = NULL},
+	{.name = "BAND+", .work_in_menu = false, .clickHandler = BUTTONHANDLER_BAND_P, .holdHandler = BUTTONHANDLER_MODE_P, .checkBool = NULL},
+	{.name = "MODE-", .work_in_menu = false, .clickHandler = BUTTONHANDLER_MODE_N, .holdHandler = BUTTONHANDLER_MODE_N, .checkBool = NULL},
+	{.name = "MODE+", .work_in_menu = false, .clickHandler = BUTTONHANDLER_MODE_P, .holdHandler = BUTTONHANDLER_MODE_P, .checkBool = NULL},	
+	{.name = "TUNE", .work_in_menu = true, .clickHandler = BUTTONHANDLER_TUNE, .holdHandler = BUTTONHANDLER_TUNE, .checkBool = (uint32_t *)&TRX_Tune},
+	
+	{.name = "SCAN", .work_in_menu = false, .clickHandler = BUTTONHANDLER_SCAN, .holdHandler = BUTTONHANDLER_SCAN, .checkBool = (uint32_t *)&TRX_ScanMode},
+	{.name = "SERV", .work_in_menu = true, .clickHandler = BUTTONHANDLER_SERVICES, .holdHandler = BUTTONHANDLER_SERVICES, .checkBool = NULL},	
+	{.name = "WPM", .work_in_menu = true, .clickHandler = BUTTONHANDLER_WPM, .holdHandler = BUTTONHANDLER_WPM, .checkBool = NULL},
+	{.name = "MUTE", .work_in_menu = false, .clickHandler = BUTTONHANDLER_MUTE, .holdHandler = BUTTONHANDLER_MUTE_AFAMP, .checkBool = (uint32_t *)&TRX.AutoGain},
+	{.name = "LOCK", .work_in_menu = true, .clickHandler = BUTTONHANDLER_LOCK, .holdHandler = BUTTONHANDLER_LOCK, .checkBool = (uint32_t *)&TRX.Locked},
 };
 #endif
 
 PERIPH_FrontPanel_Button PERIPH_FrontPanel_TANGENT_MH48[6] = {
-	{.port = 1, .channel = 1, .type = FUNIT_CTRL_BUTTON, .tres_min = 1600, .tres_max = 2200, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_DOWN, .holdHandler = FRONTPANEL_BUTTONHANDLER_DOWN},	 //PTT_SW1 - DOWN
-	{.port = 1, .channel = 1, .type = FUNIT_CTRL_BUTTON, .tres_min = 1000, .tres_max = 1500, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_UP, .holdHandler = FRONTPANEL_BUTTONHANDLER_UP},		 //PTT_SW1 - UP
-	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 1000, .tres_max = 1500, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_TUNE, .holdHandler = FRONTPANEL_BUTTONHANDLER_TUNE},		 //PTT_SW2 - P1
-	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 1500, .tres_max = 2100, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_AsB, .holdHandler = FRONTPANEL_BUTTONHANDLER_ArB},		 //PTT_SW2 - P2
-	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 2100, .tres_max = 2600, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_BAND_N, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_N}, //PTT_SW2 - P3
-	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 2700, .tres_max = 3100, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = FRONTPANEL_BUTTONHANDLER_BAND_P, .holdHandler = FRONTPANEL_BUTTONHANDLER_MODE_P}, //PTT_SW2 - P4
+	{.port = 1, .channel = 1, .type = FUNIT_CTRL_BUTTON, .tres_min = 1600, .tres_max = 2200, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_DOWN, .holdHandler = BUTTONHANDLER_DOWN},	 //PTT_SW1 - DOWN
+	{.port = 1, .channel = 1, .type = FUNIT_CTRL_BUTTON, .tres_min = 1000, .tres_max = 1500, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_UP, .holdHandler = BUTTONHANDLER_UP},		 //PTT_SW1 - UP
+	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 1000, .tres_max = 1500, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_TUNE, .holdHandler = BUTTONHANDLER_TUNE},		 //PTT_SW2 - P1
+	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 1500, .tres_max = 2100, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_AsB, .holdHandler = BUTTONHANDLER_ArB},		 //PTT_SW2 - P2
+	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 2100, .tres_max = 2600, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_BAND_N, .holdHandler = BUTTONHANDLER_MODE_N}, //PTT_SW2 - P3
+	{.port = 1, .channel = 2, .type = FUNIT_CTRL_BUTTON, .tres_min = 2700, .tres_max = 3100, .state = false, .prev_state = false, .work_in_menu = false, .parameter = 0, .clickHandler = BUTTONHANDLER_BAND_P, .holdHandler = BUTTONHANDLER_MODE_P}, //PTT_SW2 - P4
 };
 
 void FRONTPANEL_ENCODER_checkRotate(void)
@@ -230,6 +263,8 @@ static void FRONTPANEL_ENCODER_Rotated(float32_t direction) // rotated encoder, 
 			TRX.RF_Power += direction;
 		if (TRX.RF_Power > 100)
 			TRX.RF_Power = 100;
+		
+		ATU_TunePowerStabilized = false;
 
 		char sbuff[32] = {0};
 		sprintf(sbuff, "Power: %u", TRX.RF_Power);
@@ -238,52 +273,8 @@ static void FRONTPANEL_ENCODER_Rotated(float32_t direction) // rotated encoder, 
 		return;
 	}
 
-	float64_t newfreq = CurrentVFO->Freq;
-	if (TRX.ChannelMode && getBandFromFreq(CurrentVFO->Freq, false) != -1 && BANDS[getBandFromFreq(CurrentVFO->Freq, false)].channelsCount > 0)
-	{
-		int_fast8_t band = getBandFromFreq(CurrentVFO->Freq, false);
-		int_fast16_t channel = getChannelbyFreq(CurrentVFO->Freq, false);
-		int_fast16_t new_channel = channel + direction;
-		if (new_channel < 0)
-			new_channel = BANDS[band].channelsCount - 1;
-		if (new_channel >= BANDS[band].channelsCount)
-			new_channel = 0;
-
-		newfreq = BANDS[band].channels[new_channel].rxFreq;
-		TRX.SPLIT_Enabled = (BANDS[band].channels[new_channel].rxFreq != BANDS[band].channels[new_channel].txFreq);
-		if (TRX.SPLIT_Enabled)
-			TRX_setFrequency(BANDS[band].channels[new_channel].txFreq, SecondaryVFO);
-		LCD_UpdateQuery.FreqInfoRedraw = true;
-		LCD_UpdateQuery.StatusInfoGUI = true;
-		LCD_UpdateQuery.StatusInfoBarRedraw = true;
-	}
-	else if (TRX.Fast)
-	{
-		float64_t step = TRX.FRQ_FAST_STEP;
-		if (CurrentVFO->Mode == TRX_MODE_CW)
-			step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
-		if(step < 1.0f) step = 1.0f;
-
-		if (direction == -1.0f)
-			newfreq = ceill(newfreq / step) * step;
-		if (direction == 1.0f)
-			newfreq = floorl(newfreq / step) * step;
-		newfreq = newfreq + step * direction;
-	}
-	else
-	{
-		float64_t step = TRX.FRQ_STEP;
-		if (CurrentVFO->Mode == TRX_MODE_CW)
-			step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
-		if(step < 1.0f) step = 1.0f;
-
-		if (direction == -1.0f)
-			newfreq = ceill(newfreq / step) * step;
-		if (direction == 1.0f)
-			newfreq = floorl(newfreq / step) * step;
-		newfreq = newfreq + step * direction;
-	}
-	TRX_setFrequency(newfreq, CurrentVFO);
+	TRX_DoFrequencyEncoder(direction, false);
+	
 	LCD_UpdateQuery.FreqInfo = true;
 	NeedSaveSettings = true;
 }
@@ -300,94 +291,26 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 		return;
 	}
 
-	if (TRX.ENC2_func_mode_idx == 3 && CurrentVFO->Mode != TRX_MODE_CW) // no WPM if not CW
-		TRX.ENC2_func_mode_idx = 0;
-	if (TRX.ENC2_func_mode_idx == 4 && ((!TRX.RIT_Enabled && !TRX.XIT_Enabled) || !TRX.FineRITTune)) // nothing to RIT tune
-		TRX.ENC2_func_mode_idx = 0;
-	if (TRX.ENC2_func_mode_idx == 5 && !CurrentVFO->ManualNotchFilter) // nothing to NOTCH tune
-		TRX.ENC2_func_mode_idx = 0;
-	if (TRX.ENC2_func_mode_idx == 6 && CurrentVFO->Mode == TRX_MODE_WFM) // nothing to NOTCH tune
-		TRX.ENC2_func_mode_idx = 0;
-	if (TRX.ENC2_func_mode_idx == 7 && !CurrentVFO->SQL) // nothing to NOTCH tune
-		TRX.ENC2_func_mode_idx = 0;
+	FRONTPANEL_ENC2SW_validate();
 
-	if (TRX.ENC2_func_mode_idx == 0) //pager
+	if (TRX.ENC2_func_mode == ENC_FUNC_PAGER) //pager
 	{
 		if(direction < 0)
-			FRONTPANEL_BUTTONHANDLER_LEFT_ARR(0);
+			BUTTONHANDLER_LEFT_ARR(0);
 		if(direction > 0)
-			FRONTPANEL_BUTTONHANDLER_RIGHT_ARR(0);
+			BUTTONHANDLER_RIGHT_ARR(0);
 	}
-	if (TRX.ENC2_func_mode_idx == 1) //volume
+	
+	if (TRX.ENC2_func_mode == ENC_FUNC_FAST_STEP) //fast step
 	{
-		//ENC2 Volume control
-		if(direction < 0 && TRX.Volume < 5)
-			TRX.Volume = 0;
-		if(direction > 0 || TRX.Volume >= 5)
-			TRX.Volume += direction * 5;
-		if (TRX.Volume > 100)
-			TRX.Volume = 100;
-		char sbuff[32] = {0};
-		sprintf(sbuff, "Vol: %u%%", TRX.Volume);
-		LCD_showTooltip(sbuff);
-	}
-	if (TRX.ENC2_func_mode_idx == 2) //fast step
-	{
-		float64_t newfreq = (float64_t)CurrentVFO->Freq;
-		float64_t step = 0;
-		if (TRX.ChannelMode && getBandFromFreq(CurrentVFO->Freq, false) != -1 && BANDS[getBandFromFreq(CurrentVFO->Freq, false)].channelsCount > 0)
-		{
-			int_fast8_t band = getBandFromFreq(CurrentVFO->Freq, false);
-			int_fast16_t channel = getChannelbyFreq(CurrentVFO->Freq, false);
-			int_fast16_t new_channel = channel + direction;
-			if (new_channel < 0)
-				new_channel = BANDS[band].channelsCount - 1;
-			if (new_channel >= BANDS[band].channelsCount)
-				new_channel = 0;
-
-			newfreq = BANDS[band].channels[new_channel].rxFreq;
-			TRX.SPLIT_Enabled = (BANDS[band].channels[new_channel].rxFreq != BANDS[band].channels[new_channel].txFreq);
-			if (TRX.SPLIT_Enabled)
-				TRX_setFrequency(BANDS[band].channels[new_channel].txFreq, SecondaryVFO);
-			LCD_UpdateQuery.FreqInfoRedraw = true;
-			LCD_UpdateQuery.StatusInfoGUI = true;
-			LCD_UpdateQuery.StatusInfoBarRedraw = true;
-		}
-		else if (TRX.Fast)
-		{
-			step = TRX.FRQ_ENC_FAST_STEP;
-			if (CurrentVFO->Mode == TRX_MODE_WFM)
-				step = step * 2.0;
-			if (CurrentVFO->Mode == TRX_MODE_CW)
-				step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
-			if(step < 1.0f) step = 1.0f;
-
-			if (direction == -1.0f)
-				newfreq = ceill(newfreq / step) * step;
-			if (direction == 1.0f)
-				newfreq = floorl(newfreq / step) * step;
-			newfreq = newfreq + step * direction;
-		}
-		else
-		{
-			step = TRX.FRQ_ENC_STEP;
-			if (CurrentVFO->Mode == TRX_MODE_WFM)
-				step = step * 2.0;
-			if (CurrentVFO->Mode == TRX_MODE_CW)
-				step = step / (float64_t)TRX.FRQ_CW_STEP_DIVIDER;
-			if(step < 1.0f) step = 1.0f;
-
-			if (direction == -1.0f)
-				newfreq = ceill(newfreq / step) * step;
-			if (direction == 1.0f)
-				newfreq = floorl(newfreq / step) * step;
-			newfreq = newfreq + step * direction;
-		}
-		TRX_setFrequency(newfreq, CurrentVFO);
+		if(TRX_on_TX) return;
+		
+		TRX_DoFrequencyEncoder(direction, true);
+		
 		LCD_UpdateQuery.FreqInfo = true;
 	}
 
-	if (TRX.ENC2_func_mode_idx == 3)
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_WPM)
 	{
 		// ENC2 Func mode (WPM)
 		TRX.CW_KEYER_WPM += direction;
@@ -400,7 +323,7 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 		LCD_showTooltip(sbuff);
 	}
 
-	if (TRX.ENC2_func_mode_idx == 4) // Fine RIT/XIT
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_RIT) // Fine RIT/XIT
 	{
 		if (TRX.RIT_Enabled && TRX.FineRITTune)
 		{
@@ -409,6 +332,9 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 				TRX_RIT = TRX.RIT_INTERVAL;
 			if (TRX_RIT < -TRX.RIT_INTERVAL)
 				TRX_RIT = -TRX.RIT_INTERVAL;
+			
+			TRX_XIT = 0;
+			TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
 		}
 
 		if (TRX.XIT_Enabled && TRX.FineRITTune)
@@ -418,10 +344,13 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 				TRX_XIT = TRX.XIT_INTERVAL;
 			if (TRX_XIT < -TRX.XIT_INTERVAL)
 				TRX_XIT = -TRX.XIT_INTERVAL;
+			
+			TRX_RIT = 0;
+			TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
 		}
 	}
 
-	if (TRX.ENC2_func_mode_idx == 5) // Manual Notch
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_NOTCH) // Manual Notch
 	{
 		float64_t step = 50;
 		if (CurrentVFO->Mode == TRX_MODE_CW)
@@ -447,7 +376,7 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 		}
 	}
 	
-	if (TRX.ENC2_func_mode_idx == 6) // LPF
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_LPF) // LPF
 	{
 		if (!TRX_on_TX) {
 			if (CurrentVFO->Mode == TRX_MODE_CW)
@@ -474,7 +403,18 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 		}
 	}
 	
-	if (TRX.ENC2_func_mode_idx == 7) // SQL
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_HPF) // HPF
+	{
+		if (!TRX_on_TX) {
+			if (CurrentVFO->Mode == TRX_MODE_LSB || CurrentVFO->Mode == TRX_MODE_USB || CurrentVFO->Mode == TRX_MODE_DIGI_U || CurrentVFO->Mode == TRX_MODE_RTTY)
+				SYSMENU_HANDL_AUDIO_SSB_HPF_RX_pass(direction);
+		} else {
+			if (CurrentVFO->Mode == TRX_MODE_LSB || CurrentVFO->Mode == TRX_MODE_USB || CurrentVFO->Mode == TRX_MODE_DIGI_U || CurrentVFO->Mode == TRX_MODE_RTTY)
+				SYSMENU_HANDL_AUDIO_SSB_HPF_TX_pass(direction);
+		}
+	}
+	
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_SQL) // SQL
 	{
 		CurrentVFO->FM_SQL_threshold_dbm += direction * 1;
 		TRX.FM_SQL_threshold_dbm_shadow = CurrentVFO->FM_SQL_threshold_dbm;
@@ -484,7 +424,40 @@ static void FRONTPANEL_ENCODER2_Rotated(int8_t direction) // rotated encoder, ha
 		if(CurrentVFO->FM_SQL_threshold_dbm < -126)
 			CurrentVFO->FM_SQL_threshold_dbm = -126;
 		
+		int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+		if (band >= 0)
+			TRX.BANDS_SAVED_SETTINGS[band].FM_SQL_threshold_dbm = CurrentVFO->FM_SQL_threshold_dbm;
+		
 		LCD_UpdateQuery.StatusInfoBarRedraw = true;
+	}
+	
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_VOLUME) //volume
+	{
+		//ENC2 Volume control
+		if(direction < 0 && TRX.Volume < TRX.Volume_Step)
+			TRX.Volume = 0;
+		if(direction > 0 || TRX.Volume >= TRX.Volume_Step)
+			TRX.Volume += direction * TRX.Volume_Step;
+		if (TRX.Volume > 100)
+			TRX.Volume = 100;
+		char sbuff[32] = {0};
+		sprintf(sbuff, "Vol: %u%%", TRX.Volume);
+		LCD_showTooltip(sbuff);
+	}
+	
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_IF) // IF
+	{
+		TRX.IF_Gain += direction * 1;
+		if (TRX.IF_Gain < CALIBRATE.IF_GAIN_MIN)
+			TRX.IF_Gain = CALIBRATE.IF_GAIN_MIN;
+		if (TRX.IF_Gain > CALIBRATE.IF_GAIN_MAX)
+			TRX.IF_Gain = CALIBRATE.IF_GAIN_MAX;
+		
+		int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+		if (band > 0)
+			TRX.BANDS_SAVED_SETTINGS[band].IF_Gain = TRX.IF_Gain;
+		
+		LCD_UpdateQuery.StatusInfoBar = true;
 	}
 }
 
@@ -554,40 +527,46 @@ static void FRONTPANEL_ENC2SW_click_handler(uint32_t parameter)
 	// ENC2 CLICK
 	if (!LCD_systemMenuOpened && !LCD_window.opened)
 	{
-		TRX.ENC2_func_mode_idx++; // enc2 rotary mode
+		TRX.ENC2_func_mode++; // enc2 rotary mode
 
-		if (TRX.ENC2_func_mode_idx == 3 && CurrentVFO->Mode != TRX_MODE_CW) // no WPM if not CW
-			TRX.ENC2_func_mode_idx++;
-		if (TRX.ENC2_func_mode_idx == 4 && ((!TRX.RIT_Enabled && !TRX.XIT_Enabled) || !TRX.FineRITTune)) // nothing to RIT tune
-			TRX.ENC2_func_mode_idx++;
-		if (TRX.ENC2_func_mode_idx == 5 && !CurrentVFO->ManualNotchFilter) // nothing to NOTCH tune
-			TRX.ENC2_func_mode_idx++;
-		if (TRX.ENC2_func_mode_idx == 6 && CurrentVFO->Mode == TRX_MODE_WFM) // nothing to NOTCH tune
-			TRX.ENC2_func_mode_idx++;
-		if (TRX.ENC2_func_mode_idx == 7 && !CurrentVFO->SQL) // nothing to NOTCH tune
-			TRX.ENC2_func_mode_idx++;
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_WPM && CurrentVFO->Mode != TRX_MODE_CW) // no WPM if not CW
+			TRX.ENC2_func_mode++;
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_RIT && ((!TRX.RIT_Enabled && !TRX.XIT_Enabled) || !TRX.FineRITTune)) // nothing to RIT tune
+			TRX.ENC2_func_mode++;
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_NOTCH && !CurrentVFO->ManualNotchFilter) // nothing to NOTCH tune
+			TRX.ENC2_func_mode++;
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_LPF && CurrentVFO->Mode == TRX_MODE_WFM) // nothing to LPF tune
+			TRX.ENC2_func_mode++;
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_HPF) // disabled
+			TRX.ENC2_func_mode++;
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_SQL && !CurrentVFO->SQL) // nothing to SQL tune
+			TRX.ENC2_func_mode++;
 
-		if (TRX.ENC2_func_mode_idx > 7)
-			TRX.ENC2_func_mode_idx = 0;
+		if (TRX.ENC2_func_mode > ENC_FUNC_SET_IF)
+			TRX.ENC2_func_mode = ENC_FUNC_PAGER;
 
 		LCD_UpdateQuery.StatusInfoGUI = true;
 		
-		if (TRX.ENC2_func_mode_idx == 0)
+		if (TRX.ENC2_func_mode == ENC_FUNC_PAGER)
 			LCD_showTooltip("BUTTONS");
-		if (TRX.ENC2_func_mode_idx == 1)
-			LCD_showTooltip("VOLUME");
-		if (TRX.ENC2_func_mode_idx == 2)
+		if (TRX.ENC2_func_mode == ENC_FUNC_FAST_STEP)
 			LCD_showTooltip("FAST STEP");
-		if (TRX.ENC2_func_mode_idx == 3)
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_WPM)
 			LCD_showTooltip("SET WPM");
-		if (TRX.ENC2_func_mode_idx == 4)
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_RIT)
 			LCD_showTooltip("SET RIT");
-		if (TRX.ENC2_func_mode_idx == 5)
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_NOTCH)
 			LCD_showTooltip("SET NOTCH");
-		if (TRX.ENC2_func_mode_idx == 6)
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_LPF)
 			LCD_showTooltip("SET LPF");
-		if (TRX.ENC2_func_mode_idx == 7)
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_HPF)
+			LCD_showTooltip("SET HPF");
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_SQL)
 			LCD_showTooltip("SET SQL");
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_VOLUME)
+			LCD_showTooltip("VOLUME");
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_IF)
+			LCD_showTooltip("SET IF");
 	}
 	else
 	{
@@ -602,7 +581,7 @@ static void FRONTPANEL_ENC2SW_click_handler(uint32_t parameter)
 static void FRONTPANEL_ENC2SW_hold_handler(uint32_t parameter)
 {
 	TRX_Inactive_Time = 0;
-	FRONTPANEL_BUTTONHANDLER_MENU(0);
+	BUTTONHANDLER_MENU(0);
 }
 
 void FRONTPANEL_Init(void)
@@ -667,7 +646,7 @@ void FRONTPANEL_Process(void)
 
 	static uint32_t fu_debug_lasttime = 0;
 	uint16_t buttons_count = sizeof(PERIPH_FrontPanel_Buttons) / sizeof(PERIPH_FrontPanel_Button);
-	uint16_t mcp3008_value = 0;
+	uint32_t mcp3008_value = 0;
 
 	// process buttons
 	for (uint16_t b = 0; b < buttons_count; b++)
@@ -689,19 +668,31 @@ void FRONTPANEL_Process(void)
 
 // get state from ADC MCP3008 (10bit - 1024values)
 #ifdef HRDW_MCP3008_1
-		if (button->port == 1)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
-		else
+		if (button->port == 1) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 1);
+			mcp3008_value /= 3;
+		} else
 #endif
 #ifdef HRDW_MCP3008_2
-			if (button->port == 2)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
-		else
+		if (button->port == 2) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 2);
+			mcp3008_value /= 3;
+		} else
 #endif
 #ifdef HRDW_MCP3008_3
-			if (button->port == 3)
-			mcp3008_value = FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
-		else
+		if (button->port == 3) {
+			mcp3008_value = 0;
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value += FRONTPANEL_ReadMCP3008_Value(button->channel, 3);
+			mcp3008_value /= 3;
+		} else
 #endif
 			continue;
 
@@ -742,78 +733,6 @@ void FRONTPANEL_Process(void)
 
 void FRONTPANEL_CheckButton(PERIPH_FrontPanel_Button *button, uint16_t mcp3008_value)
 {
-	// AF_GAIN
-	if (button->type == FUNIT_CTRL_AF_GAIN)
-	{
-		static float32_t AF_VOLUME_mcp3008_averaged = 0.0f;
-		AF_VOLUME_mcp3008_averaged = AF_VOLUME_mcp3008_averaged * 0.6f + mcp3008_value * 0.4f;
-		
-		TRX.Volume = (uint16_t)(MAX_VOLUME_VALUE - AF_VOLUME_mcp3008_averaged);
-		if (TRX.Volume < 50)
-			TRX.Volume = 0;
-	}
-
-	// RIT / XIT or IF Gain
-	if (button->type == FUNIT_CTRL_RIT_XIT)
-	{
-		static float32_t IF_GAIN_mcp3008_averaged = 0.0f;
-		IF_GAIN_mcp3008_averaged = IF_GAIN_mcp3008_averaged * 0.6f + mcp3008_value * 0.4f;
-		
-		if (TRX.RIT_Enabled)
-		{
-			static int_fast16_t TRX_RIT_old = 0;
-			if (!TRX.FineRITTune)
-				TRX_RIT = (int_fast16_t)(((1023.0f - IF_GAIN_mcp3008_averaged) * TRX.RIT_INTERVAL * 2 / 1023.0f) - TRX.RIT_INTERVAL);
-
-			if (TRX_RIT_old != TRX_RIT)
-			{
-				TRX_RIT_old = TRX_RIT;
-				TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
-				uint16_t LCD_bw_trapez_stripe_pos_new = LAYOUT->BW_TRAPEZ_POS_X + LAYOUT->BW_TRAPEZ_WIDTH / 2;
-				LCD_bw_trapez_stripe_pos_new += (int16_t)((float32_t)(LAYOUT->BW_TRAPEZ_WIDTH * 0.9f) / 2.0f * ((float32_t)TRX_RIT / (float32_t)TRX.RIT_INTERVAL));
-				if (abs(LCD_bw_trapez_stripe_pos_new - LCD_bw_trapez_stripe_pos) > 2)
-				{
-					LCD_bw_trapez_stripe_pos = LCD_bw_trapez_stripe_pos_new;
-					LCD_UpdateQuery.StatusInfoGUI = true;
-				}
-			}
-			TRX_XIT = 0;
-		}
-
-		if (TRX.XIT_Enabled)
-		{
-			static int_fast16_t TRX_XIT_old = 0;
-			if (!TRX.FineRITTune)
-				TRX_XIT = (int_fast16_t)(((1023.0f - IF_GAIN_mcp3008_averaged) * TRX.XIT_INTERVAL * 2 / 1023.0f) - TRX.XIT_INTERVAL);
-
-			if (TRX_XIT_old != TRX_XIT)
-			{
-				TRX_XIT_old = TRX_XIT;
-				TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
-				uint16_t LCD_bw_trapez_stripe_pos_new = LAYOUT->BW_TRAPEZ_POS_X + LAYOUT->BW_TRAPEZ_WIDTH / 2;
-				LCD_bw_trapez_stripe_pos_new += (int16_t)((float32_t)(LAYOUT->BW_TRAPEZ_WIDTH * 0.9f) / 2.0f * ((float32_t)TRX_XIT / (float32_t)TRX.XIT_INTERVAL));
-				if (abs(LCD_bw_trapez_stripe_pos_new - LCD_bw_trapez_stripe_pos) > 2)
-				{
-					LCD_bw_trapez_stripe_pos = LCD_bw_trapez_stripe_pos_new;
-					LCD_UpdateQuery.StatusInfoGUI = true;
-				}
-			}
-			TRX_RIT = 0;
-		}
-		
-		if (!TRX.RIT_Enabled && TRX.XIT_Enabled && !TRX.FineRITTune) // Disable RIT/XIT + IF
-		{
-			TRX_RIT = 0;
-			TRX_XIT = 0;
-			TRX.IF_Gain = (uint8_t)(0.0f + ((1023.0f - IF_GAIN_mcp3008_averaged) * 60.0f / 1023.0f));
-		}
-
-		if (TRX.FineRITTune) // IF only
-		{
-			TRX.IF_Gain = (uint8_t)(0.0f + ((1023.0f - IF_GAIN_mcp3008_averaged) * 60.0f / 1023.0f));
-		}
-	}
-
 	// PTT
 	if (button->type == FUNIT_CTRL_PTT)
 	{
@@ -860,7 +779,7 @@ void FRONTPANEL_CheckButton(PERIPH_FrontPanel_Button *button, uint16_t mcp3008_v
 				{
 					if (button->holdHandler != NULL)
 					{
-						WM8731_Beep();
+						CODEC_Beep();
 						button->holdHandler(button->parameter);
 					}
 				}
@@ -880,7 +799,7 @@ void FRONTPANEL_CheckButton(PERIPH_FrontPanel_Button *button, uint16_t mcp3008_v
 				{
 					if (button->clickHandler != NULL)
 					{
-						WM8731_Beep();
+						CODEC_Beep();
 						button->clickHandler(button->parameter);
 					}
 				}
@@ -904,772 +823,6 @@ void FRONTPANEL_CheckButton(PERIPH_FrontPanel_Button *button, uint16_t mcp3008_v
 	}
 }
 
-void FRONTPANEL_BUTTONHANDLER_AsB(uint32_t parameter) // A/B
-{
-	// TX block
-	if (TRX_on_TX)
-		return;
-
-	TRX_TemporaryMute();
-
-	TRX.selected_vfo = !TRX.selected_vfo;
-	// VFO settings
-	if (!TRX.selected_vfo)
-	{
-		CurrentVFO = &TRX.VFO_A;
-		SecondaryVFO = &TRX.VFO_B;
-	}
-	else
-	{
-		CurrentVFO = &TRX.VFO_B;
-		SecondaryVFO = &TRX.VFO_A;
-	}
-
-	TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
-	TRX_setMode(CurrentVFO->Mode, CurrentVFO);
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	TRX.SAMPLERATE_MAIN = TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE;
-	TRX.LNA = TRX.BANDS_SAVED_SETTINGS[band].LNA;
-	TRX.ATT = TRX.BANDS_SAVED_SETTINGS[band].ATT;
-	TRX.ANT_selected = TRX.BANDS_SAVED_SETTINGS[band].ANT_selected;
-	TRX.ANT_mode = TRX.BANDS_SAVED_SETTINGS[band].ANT_mode;
-	TRX.ATT_DB = TRX.BANDS_SAVED_SETTINGS[band].ATT_DB;
-	TRX.ADC_Driver = TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver;
-	TRX.ADC_PGA = TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA;
-	CurrentVFO->FM_SQL_threshold_dbm = TRX.BANDS_SAVED_SETTINGS[band].FM_SQL_threshold_dbm;
-	CurrentVFO->DNR_Type = TRX.BANDS_SAVED_SETTINGS[band].DNR_Type;
-	CurrentVFO->AGC = TRX.BANDS_SAVED_SETTINGS[band].AGC;
-	CurrentVFO->SQL = TRX.BANDS_SAVED_SETTINGS[band].SQL;
-	TRX.SQL_shadow = CurrentVFO->SQL;
-	TRX.FM_SQL_threshold_dbm_shadow = CurrentVFO->FM_SQL_threshold_dbm;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.BottomButtons = true;
-	LCD_UpdateQuery.FreqInfoRedraw = true;
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	LCD_UpdateQuery.StatusInfoBarRedraw = true;
-	NeedSaveSettings = true;
-	NeedReinitAudioFiltersClean = true;
-	NeedReinitAudioFilters = true;
-	resetVAD();
-	FFT_Init();
-	TRX_ScanMode = false;
-}
-
-void FRONTPANEL_BUTTONHANDLER_TUNE(uint32_t parameter)
-{
-	if (!TRX_Tune)
-	{
-		APROC_TX_tune_power = 0.0f;
-		int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-		if (band >= 0)
-		{
-			TRX.ATU_I = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I;
-			TRX.ATU_C = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_C;
-			TRX.ATU_T = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_T;
-		}
-		RF_UNIT_ATU_Invalidate();
-		ATU_TunePowerStabilized = false;
-		LCD_UpdateQuery.StatusInfoBar = true;
-	}
-
-	TRX_Tune = !TRX_Tune;
-	TRX_ptt_hard = TRX_Tune;
-
-	if (TRX_TX_Disabled(CurrentVFO->Freq))
-	{
-		TRX_Tune = false;
-		TRX_ptt_hard = false;
-	}
-
-	LCD_UpdateQuery.StatusInfoGUIRedraw = true;
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-	TRX_Restart_Mode();
-}
-
-void FRONTPANEL_BUTTONHANDLER_PRE(uint32_t parameter)
-{
-	TRX.LNA = !TRX.LNA;
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-	{
-		TRX.BANDS_SAVED_SETTINGS[band].LNA = TRX.LNA;
-	}
-	LCD_UpdateQuery.TopButtons = true;
-	FPGA_NeedSendParams = true;
-	NeedSaveSettings = true;
-	resetVAD();
-}
-
-void FRONTPANEL_BUTTONHANDLER_ATT(uint32_t parameter)
-{
-	if (TRX.ATT && TRX.ATT_DB < 1.0f)
-		TRX.ATT_DB = TRX.ATT_STEP;
-	else
-		TRX.ATT = !TRX.ATT;
-	
-	if (TRX.ATT_DB < 1.0f)
-		TRX.ATT_DB = TRX.ATT_STEP;
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-	{
-		TRX.BANDS_SAVED_SETTINGS[band].ATT = TRX.ATT;
-		TRX.BANDS_SAVED_SETTINGS[band].ATT_DB = TRX.ATT_DB;
-	}
-
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-	resetVAD();
-}
-
-void FRONTPANEL_BUTTONHANDLER_ATTHOLD(uint32_t parameter)
-{
-	TRX.ATT_DB += TRX.ATT_STEP;
-	if (TRX.ATT_DB > 31.0f)
-		TRX.ATT_DB = TRX.ATT_STEP;
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-	{
-		TRX.BANDS_SAVED_SETTINGS[band].ATT = TRX.ATT;
-		TRX.BANDS_SAVED_SETTINGS[band].ATT_DB = TRX.ATT_DB;
-	}
-
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-	resetVAD();
-}
-
-void FRONTPANEL_BUTTONHANDLER_ANT(uint32_t parameter)
-{
-	if(!TRX.ANT_mode && !TRX.ANT_selected) //ANT1->ANT2
-	{
-		TRX.ANT_selected = true;
-		TRX.ANT_mode = false;
-	}
-	else if(!TRX.ANT_mode && TRX.ANT_selected) //ANT2->1T2
-	{
-		TRX.ANT_selected = false;
-		TRX.ANT_mode = true;
-	}
-	else if(TRX.ANT_mode) //1T2->ANT1
-	{
-		TRX.ANT_selected = false;
-		TRX.ANT_mode = false;
-	}
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0) {
-		TRX.BANDS_SAVED_SETTINGS[band].ANT_selected = TRX.ANT_selected;
-		TRX.BANDS_SAVED_SETTINGS[band].ANT_mode = TRX.ANT_mode;
-	}
-
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_PGA(uint32_t parameter)
-{
-	if (!TRX.ADC_Driver && !TRX.ADC_PGA)
-	{
-		TRX.ADC_Driver = true;
-		TRX.ADC_PGA = false;
-	}
-	else if (TRX.ADC_Driver && !TRX.ADC_PGA)
-	{
-		TRX.ADC_Driver = true;
-		TRX.ADC_PGA = true;
-	}
-	else if (TRX.ADC_Driver && TRX.ADC_PGA)
-	{
-		TRX.ADC_Driver = false;
-		TRX.ADC_PGA = true;
-	}
-	else if (!TRX.ADC_Driver && TRX.ADC_PGA)
-	{
-		TRX.ADC_Driver = false;
-		TRX.ADC_PGA = false;
-	}
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-	{
-		TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver = TRX.ADC_Driver;
-		TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA = TRX.ADC_PGA;
-	}
-	LCD_UpdateQuery.TopButtons = true;
-	FPGA_NeedSendParams = true;
-	NeedSaveSettings = true;
-	resetVAD();
-}
-
-void FRONTPANEL_BUTTONHANDLER_PGA_ONLY(uint32_t parameter)
-{
-	TRX.ADC_PGA = !TRX.ADC_PGA;
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA = TRX.ADC_PGA;
-	LCD_UpdateQuery.TopButtons = true;
-	FPGA_NeedSendParams = true;
-	NeedSaveSettings = true;
-	resetVAD();
-}
-
-void FRONTPANEL_BUTTONHANDLER_DRV_ONLY(uint32_t parameter)
-{
-	TRX.ADC_Driver = !TRX.ADC_Driver;
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver = TRX.ADC_Driver;
-	LCD_UpdateQuery.TopButtons = true;
-	FPGA_NeedSendParams = true;
-	NeedSaveSettings = true;
-	resetVAD();
-}
-
-void FRONTPANEL_BUTTONHANDLER_FAST(uint32_t parameter)
-{
-	TRX.Fast = !TRX.Fast;
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_MODE_P(uint32_t parameter)
-{
-	int8_t mode = (int8_t)CurrentVFO->Mode;
-	if (mode == TRX_MODE_LSB)
-		mode = TRX_MODE_USB;
-	else if (mode == TRX_MODE_USB)
-		mode = TRX_MODE_LSB;
-	else if (mode == TRX_MODE_CW)
-		mode = TRX_MODE_CW;
-	else if (mode == TRX_MODE_NFM)
-		mode = TRX_MODE_WFM;
-	else if (mode == TRX_MODE_WFM)
-		mode = TRX_MODE_NFM;
-	else if (mode == TRX_MODE_DIGI_L)
-		mode = TRX_MODE_DIGI_U;
-	else if (mode == TRX_MODE_DIGI_U)
-		mode = TRX_MODE_RTTY;
-	else if (mode == TRX_MODE_RTTY)
-		mode = TRX_MODE_DIGI_L;
-	else if (mode == TRX_MODE_AM)
-		mode = TRX_MODE_SAM;
-	else if (mode == TRX_MODE_SAM)
-		mode = TRX_MODE_IQ;
-	else if (mode == TRX_MODE_IQ)
-	{
-		mode = TRX_MODE_LOOPBACK;
-		LCD_UpdateQuery.StatusInfoGUIRedraw = true;
-	}
-	else if (mode == TRX_MODE_LOOPBACK)
-	{
-		mode = TRX_MODE_AM;
-		LCD_UpdateQuery.StatusInfoGUIRedraw = true;
-	}
-
-	TRX_setMode((uint8_t)mode, CurrentVFO);
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].Mode = (uint8_t)mode;
-	TRX_Temporary_Stop_BandMap = true;
-	resetVAD();
-	TRX_ScanMode = false;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_MODE_N(uint32_t parameter)
-{
-	int8_t mode = (int8_t)CurrentVFO->Mode;
-	if (mode == TRX_MODE_LOOPBACK)
-		LCD_UpdateQuery.StatusInfoGUIRedraw = true;
-	if (mode == TRX_MODE_LSB)
-		mode = TRX_MODE_CW;
-	else if (mode == TRX_MODE_USB)
-		mode = TRX_MODE_CW;
-	else if (mode == TRX_MODE_CW)
-		mode = TRX_MODE_DIGI_U;
-	else if (mode == TRX_MODE_DIGI_L || mode == TRX_MODE_DIGI_U || mode == TRX_MODE_RTTY)
-		mode = TRX_MODE_NFM;
-	else if (mode == TRX_MODE_NFM || mode == TRX_MODE_WFM)
-		mode = TRX_MODE_AM;
-	else
-	{
-		if (CurrentVFO->Freq < 10000000)
-			mode = TRX_MODE_LSB;
-		else
-			mode = TRX_MODE_USB;
-	}
-
-	TRX_setMode((uint8_t)mode, CurrentVFO);
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].Mode = (uint8_t)mode;
-	TRX_Temporary_Stop_BandMap = true;
-	resetVAD();
-	TRX_ScanMode = false;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_BAND_P(uint32_t parameter)
-{
-	// TX block
-	if (TRX_on_TX)
-		return;
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	band++;
-	if (band >= BANDS_COUNT)
-		band = 0;
-	while (!BANDS[band].selectable)
-	{
-		band++;
-		if (band >= BANDS_COUNT)
-			band = 0;
-	}
-
-	TRX_setFrequency(TRX.BANDS_SAVED_SETTINGS[band].Freq, CurrentVFO);
-	TRX_setMode(TRX.BANDS_SAVED_SETTINGS[band].Mode, CurrentVFO);
-	if (TRX.SAMPLERATE_MAIN != TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE)
-	{
-		TRX.SAMPLERATE_MAIN = TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE;
-		FFT_Init();
-		NeedReinitAudioFilters = true;
-	}
-	TRX.LNA = TRX.BANDS_SAVED_SETTINGS[band].LNA;
-	TRX.ATT = TRX.BANDS_SAVED_SETTINGS[band].ATT;
-	TRX.ANT_selected = TRX.BANDS_SAVED_SETTINGS[band].ANT_selected;
-	TRX.ANT_mode = TRX.BANDS_SAVED_SETTINGS[band].ANT_mode;
-	TRX.ATT_DB = TRX.BANDS_SAVED_SETTINGS[band].ATT_DB;
-	TRX.ADC_Driver = TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver;
-	TRX.ADC_PGA = TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA;
-	TRX.ATU_I = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I;
-	TRX.ATU_C = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_C;
-	TRX.ATU_T = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_T;
-	CurrentVFO->FM_SQL_threshold_dbm = TRX.BANDS_SAVED_SETTINGS[band].FM_SQL_threshold_dbm;
-	CurrentVFO->DNR_Type = TRX.BANDS_SAVED_SETTINGS[band].DNR_Type;
-	CurrentVFO->AGC = TRX.BANDS_SAVED_SETTINGS[band].AGC;
-	CurrentVFO->SQL = TRX.BANDS_SAVED_SETTINGS[band].SQL;
-	TRX.SQL_shadow = CurrentVFO->SQL;
-	TRX.FM_SQL_threshold_dbm_shadow = CurrentVFO->FM_SQL_threshold_dbm;
-	TRX_Temporary_Stop_BandMap = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.FreqInfoRedraw = true;
-	LCD_UpdateQuery.StatusInfoBarRedraw = true;
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	resetVAD();
-	TRX_ScanMode = false;
-	TRX_DXCluster_UpdateTime = 0;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_BAND_N(uint32_t parameter)
-{
-	// TX block
-	if (TRX_on_TX)
-		return;
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	band--;
-	if (band < 0)
-		band = BANDS_COUNT - 1;
-	while (!BANDS[band].selectable)
-	{
-		band--;
-		if (band < 0)
-			band = BANDS_COUNT - 1;
-	}
-
-	TRX_setFrequency(TRX.BANDS_SAVED_SETTINGS[band].Freq, CurrentVFO);
-	TRX_setMode(TRX.BANDS_SAVED_SETTINGS[band].Mode, CurrentVFO);
-	if (TRX.SAMPLERATE_MAIN != TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE)
-	{
-		TRX.SAMPLERATE_MAIN = TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE;
-		FFT_Init();
-		NeedReinitAudioFilters = true;
-	}
-	TRX.LNA = TRX.BANDS_SAVED_SETTINGS[band].LNA;
-	TRX.ATT = TRX.BANDS_SAVED_SETTINGS[band].ATT;
-	TRX.ANT_selected = TRX.BANDS_SAVED_SETTINGS[band].ANT_selected;
-	TRX.ANT_mode = TRX.BANDS_SAVED_SETTINGS[band].ANT_mode;
-	TRX.ATT_DB = TRX.BANDS_SAVED_SETTINGS[band].ATT_DB;
-	TRX.ADC_Driver = TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver;
-	TRX.ADC_PGA = TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA;
-	TRX.ATU_I = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I;
-	TRX.ATU_C = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_C;
-	TRX.ATU_T = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_T;
-	CurrentVFO->DNR_Type = TRX.BANDS_SAVED_SETTINGS[band].DNR_Type;
-	CurrentVFO->AGC = TRX.BANDS_SAVED_SETTINGS[band].AGC;
-	CurrentVFO->SQL = TRX.BANDS_SAVED_SETTINGS[band].SQL;
-	CurrentVFO->FM_SQL_threshold_dbm = TRX.BANDS_SAVED_SETTINGS[band].FM_SQL_threshold_dbm;
-	TRX.SQL_shadow = CurrentVFO->SQL;
-	TRX.FM_SQL_threshold_dbm_shadow = CurrentVFO->FM_SQL_threshold_dbm;
-	TRX_Temporary_Stop_BandMap = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.FreqInfoRedraw = true;
-	LCD_UpdateQuery.StatusInfoBarRedraw = true;
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	resetVAD();
-	TRX_ScanMode = false;
-	TRX_DXCluster_UpdateTime = 0;
-}
-
-void FRONTPANEL_BUTTONHANDLER_RF_POWER(uint32_t parameter)
-{
-#ifdef HAS_TOUCHPAD
-	LCD_showRFPowerWindow();
-#else
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_TRX_RFPOWER_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-#endif
-}
-
-void FRONTPANEL_BUTTONHANDLER_AGC(uint32_t parameter)
-{
-	CurrentVFO->AGC = !CurrentVFO->AGC;
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].AGC = CurrentVFO->AGC;
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_AGC_SPEED(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_AUDIO_AGC_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_SQUELCH(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_AUDIO_SQUELCH_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_IF(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_AUDIO_IF_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-static void FRONTPANEL_BUTTONHANDLER_WPM(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_CW_WPM_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-static void FRONTPANEL_BUTTONHANDLER_KEYER(uint32_t parameter)
-{
-	TRX.CW_KEYER = !TRX.CW_KEYER;
-	if (TRX.CW_KEYER)
-		LCD_showTooltip("KEYER ON");
-	else
-		LCD_showTooltip("KEYER OFF");
-}
-
-static void FRONTPANEL_BUTTONHANDLER_STEP(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_TRX_STEP_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_DNR(uint32_t parameter)
-{
-	TRX_TemporaryMute();
-	InitNoiseReduction();
-	if (CurrentVFO->DNR_Type == 0)
-		CurrentVFO->DNR_Type = 1;
-	else
-		CurrentVFO->DNR_Type = 0;
-
-	TRX.DNR_shadow = CurrentVFO->DNR_Type;
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].DNR_Type = CurrentVFO->DNR_Type;
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_DNR_HOLD(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_AUDIO_DNR_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_NB(uint32_t parameter)
-{
-	TRX.NOISE_BLANKER = !TRX.NOISE_BLANKER;
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_BW(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		if (CurrentVFO->Mode == TRX_MODE_CW)
-			SYSMENU_AUDIO_BW_CW_HOTKEY();
-		else if (CurrentVFO->Mode == TRX_MODE_NFM || CurrentVFO->Mode == TRX_MODE_WFM)
-			SYSMENU_AUDIO_BW_FM_HOTKEY();
-		else if (CurrentVFO->Mode == TRX_MODE_AM || CurrentVFO->Mode == TRX_MODE_SAM)
-			SYSMENU_AUDIO_BW_AM_HOTKEY();
-		else
-			SYSMENU_AUDIO_BW_SSB_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_HPF(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_AUDIO_HPF_SSB_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_ArB(uint32_t parameter) // A=B
-{
-	if (TRX.selected_vfo)
-		dma_memcpy(&TRX.VFO_A, &TRX.VFO_B, sizeof TRX.VFO_B);
-	else
-		dma_memcpy(&TRX.VFO_B, &TRX.VFO_A, sizeof TRX.VFO_B);
-
-	LCD_showTooltip("VFO COPIED");
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.FreqInfo = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_NOTCH(uint32_t parameter)
-{
-	TRX_TemporaryMute();
-
-	if (CurrentVFO->NotchFC > CurrentVFO->LPF_RX_Filter_Width)
-	{
-		CurrentVFO->NotchFC = CurrentVFO->LPF_RX_Filter_Width;
-		NeedReinitNotch = true;
-	}
-	CurrentVFO->ManualNotchFilter = false;
-
-	if (!CurrentVFO->AutoNotchFilter)
-	{
-		InitAutoNotchReduction();
-		CurrentVFO->AutoNotchFilter = true;
-	}
-	else
-		CurrentVFO->AutoNotchFilter = false;
-
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	LCD_UpdateQuery.TopButtons = true;
-	NeedWTFRedraw = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_NOTCH_MANUAL(uint32_t parameter)
-{
-	if (CurrentVFO->NotchFC > CurrentVFO->LPF_RX_Filter_Width)
-		CurrentVFO->NotchFC = CurrentVFO->LPF_RX_Filter_Width;
-	CurrentVFO->AutoNotchFilter = false;
-	if (!CurrentVFO->ManualNotchFilter)
-		CurrentVFO->ManualNotchFilter = true;
-	else
-		CurrentVFO->ManualNotchFilter = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	NeedReinitNotch = true;
-	NeedWTFRedraw = true;
-	NeedSaveSettings = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_RIT(uint32_t parameter)
-{
-	TRX.RIT_Enabled = !TRX.RIT_Enabled;
-	if(TRX.RIT_Enabled) 
-		TRX.ENC2_func_mode_idx = 4;
-	TRX.XIT_Enabled = false;
-	TRX.SPLIT_Enabled = false;
-	TRX_RIT = 0;
-	TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
-	TRX_setFrequency(SecondaryVFO->Freq, SecondaryVFO);
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	NeedSaveSettings = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_XIT(uint32_t parameter)
-{
-	TRX.XIT_Enabled = !TRX.XIT_Enabled;
-	if(TRX.XIT_Enabled) 
-		TRX.ENC2_func_mode_idx = 4;
-	TRX.RIT_Enabled = false;
-	TRX.SPLIT_Enabled = false;
-	TRX_XIT = 0;
-	TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
-	TRX_setFrequency(SecondaryVFO->Freq, SecondaryVFO);
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.StatusInfoGUI = true;
-	NeedSaveSettings = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_SPLIT(uint32_t parameter)
-{
-	TRX.SPLIT_Enabled = !TRX.SPLIT_Enabled;
-	TRX.XIT_Enabled = false;
-	TRX.RIT_Enabled = false;
-	TRX_XIT = 0;
-	TRX_RIT = 0;
-	TRX_setFrequency(CurrentVFO->Freq, CurrentVFO);
-	TRX_setFrequency(SecondaryVFO->Freq, SecondaryVFO);
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_LOCK(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-		TRX.Locked = !TRX.Locked;
-	else
-	{
-		SYSMENU_hiddenmenu_enabled = true;
-		LCD_redraw(false);
-	}
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.StatusInfoBar = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_MENU(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-		LCD_systemMenuOpened = true;
-	else
-		SYSMENU_eventCloseSystemMenu();
-	LCD_redraw(false);
-}
-
-void FRONTPANEL_BUTTONHANDLER_MENUHOLD(uint32_t parameter)
-{
-	if (LCD_systemMenuOpened)
-	{
-		SYSMENU_hiddenmenu_enabled = true;
-		LCD_redraw(false);
-		return;
-	}
-	else
-	{
-		FRONTPANEL_BUTTONHANDLER_MENU(parameter);
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_MUTE(uint32_t parameter)
-{
-	TRX_Mute = !TRX_Mute;
-	TRX_AFAmp_Mute = false;
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_MUTE_AFAMP(uint32_t parameter)
-{
-	TRX_AFAmp_Mute = !TRX_AFAmp_Mute;
-	if (TRX_AFAmp_Mute)
-		WM8731_Mute_AF_AMP();
-	else
-		WM8731_UnMute_AF_AMP();
-	TRX_Mute = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_BANDMAP(uint32_t parameter)
-{
-	TRX.BandMapEnabled = !TRX.BandMapEnabled;
-
-	if (TRX.BandMapEnabled)
-		LCD_showTooltip("BANDMAP ON");
-	else
-		LCD_showTooltip("BANDMAP OFF");
-
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_AUTOGAINER(uint32_t parameter)
-{
-	TRX.AutoGain = !TRX.AutoGain;
-
-	if (TRX.AutoGain)
-		LCD_showTooltip("AUTOGAIN ON");
-	else
-		LCD_showTooltip("AUTOGAIN OFF");
-
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
 static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num)
 {
 	uint8_t outData[3] = {0};
@@ -1688,594 +841,18 @@ static uint16_t FRONTPANEL_ReadMCP3008_Value(uint8_t channel, uint8_t adc_num)
 	return mcp3008_value;
 }
 
-void FRONTPANEL_BUTTONHANDLER_SERVICES(uint32_t parameter)
+void FRONTPANEL_ENC2SW_validate()
 {
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_HANDL_SERVICESMENU(1);
-	}
-	else
-	{
-		SYSMENU_eventCloseSystemMenu();
-	}
-}
-
-void FRONTPANEL_BUTTONHANDLER_SQL(uint32_t parameter)
-{
-	CurrentVFO->SQL = !CurrentVFO->SQL;
-	TRX.SQL_shadow = CurrentVFO->SQL;
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].SQL = CurrentVFO->SQL;
-
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_SCAN(uint32_t parameter)
-{
-	TRX_ScanMode = !TRX_ScanMode;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_PLAY(uint32_t parameter)
-{
-	#if HRDW_HAS_SD
-	if (SD_RecordInProcess)
-		SD_NeedStopRecord = true;
-
-	// go tx
-	TRX_ptt_soft = true;
-	TRX_ptt_change();
-
-	// start play cq message
-	SD_PlayCQMessageInProcess = true;
-	dma_memset(SD_workbuffer_A, 0, sizeof(SD_workbuffer_A));
-	strcat((char *)SD_workbuffer_A, SD_CQ_MESSAGE_FILE);
-	SD_doCommand(SDCOMM_START_PLAY, false);
-	#endif
-}
-
-static void FRONTPANEL_BUTTONHANDLER_REC(uint32_t parameter)
-{
-	#if HRDW_HAS_SD
-	if (!SD_RecordInProcess)
-		SD_doCommand(SDCOMM_START_RECORD, false);
-	else
-		SD_NeedStopRecord = true;
-	#endif
-}
-
-static void FRONTPANEL_BUTTONHANDLER_FUNC(uint32_t parameter)
-{
-	if (!TRX.Locked) // LOCK BUTTON
-		if (!LCD_systemMenuOpened || PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + parameter]].work_in_menu)
-			PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + parameter]].clickHandler(0);
-}
-
-static void FRONTPANEL_BUTTONHANDLER_FUNCH(uint32_t parameter)
-{
-	if (parameter == 7 && LCD_systemMenuOpened)
-	{
-		SYSMENU_hiddenmenu_enabled = true;
-		LCD_redraw(false);
-	}
-	else if (!TRX.Locked || PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + parameter]].holdHandler == FRONTPANEL_BUTTONHANDLER_LOCK) // LOCK BUTTON
-		if (!LCD_systemMenuOpened || PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + parameter]].work_in_menu)
-			PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + parameter]].holdHandler(0);
-}
-
-static void FRONTPANEL_BUTTONHANDLER_UP(uint32_t parameter)
-{
-	uint32_t newfreq = CurrentVFO->Freq + 500;
-	newfreq = newfreq / 500 * 500;
-	TRX_setFrequency(newfreq, CurrentVFO);
-	LCD_UpdateQuery.FreqInfo = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_DOWN(uint32_t parameter)
-{
-	uint32_t newfreq = CurrentVFO->Freq - 500;
-	newfreq = newfreq / 500 * 500;
-	TRX_setFrequency(newfreq, CurrentVFO);
-	LCD_UpdateQuery.FreqInfo = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_SET_CUR_VFO_BAND(uint32_t parameter)
-{
-	int8_t band = parameter;
-	if (band >= BANDS_COUNT)
-		band = 0;
-
-	// manual freq enter
-	if (LCD_window.opened && TRX.BANDS_SAVED_SETTINGS[band].Freq == CurrentVFO->Freq)
-	{
-		TRX_Temporary_Stop_BandMap = false;
-		resetVAD();
-		TRX_ScanMode = false;
-		LCD_closeWindow();
-		LCD_redraw(true);
-		LCD_showManualFreqWindow(false);
-		return;
-	}
-	//
-
-	TRX_setFrequency(TRX.BANDS_SAVED_SETTINGS[band].Freq, CurrentVFO);
-	TRX_setMode(TRX.BANDS_SAVED_SETTINGS[band].Mode, CurrentVFO);
-	if (TRX.SAMPLERATE_MAIN != TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE)
-	{
-		TRX.SAMPLERATE_MAIN = TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE;
-		FFT_Init();
-		NeedReinitAudioFilters = true;
-	}
-	TRX.LNA = TRX.BANDS_SAVED_SETTINGS[band].LNA;
-	TRX.ATT = TRX.BANDS_SAVED_SETTINGS[band].ATT;
-	TRX.ATT_DB = TRX.BANDS_SAVED_SETTINGS[band].ATT_DB;
-	TRX.ANT_selected = TRX.BANDS_SAVED_SETTINGS[band].ANT_selected;
-	TRX.ANT_mode = TRX.BANDS_SAVED_SETTINGS[band].ANT_mode;
-	TRX.ADC_Driver = TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver;
-	CurrentVFO->SQL = TRX.BANDS_SAVED_SETTINGS[band].SQL;
-	CurrentVFO->FM_SQL_threshold_dbm = TRX.BANDS_SAVED_SETTINGS[band].FM_SQL_threshold_dbm;
-	TRX.SQL_shadow = CurrentVFO->SQL;
-	TRX.FM_SQL_threshold_dbm_shadow = CurrentVFO->FM_SQL_threshold_dbm;
-	TRX.ADC_PGA = TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA;
-	TRX.ATU_I = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I;
-	TRX.ATU_C = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_C;
-	TRX.ATU_T = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_T;
-	CurrentVFO->DNR_Type = TRX.BANDS_SAVED_SETTINGS[band].DNR_Type;
-	CurrentVFO->AGC = TRX.BANDS_SAVED_SETTINGS[band].AGC;
-	TRX_Temporary_Stop_BandMap = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.FreqInfoRedraw = true;
-	LCD_UpdateQuery.StatusInfoBarRedraw = true;
-
-	resetVAD();
-	TRX_ScanMode = false;
-	if (LCD_window.opened)
-		LCD_closeWindow();
-	TRX_DXCluster_UpdateTime = 0;
-}
-
-void FRONTPANEL_BUTTONHANDLER_SET_VFOA_BAND(uint32_t parameter)
-{
-	int8_t band = parameter;
-	if (band >= BANDS_COUNT)
-		band = 0;
-
-	// manual freq enter
-	if (LCD_window.opened && TRX.BANDS_SAVED_SETTINGS[band].Freq == TRX.VFO_A.Freq)
-	{
-		TRX_Temporary_Stop_BandMap = false;
-		resetVAD();
-		TRX_ScanMode = false;
-		LCD_closeWindow();
-		LCD_redraw(true);
-		LCD_showManualFreqWindow(false);
-		return;
-	}
-	//
-
-	TRX_setFrequency(TRX.BANDS_SAVED_SETTINGS[band].Freq, &TRX.VFO_A);
-	TRX_setMode(TRX.BANDS_SAVED_SETTINGS[band].Mode, &TRX.VFO_A);
-	if (TRX.SAMPLERATE_MAIN != TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE)
-	{
-		TRX.SAMPLERATE_MAIN = TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE;
-		FFT_Init();
-		NeedReinitAudioFilters = true;
-	}
-	TRX.LNA = TRX.BANDS_SAVED_SETTINGS[band].LNA;
-	TRX.ATT = TRX.BANDS_SAVED_SETTINGS[band].ATT;
-	TRX.ATT_DB = TRX.BANDS_SAVED_SETTINGS[band].ATT_DB;
-	TRX.ANT_selected = TRX.BANDS_SAVED_SETTINGS[band].ANT_selected;
-	TRX.ANT_mode = TRX.BANDS_SAVED_SETTINGS[band].ANT_mode;
-	TRX.ADC_Driver = TRX.BANDS_SAVED_SETTINGS[band].ADC_Driver;
-	TRX.VFO_A.SQL = TRX.BANDS_SAVED_SETTINGS[band].SQL;
-	TRX.VFO_A.FM_SQL_threshold_dbm = TRX.BANDS_SAVED_SETTINGS[band].FM_SQL_threshold_dbm;
-	TRX.SQL_shadow = CurrentVFO->SQL;
-	TRX.FM_SQL_threshold_dbm_shadow = CurrentVFO->FM_SQL_threshold_dbm;
-	TRX.ADC_PGA = TRX.BANDS_SAVED_SETTINGS[band].ADC_PGA;
-	TRX.VFO_A.DNR_Type = TRX.BANDS_SAVED_SETTINGS[band].DNR_Type;
-	TRX.VFO_A.AGC = TRX.BANDS_SAVED_SETTINGS[band].AGC;
-	TRX.ATU_I = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I;
-	TRX.ATU_C = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_C;
-	TRX.ATU_T = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_T;
-	TRX_Temporary_Stop_BandMap = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.FreqInfoRedraw = true;
-	LCD_UpdateQuery.StatusInfoBarRedraw = true;
-
-	resetVAD();
-	TRX_ScanMode = false;
-	if (LCD_window.opened)
-		LCD_closeWindow();
-	TRX_DXCluster_UpdateTime = 0;
-}
-
-void FRONTPANEL_BUTTONHANDLER_SET_VFOB_BAND(uint32_t parameter)
-{
-	int8_t band = parameter;
-	if (band >= BANDS_COUNT)
-		band = 0;
-
-	// manual freq enter
-	if (TRX.BANDS_SAVED_SETTINGS[band].Freq == TRX.VFO_B.Freq)
-	{
-		TRX_Temporary_Stop_BandMap = false;
-		resetVAD();
-		TRX_ScanMode = false;
-		LCD_closeWindow();
-		LCD_redraw(true);
-		LCD_showManualFreqWindow(true);
-		return;
-	}
-	//
-
-	TRX_setFrequency(TRX.BANDS_SAVED_SETTINGS[band].Freq, &TRX.VFO_B);
-	TRX_setMode(TRX.BANDS_SAVED_SETTINGS[band].Mode, &TRX.VFO_B);
-	TRX.VFO_B.FM_SQL_threshold_dbm = TRX.BANDS_SAVED_SETTINGS[band].FM_SQL_threshold_dbm;
-	TRX.VFO_B.DNR_Type = TRX.BANDS_SAVED_SETTINGS[band].DNR_Type;
-	TRX.VFO_B.AGC = TRX.BANDS_SAVED_SETTINGS[band].AGC;
-	TRX.VFO_B.SQL = TRX.BANDS_SAVED_SETTINGS[band].SQL;
-	TRX_Temporary_Stop_BandMap = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.FreqInfoRedraw = true;
-	LCD_UpdateQuery.StatusInfoBarRedraw = true;
-
-	resetVAD();
-	TRX_ScanMode = false;
-	LCD_closeWindow();
-	TRX_DXCluster_UpdateTime = 0;
-}
-
-void FRONTPANEL_BUTTONHANDLER_SETMODE(uint32_t parameter)
-{
-	int8_t mode = parameter;
-	TRX_setMode((uint8_t)mode, &TRX.VFO_A);
-	int8_t band = getBandFromFreq(TRX.VFO_A.Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].Mode = (uint8_t)mode;
-	TRX_Temporary_Stop_BandMap = true;
-	resetVAD();
-	if (CurrentVFO->NotchFC > CurrentVFO->LPF_RX_Filter_Width)
-	{
-		CurrentVFO->NotchFC = CurrentVFO->LPF_RX_Filter_Width;
-		NeedReinitNotch = true;
-	}
-	TRX_ScanMode = false;
-	LCD_closeWindow();
-}
-
-void FRONTPANEL_BUTTONHANDLER_SETSECMODE(uint32_t parameter)
-{
-	int8_t mode = parameter;
-	TRX_setMode((uint8_t)mode, &TRX.VFO_B);
-	int8_t band = getBandFromFreq(TRX.VFO_B.Freq, true);
-	if (band >= 0)
-		TRX.BANDS_SAVED_SETTINGS[band].Mode = (uint8_t)mode;
-	TRX_Temporary_Stop_BandMap = true;
-	resetVAD();
-	if (SecondaryVFO->NotchFC > SecondaryVFO->LPF_RX_Filter_Width)
-	{
-		SecondaryVFO->NotchFC = SecondaryVFO->LPF_RX_Filter_Width;
-		NeedReinitNotch = true;
-	}
-	TRX_ScanMode = false;
-	LCD_closeWindow();
-}
-
-void FRONTPANEL_BUTTONHANDLER_SET_RX_BW(uint32_t parameter)
-{
-	if (CurrentVFO->Mode == TRX_MODE_CW)
-		TRX.CW_LPF_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_LSB || CurrentVFO->Mode == TRX_MODE_USB)
-		TRX.SSB_LPF_RX_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_DIGI_L || CurrentVFO->Mode == TRX_MODE_DIGI_U || CurrentVFO->Mode == TRX_MODE_RTTY)
-		TRX.DIGI_LPF_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_AM || CurrentVFO->Mode == TRX_MODE_SAM)
-		TRX.AM_LPF_RX_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_NFM)
-		TRX.FM_LPF_RX_Filter = parameter;
-
-	TRX_setMode(SecondaryVFO->Mode, SecondaryVFO);
-	TRX_setMode(CurrentVFO->Mode, CurrentVFO);
-
-	LCD_closeWindow();
-}
-
-void FRONTPANEL_BUTTONHANDLER_SET_TX_BW(uint32_t parameter)
-{
-	if (CurrentVFO->Mode == TRX_MODE_CW)
-		TRX.CW_LPF_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_LSB || CurrentVFO->Mode == TRX_MODE_USB)
-		TRX.SSB_LPF_TX_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_DIGI_L || CurrentVFO->Mode == TRX_MODE_DIGI_U || CurrentVFO->Mode == TRX_MODE_RTTY)
-		TRX.DIGI_LPF_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_AM || CurrentVFO->Mode == TRX_MODE_SAM)
-		TRX.AM_LPF_TX_Filter = parameter;
-	if (CurrentVFO->Mode == TRX_MODE_NFM)
-		TRX.FM_LPF_TX_Filter = parameter;
-
-	TRX_setMode(SecondaryVFO->Mode, SecondaryVFO);
-	TRX_setMode(CurrentVFO->Mode, CurrentVFO);
-
-	LCD_closeWindow();
-}
-
-void FRONTPANEL_BUTTONHANDLER_SETRF_POWER(uint32_t parameter)
-{
-	TRX.RF_Power = parameter;
-	APROC_TX_clip_gain = 1.0f;
-	APROC_TX_tune_power = 0.0f;
-	ATU_TunePowerStabilized = false;
-	LCD_closeWindow();
-}
-
-void FRONTPANEL_BUTTONHANDLER_SET_ATT_DB(uint32_t parameter)
-{
-	TRX.ATT_DB = parameter;
-
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-	if (band >= 0)
-	{
-		TRX.BANDS_SAVED_SETTINGS[band].ATT = TRX.ATT;
-		TRX.BANDS_SAVED_SETTINGS[band].ATT_DB = TRX.ATT_DB;
-	}
-
-	LCD_UpdateQuery.TopButtons = true;
-	NeedSaveSettings = true;
-	resetVAD();
-
-	LCD_closeWindow();
-}
-
-void FRONTPANEL_BUTTONHANDLER_LEFT_ARR(uint32_t parameter)
-{
-	if (TRX.FRONTPANEL_funcbuttons_page == 0)
-		TRX.FRONTPANEL_funcbuttons_page = (FUNCBUTTONS_PAGES - 1);
-	else
-		TRX.FRONTPANEL_funcbuttons_page--;
-
-	LCD_UpdateQuery.BottomButtons = true;
-	LCD_UpdateQuery.TopButtons = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_RIGHT_ARR(uint32_t parameter)
-{
-	if (TRX.FRONTPANEL_funcbuttons_page >= (FUNCBUTTONS_PAGES - 1))
-		TRX.FRONTPANEL_funcbuttons_page = 0;
-	else
-		TRX.FRONTPANEL_funcbuttons_page++;
-
-	LCD_UpdateQuery.BottomButtons = true;
-	LCD_UpdateQuery.TopButtons = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_SAMPLE_N(uint32_t parameter)
-{
-	if (CurrentVFO->Mode == TRX_MODE_WFM)
-	{
-		if (TRX.SAMPLERATE_FM > 0)
-			TRX.SAMPLERATE_FM -= 1;
-	}
-	else
-	{
-		if (TRX.SAMPLERATE_MAIN > 0)
-			TRX.SAMPLERATE_MAIN -= 1;
-		int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-		TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE = TRX.SAMPLERATE_MAIN;
-	}
-
-	FFT_Init();
-	NeedReinitAudioFilters = true;
-	LCD_UpdateQuery.StatusInfoBar = true;
-}
-
-static void FRONTPANEL_BUTTONHANDLER_SAMPLE_P(uint32_t parameter)
-{
-	if (CurrentVFO->Mode == TRX_MODE_WFM)
-	{
-		if (TRX.SAMPLERATE_FM < 3)
-			TRX.SAMPLERATE_FM += 1;
-	}
-	else
-	{
-		if (TRX.SAMPLERATE_MAIN < 3)
-			TRX.SAMPLERATE_MAIN += 1;
-		int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
-		TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE = TRX.SAMPLERATE_MAIN;
-	}
-
-	FFT_Init();
-	NeedReinitAudioFilters = true;
-	LCD_UpdateQuery.StatusInfoBar = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_ZOOM_N(uint32_t parameter)
-{
-	if (CurrentVFO->Mode == TRX_MODE_CW)
-	{
-		if (TRX.FFT_ZoomCW == 2)
-			TRX.FFT_ZoomCW = 1;
-		else if (TRX.FFT_ZoomCW == 4)
-			TRX.FFT_ZoomCW = 2;
-		else if (TRX.FFT_ZoomCW == 8)
-			TRX.FFT_ZoomCW = 4;
-		else if (TRX.FFT_ZoomCW == 16)
-			TRX.FFT_ZoomCW = 8;
-	}
-	else
-	{
-		if (TRX.FFT_Zoom == 2)
-			TRX.FFT_Zoom = 1;
-		else if (TRX.FFT_Zoom == 4)
-			TRX.FFT_Zoom = 2;
-		else if (TRX.FFT_Zoom == 8)
-			TRX.FFT_Zoom = 4;
-		else if (TRX.FFT_Zoom == 16)
-			TRX.FFT_Zoom = 8;
-	}
-
-	FFT_Init();
-	LCD_UpdateQuery.StatusInfoBar = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_ZOOM_P(uint32_t parameter)
-{
-	if (CurrentVFO->Mode == TRX_MODE_CW)
-	{
-		if (TRX.FFT_ZoomCW == 1)
-			TRX.FFT_ZoomCW = 2;
-		else if (TRX.FFT_ZoomCW == 2)
-			TRX.FFT_ZoomCW = 4;
-		else if (TRX.FFT_ZoomCW == 4)
-			TRX.FFT_ZoomCW = 8;
-		else if (TRX.FFT_ZoomCW == 8)
-			TRX.FFT_ZoomCW = 16;
-	}
-	else
-	{
-		if (TRX.FFT_Zoom == 1)
-			TRX.FFT_Zoom = 2;
-		else if (TRX.FFT_Zoom == 2)
-			TRX.FFT_Zoom = 4;
-		else if (TRX.FFT_Zoom == 4)
-			TRX.FFT_Zoom = 8;
-		else if (TRX.FFT_Zoom == 8)
-			TRX.FFT_Zoom = 16;
-	}
-
-	FFT_Init();
-	LCD_UpdateQuery.StatusInfoBar = true;
-}
-
-void FRONTPANEL_SelectMemoryChannelsButtonHandler(uint32_t parameter)
-{
-	int8_t channel = parameter;
-	if (channel >= MEMORY_CHANNELS_COUNT)
-		channel = 0;
-
-	TRX_setFrequency(CALIBRATE.MEMORY_CHANNELS[channel].Freq, CurrentVFO);
-	TRX_setMode(CALIBRATE.MEMORY_CHANNELS[channel].Mode, CurrentVFO);
-	if (TRX.SAMPLERATE_MAIN != CALIBRATE.MEMORY_CHANNELS[channel].SAMPLERATE)
-	{
-		TRX.SAMPLERATE_MAIN = CALIBRATE.MEMORY_CHANNELS[channel].SAMPLERATE;
-		FFT_Init();
-		NeedReinitAudioFilters = true;
-	}
-	TRX.LNA = CALIBRATE.MEMORY_CHANNELS[channel].LNA;
-	TRX.ATT = CALIBRATE.MEMORY_CHANNELS[channel].ATT;
-	TRX.ATT_DB = CALIBRATE.MEMORY_CHANNELS[channel].ATT_DB;
-	TRX.ANT_selected = CALIBRATE.MEMORY_CHANNELS[channel].ANT_selected;
-	TRX.ANT_mode = CALIBRATE.MEMORY_CHANNELS[channel].ANT_mode;
-	TRX.ADC_Driver = CALIBRATE.MEMORY_CHANNELS[channel].ADC_Driver;
-	CurrentVFO->SQL = CALIBRATE.MEMORY_CHANNELS[channel].SQL;
-	CurrentVFO->FM_SQL_threshold_dbm = CALIBRATE.MEMORY_CHANNELS[channel].FM_SQL_threshold_dbm;
-	TRX.SQL_shadow = CurrentVFO->SQL;
-	TRX.FM_SQL_threshold_dbm_shadow = CurrentVFO->FM_SQL_threshold_dbm;
-	TRX.ADC_PGA = CALIBRATE.MEMORY_CHANNELS[channel].ADC_PGA;
-	CurrentVFO->DNR_Type = CALIBRATE.MEMORY_CHANNELS[channel].DNR_Type;
-	CurrentVFO->AGC = CALIBRATE.MEMORY_CHANNELS[channel].AGC;
-	TRX_Temporary_Stop_BandMap = false;
-
-	LCD_UpdateQuery.TopButtons = true;
-	LCD_UpdateQuery.FreqInfoRedraw = true;
-
-	resetVAD();
-	TRX_ScanMode = false;
-	LCD_closeWindow();
-	TRX_DXCluster_UpdateTime = 0;
-}
-
-void FRONTPANEL_SaveMemoryChannelsButtonHandler(uint32_t parameter)
-{
-	int8_t channel = parameter;
-	if (channel >= MEMORY_CHANNELS_COUNT)
-		channel = 0;
-
-	CALIBRATE.MEMORY_CHANNELS[channel].Freq = CurrentVFO->Freq;
-	CALIBRATE.MEMORY_CHANNELS[channel].Mode = CurrentVFO->Mode;
-	CALIBRATE.MEMORY_CHANNELS[channel].SAMPLERATE = TRX.SAMPLERATE_MAIN;
-	CALIBRATE.MEMORY_CHANNELS[channel].LNA = TRX.LNA;
-	CALIBRATE.MEMORY_CHANNELS[channel].ATT = TRX.ATT;
-	CALIBRATE.MEMORY_CHANNELS[channel].ATT_DB = TRX.ATT_DB;
-	CALIBRATE.MEMORY_CHANNELS[channel].ANT_selected = TRX.ANT_selected;
-	CALIBRATE.MEMORY_CHANNELS[channel].ANT_mode = TRX.ANT_mode;
-	CALIBRATE.MEMORY_CHANNELS[channel].ADC_Driver = TRX.ADC_Driver;
-	CALIBRATE.MEMORY_CHANNELS[channel].SQL = CurrentVFO->SQL;
-	CALIBRATE.MEMORY_CHANNELS[channel].FM_SQL_threshold_dbm = CurrentVFO->FM_SQL_threshold_dbm;
-	CALIBRATE.MEMORY_CHANNELS[channel].ADC_PGA = TRX.ADC_PGA;
-	CALIBRATE.MEMORY_CHANNELS[channel].DNR_Type = CurrentVFO->DNR_Type;
-	CALIBRATE.MEMORY_CHANNELS[channel].AGC = CurrentVFO->AGC;
-
-	LCD_closeWindow();
-
-	NeedSaveCalibration = true;
-	LCD_showTooltip("Channel saved");
-}
-
-void FRONTPANEL_BUTTONHANDLER_SET_BAND_MEMORY(uint32_t parameter)
-{
-	int8_t band = parameter;
-	if (band >= BANDS_COUNT)
-		band = 0;
-	if (band < 0)
-		return;
-	
-	//slide mems
-	for (uint8_t j = BANDS_MEMORIES_COUNT - 1; j > 0; j--)
-		CALIBRATE.BAND_MEMORIES[band][j] = CALIBRATE.BAND_MEMORIES[band][j - 1];
-	
-	CALIBRATE.BAND_MEMORIES[band][0] = CurrentVFO->Freq;
-	
-	LCD_showTooltip("Band mem saved");
-	NeedSaveCalibration = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_GET_BAND_MEMORY(uint32_t parameter)
-{
-	int8_t band = parameter;
-	if (band >= BANDS_COUNT)
-		band = 0;
-	if (band < 0)
-		return;
-	
-	FRONTPANEL_BUTTONHANDLER_SET_CUR_VFO_BAND(band);
-	
-	int8_t mem_num = -1;
-	for (uint8_t j = 0; j < BANDS_MEMORIES_COUNT; j++) {
-		if(CALIBRATE.BAND_MEMORIES[band][j] == CurrentVFO->Freq)
-		{
-			mem_num = j;
-			break;
-		}
-	}
-	
-	if(mem_num < 0)
-		return;
-	mem_num++;
-	if(mem_num >= BANDS_MEMORIES_COUNT)
-		mem_num = 0;
-	
-	if(CALIBRATE.BAND_MEMORIES[band][mem_num] == 0)
-		mem_num = 0;
-	
-	TRX_setFrequency(CALIBRATE.BAND_MEMORIES[band][mem_num], CurrentVFO);
-	LCD_UpdateQuery.StatusInfoBarRedraw = true;
-}
-
-void FRONTPANEL_BUTTONHANDLER_FT8(uint32_t parameter)
-{
-	if (!LCD_systemMenuOpened)
-	{
-		LCD_systemMenuOpened = true;
-		SYSMENU_SERVICE_FT8_HOTKEY();
-	}
-	else
-	{
-		SYSMENU_eventCloseAllSystemMenu();
-	}
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_WPM && CurrentVFO->Mode != TRX_MODE_CW) // no WPM if not CW
+		TRX.ENC2_func_mode = ENC_FUNC_PAGER;
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_RIT && ((!TRX.RIT_Enabled && !TRX.XIT_Enabled) || !TRX.FineRITTune)) // nothing to RIT tune
+		TRX.ENC2_func_mode = ENC_FUNC_PAGER;
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_NOTCH && !CurrentVFO->ManualNotchFilter) // nothing to NOTCH tune
+		TRX.ENC2_func_mode = ENC_FUNC_PAGER;
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_LPF && CurrentVFO->Mode == TRX_MODE_WFM) // nothing to LPF tune
+		TRX.ENC2_func_mode = ENC_FUNC_PAGER;
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_HPF && CurrentVFO->Mode != TRX_MODE_LSB && CurrentVFO->Mode != TRX_MODE_USB) // fast tune HPF in SSB only
+		TRX.ENC2_func_mode = ENC_FUNC_PAGER;
+	if (TRX.ENC2_func_mode == ENC_FUNC_SET_SQL && ((CurrentVFO->Mode != TRX_MODE_NFM && CurrentVFO->Mode != TRX_MODE_WFM) || !CurrentVFO->SQL)) // nothing to SQL tune
+		TRX.ENC2_func_mode = ENC_FUNC_PAGER;
 }

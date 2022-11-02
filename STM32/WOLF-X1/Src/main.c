@@ -33,7 +33,7 @@
 #include "rf_unit.h"
 #include "fpga.h"
 #include "fft.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "audio_processor.h"
 #include "profiler.h"
 #include "usb_device.h"
@@ -298,7 +298,7 @@ int main(void)
   InitProfiler();
 
   println("[OK] Calibration loading");
-  if (PERIPH_FrontPanel_Buttons[2].state && PERIPH_FrontPanel_Buttons[0].state) //Very hard reset (MENU+VFO)
+  if (PERIPH_FrontPanel_Buttons[2].state && PERIPH_FrontPanel_Buttons[0].state) //Very hard reset (MENU+F4)
     LoadCalibration(true);
   else
     LoadCalibration(false);
@@ -322,7 +322,7 @@ int main(void)
 	HAL_ADCEx_Calibration_Start(&hadc2, LL_ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
   HAL_ADCEx_Calibration_Start(&hadc3, LL_ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
   println("[OK] AudioCodec init");
-  WM8731_Init();
+  CODEC_Init();
   println("[OK] TRX init");
   TRX_Init();
   println("[OK] Audioprocessor & TIM5 init");
@@ -1647,7 +1647,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = LCD_DC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LCD_DC_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : AUDIO_48K_CLOCK_Pin */

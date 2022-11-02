@@ -98,7 +98,7 @@ output reg unsigned [7:0] TX_CICFIR_GAIN = 32;
 output reg unsigned [7:0] DAC_GAIN = 0;
 output reg signed [15:0] ADC_OFFSET = 'd0;
 output reg tx_iq_valid = 0;
-output reg signed [7:0] VCXO_correction = 'd0;
+output reg signed [15:0] VCXO_correction = 'd0;
 output reg DAC_div0 = 0;
 output reg DAC_div1 = 0;
 output reg DAC_hp1 = 0;
@@ -327,6 +327,11 @@ begin
 	begin
 		DAC_DRV_A0 = DATA_BUS[0:0];
 		DAC_DRV_A1 = DATA_BUS[1:1];
+		k = 121;
+	end
+	else if (k == 121)
+	begin
+		VCXO_correction[15:8] = DATA_BUS[7:0];
 		k = 999;
 	end
 	else if (k == 200) //SEND PARAMS
@@ -529,12 +534,12 @@ begin
 	end
 	else if (k == 800) //GET INFO
 	begin
-		DATA_BUS_OUT[7:0] = 'd4; //flash id 1
+		DATA_BUS_OUT[7:0] = 'd6; //flash id 1
 		k = 801;
 	end
 	else if (k == 801)
 	begin
-		DATA_BUS_OUT[7:0] = 'd1; //flash id 2
+		DATA_BUS_OUT[7:0] = 'd0; //flash id 2
 		k = 802;
 	end
 	else if (k == 802)

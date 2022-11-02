@@ -82,7 +82,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -400,6 +400,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -450,11 +455,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -485,9 +485,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -2766,284 +2766,34 @@
           </GroupOption>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
-              <FileOption>
-                <CommonProperty>
-                  <UseCPPCompiler>2</UseCPPCompiler>
-                  <RVCTCodeConst>0</RVCTCodeConst>
-                  <RVCTZI>0</RVCTZI>
-                  <RVCTOtherData>0</RVCTOtherData>
-                  <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>1</IncludeInBuild>
-                  <AlwaysBuild>2</AlwaysBuild>
-                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
-                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
-                  <PublicsOnly>2</PublicsOnly>
-                  <StopOnExitCode>11</StopOnExitCode>
-                  <CustomArgument></CustomArgument>
-                  <IncludeLibraryModules></IncludeLibraryModules>
-                  <ComprImg>1</ComprImg>
-                </CommonProperty>
-                <FileArmAds>
-                  <Cads>
-                    <interw>2</interw>
-                    <Optim>0</Optim>
-                    <oTime>2</oTime>
-                    <SplitLS>2</SplitLS>
-                    <OneElfS>2</OneElfS>
-                    <Strict>2</Strict>
-                    <EnumInt>2</EnumInt>
-                    <PlainCh>2</PlainCh>
-                    <Ropi>2</Ropi>
-                    <Rwpi>2</Rwpi>
-                    <wLevel>0</wLevel>
-                    <uThumb>2</uThumb>
-                    <uSurpInc>2</uSurpInc>
-                    <uC99>2</uC99>
-                    <uGnu>2</uGnu>
-                    <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
-                    <VariousControls>
-                      <MiscControls></MiscControls>
-                      <Define></Define>
-                      <Undefine></Undefine>
-                      <IncludePath></IncludePath>
-                    </VariousControls>
-                  </Cads>
-                </FileArmAds>
-              </FileOption>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
-              <FileOption>
-                <CommonProperty>
-                  <UseCPPCompiler>2</UseCPPCompiler>
-                  <RVCTCodeConst>0</RVCTCodeConst>
-                  <RVCTZI>0</RVCTZI>
-                  <RVCTOtherData>0</RVCTOtherData>
-                  <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>1</IncludeInBuild>
-                  <AlwaysBuild>2</AlwaysBuild>
-                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
-                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
-                  <PublicsOnly>2</PublicsOnly>
-                  <StopOnExitCode>11</StopOnExitCode>
-                  <CustomArgument></CustomArgument>
-                  <IncludeLibraryModules></IncludeLibraryModules>
-                  <ComprImg>1</ComprImg>
-                </CommonProperty>
-                <FileArmAds>
-                  <Cads>
-                    <interw>2</interw>
-                    <Optim>0</Optim>
-                    <oTime>2</oTime>
-                    <SplitLS>2</SplitLS>
-                    <OneElfS>2</OneElfS>
-                    <Strict>2</Strict>
-                    <EnumInt>2</EnumInt>
-                    <PlainCh>2</PlainCh>
-                    <Ropi>2</Ropi>
-                    <Rwpi>2</Rwpi>
-                    <wLevel>0</wLevel>
-                    <uThumb>2</uThumb>
-                    <uSurpInc>2</uSurpInc>
-                    <uC99>2</uC99>
-                    <uGnu>2</uGnu>
-                    <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
-                    <VariousControls>
-                      <MiscControls></MiscControls>
-                      <Define></Define>
-                      <Undefine></Undefine>
-                      <IncludePath></IncludePath>
-                    </VariousControls>
-                  </Cads>
-                </FileArmAds>
-              </FileOption>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
-              <FileOption>
-                <CommonProperty>
-                  <UseCPPCompiler>2</UseCPPCompiler>
-                  <RVCTCodeConst>0</RVCTCodeConst>
-                  <RVCTZI>0</RVCTZI>
-                  <RVCTOtherData>0</RVCTOtherData>
-                  <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>1</IncludeInBuild>
-                  <AlwaysBuild>2</AlwaysBuild>
-                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
-                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
-                  <PublicsOnly>2</PublicsOnly>
-                  <StopOnExitCode>11</StopOnExitCode>
-                  <CustomArgument></CustomArgument>
-                  <IncludeLibraryModules></IncludeLibraryModules>
-                  <ComprImg>1</ComprImg>
-                </CommonProperty>
-                <FileArmAds>
-                  <Cads>
-                    <interw>2</interw>
-                    <Optim>0</Optim>
-                    <oTime>2</oTime>
-                    <SplitLS>2</SplitLS>
-                    <OneElfS>2</OneElfS>
-                    <Strict>2</Strict>
-                    <EnumInt>2</EnumInt>
-                    <PlainCh>2</PlainCh>
-                    <Ropi>2</Ropi>
-                    <Rwpi>2</Rwpi>
-                    <wLevel>0</wLevel>
-                    <uThumb>2</uThumb>
-                    <uSurpInc>2</uSurpInc>
-                    <uC99>2</uC99>
-                    <uGnu>2</uGnu>
-                    <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
-                    <VariousControls>
-                      <MiscControls></MiscControls>
-                      <Define></Define>
-                      <Undefine></Undefine>
-                      <IncludePath></IncludePath>
-                    </VariousControls>
-                  </Cads>
-                </FileArmAds>
-              </FileOption>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
-              <FileOption>
-                <CommonProperty>
-                  <UseCPPCompiler>2</UseCPPCompiler>
-                  <RVCTCodeConst>0</RVCTCodeConst>
-                  <RVCTZI>0</RVCTZI>
-                  <RVCTOtherData>0</RVCTOtherData>
-                  <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>1</IncludeInBuild>
-                  <AlwaysBuild>2</AlwaysBuild>
-                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
-                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
-                  <PublicsOnly>2</PublicsOnly>
-                  <StopOnExitCode>11</StopOnExitCode>
-                  <CustomArgument></CustomArgument>
-                  <IncludeLibraryModules></IncludeLibraryModules>
-                  <ComprImg>1</ComprImg>
-                </CommonProperty>
-                <FileArmAds>
-                  <Cads>
-                    <interw>2</interw>
-                    <Optim>0</Optim>
-                    <oTime>2</oTime>
-                    <SplitLS>2</SplitLS>
-                    <OneElfS>2</OneElfS>
-                    <Strict>2</Strict>
-                    <EnumInt>2</EnumInt>
-                    <PlainCh>2</PlainCh>
-                    <Ropi>2</Ropi>
-                    <Rwpi>2</Rwpi>
-                    <wLevel>0</wLevel>
-                    <uThumb>2</uThumb>
-                    <uSurpInc>2</uSurpInc>
-                    <uC99>2</uC99>
-                    <uGnu>2</uGnu>
-                    <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
-                    <VariousControls>
-                      <MiscControls></MiscControls>
-                      <Define></Define>
-                      <Undefine></Undefine>
-                      <IncludePath></IncludePath>
-                    </VariousControls>
-                  </Cads>
-                </FileArmAds>
-              </FileOption>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
-              <FileOption>
-                <CommonProperty>
-                  <UseCPPCompiler>2</UseCPPCompiler>
-                  <RVCTCodeConst>0</RVCTCodeConst>
-                  <RVCTZI>0</RVCTZI>
-                  <RVCTOtherData>0</RVCTOtherData>
-                  <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>1</IncludeInBuild>
-                  <AlwaysBuild>2</AlwaysBuild>
-                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
-                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
-                  <PublicsOnly>2</PublicsOnly>
-                  <StopOnExitCode>11</StopOnExitCode>
-                  <CustomArgument></CustomArgument>
-                  <IncludeLibraryModules></IncludeLibraryModules>
-                  <ComprImg>1</ComprImg>
-                </CommonProperty>
-                <FileArmAds>
-                  <Cads>
-                    <interw>2</interw>
-                    <Optim>0</Optim>
-                    <oTime>2</oTime>
-                    <SplitLS>2</SplitLS>
-                    <OneElfS>2</OneElfS>
-                    <Strict>2</Strict>
-                    <EnumInt>2</EnumInt>
-                    <PlainCh>2</PlainCh>
-                    <Ropi>2</Ropi>
-                    <Rwpi>2</Rwpi>
-                    <wLevel>0</wLevel>
-                    <uThumb>2</uThumb>
-                    <uSurpInc>2</uSurpInc>
-                    <uC99>2</uC99>
-                    <uGnu>2</uGnu>
-                    <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
-                    <VariousControls>
-                      <MiscControls></MiscControls>
-                      <Define></Define>
-                      <Undefine></Undefine>
-                      <IncludePath></IncludePath>
-                    </VariousControls>
-                  </Cads>
-                </FileArmAds>
-              </FileOption>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -3091,6 +2841,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -3129,6 +2889,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -3371,6 +3151,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -3409,6 +3199,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -3559,16 +3359,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -3948,7 +3738,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -4266,6 +4056,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -4316,11 +4111,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -4351,9 +4141,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -4556,29 +4346,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -4626,6 +4421,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -4664,6 +4469,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -4906,6 +4731,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -4944,6 +4779,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -5094,16 +4939,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -5552,7 +5387,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -5870,6 +5705,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -5920,11 +5760,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -5955,9 +5790,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -6160,29 +5995,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -6230,6 +6070,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -6268,6 +6118,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -6510,6 +6380,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -6548,6 +6428,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -6698,16 +6588,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -7156,7 +7036,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -7474,6 +7354,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -7524,11 +7409,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -7559,9 +7439,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -7764,29 +7644,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -7834,6 +7719,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -7872,6 +7767,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -8114,6 +8029,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -8152,6 +8077,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -8302,16 +8237,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -8760,7 +8685,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -9078,6 +9003,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -9128,11 +9058,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -9163,9 +9088,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -9368,29 +9293,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -9438,6 +9368,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -9476,6 +9416,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -9718,6 +9678,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -9756,6 +9726,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -9906,16 +9886,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -10364,7 +10334,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -10682,6 +10652,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -10732,11 +10707,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -10767,9 +10737,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -10972,29 +10942,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -11042,6 +11017,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -11080,6 +11065,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -11322,6 +11327,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -11360,6 +11375,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -11510,16 +11535,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -11968,7 +11983,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -12286,6 +12301,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -12336,11 +12356,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -12371,9 +12386,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -12576,29 +12591,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -12646,6 +12666,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -12684,6 +12714,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -12926,6 +12976,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -12964,6 +13024,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -13114,16 +13184,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -13503,7 +13563,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -13821,6 +13881,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -13871,11 +13936,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -13906,9 +13966,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -14111,29 +14171,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -14181,6 +14246,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -14219,6 +14294,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -14461,6 +14556,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -14499,6 +14604,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -14649,16 +14764,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>
@@ -15038,7 +15143,7 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCLANG\bin\fromelf.exe --bin --output=@L.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -15356,6 +15461,11 @@
               <FilePath>..\Inc\fatfs.h</FilePath>
             </File>
             <File>
+              <FileName>fpga.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\fpga.c</FilePath>
+            </File>
+            <File>
               <FileName>front_unit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\front_unit.c</FilePath>
@@ -15406,11 +15516,6 @@
               <FilePath>..\Src\main.c</FilePath>
             </File>
             <File>
-              <FileName>user_diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user_diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>fatfs.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\fatfs.c</FilePath>
@@ -15441,9 +15546,9 @@
               <FilePath>..\Src\hardware.h</FilePath>
             </File>
             <File>
-              <FileName>fpga.c</FileName>
+              <FileName>user_diskio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Src\fpga.c</FilePath>
+              <FilePath>..\Src\user_diskio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -15646,29 +15751,34 @@
           <GroupName>Middlewares/FatFs</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/diskio.c</FilePath>
+              <FileName>diskio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\diskio.h</FilePath>
             </File>
             <File>
               <FileName>ff.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.c</FilePath>
             </File>
             <File>
-              <FileName>ff_gen_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/ff_gen_drv.c</FilePath>
+              <FileName>ff.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ff.h</FilePath>
             </File>
             <File>
-              <FileName>syscall.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/syscall.c</FilePath>
+              <FileName>ffconf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\ffconf.h</FilePath>
             </File>
             <File>
-              <FileName>ccsbcs.c</FileName>
+              <FileName>ffsystem.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Middlewares/Third_Party/FatFs/src/option/ccsbcs.c</FilePath>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffsystem.c</FilePath>
+            </File>
+            <File>
+              <FileName>ffunicode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\Third_Party\FatFs\src\ffunicode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -15716,6 +15826,16 @@
               <FilePath>..\..\Src\audio_processor.h</FilePath>
             </File>
             <File>
+              <FileName>auto_calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\auto_calibration.c</FilePath>
+            </File>
+            <File>
+              <FileName>auto_calibration.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\auto_calibration.h</FilePath>
+            </File>
+            <File>
               <FileName>auto_notch.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\auto_notch.c</FilePath>
@@ -15754,6 +15874,26 @@
               <FileName>callsign.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\callsign.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\codec.h</FilePath>
+            </File>
+            <File>
+              <FileName>codec_nau8822.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_nau8822.c</FilePath>
+            </File>
+            <File>
+              <FileName>codec_wm8731.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\codec_wm8731.c</FilePath>
             </File>
             <File>
               <FileName>color_themes.h</FileName>
@@ -15996,6 +16136,16 @@
               <FilePath>..\..\Src\screen_layout.h</FilePath>
             </File>
             <File>
+              <FileName>screen_layout_160x128.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_160x128.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>screen_layout_320x240.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\Src\screen_layout_320x240.cpp</FilePath>
+            </File>
+            <File>
               <FileName>screen_layout_480x320.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\Src\screen_layout_480x320.cpp</FilePath>
@@ -16034,6 +16184,16 @@
               <FileName>settings.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\settings.h</FilePath>
+            </File>
+            <File>
+              <FileName>snap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\snap.c</FilePath>
+            </File>
+            <File>
+              <FileName>snap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Src\snap.h</FilePath>
             </File>
             <File>
               <FileName>spec_analyzer.c</FileName>
@@ -16184,16 +16344,6 @@
               <FileName>wifi.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\Src\wifi.h</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\wm8731.c</FilePath>
-            </File>
-            <File>
-              <FileName>wm8731.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Src\wm8731.h</FilePath>
             </File>
             <File>
               <FileName>wspr.c</FileName>

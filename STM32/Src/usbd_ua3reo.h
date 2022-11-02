@@ -12,50 +12,69 @@ extern "C"
 #include "usbd_msc_scsi.h"
 #include "audio_processor.h"
 
-#define DEBUG_INTERFACE_IDX 0x0	  // Index of DEBUG interface
-#define CAT_INTERFACE_IDX 0x2	  // Index of CAT interface
-#define AUDIO_INTERFACE_IDX 0x4	  // Index of AUDIO interface
-#if HRDW_HAS_USB_IQ
-#define IQ_INTERFACE_IDX 0x7	  // Index of AUDIO interface
-#endif
-#if HRDW_HAS_SD
-#define STORAGE_INTERFACE_IDX 0x9 // Index of STORAGE interface
-#endif
-	
-#define DEBUG_EP_IDX 0x01
-#define CAT_EP_IDX 0x02
-#define AUDIO_EP_IDX 0x03
-#if HRDW_HAS_USB_IQ
-	#define IQ_EP_IDX 0x04
-#endif
-#if HRDW_HAS_SD
-	#define STORAGE_EP_IDX 0x05
-#endif
-#define DEBUG_CMD_IDX 0x06
-#define CAT_CMD_IDX 0x07
-
 #define IN_EP_DIR 0x80 // Adds a direction bit
 
-#define DEBUG_OUT_EP DEBUG_EP_IDX
-#define DEBUG_CMD_EP (DEBUG_CMD_IDX | IN_EP_DIR)
-#define DEBUG_IN_EP (DEBUG_EP_IDX | IN_EP_DIR)
-
-#define CAT_OUT_EP CAT_EP_IDX
-#define CAT_CMD_EP (CAT_CMD_IDX | IN_EP_DIR)
-#define CAT_IN_EP (CAT_EP_IDX | IN_EP_DIR)
-
-#define AUDIO_OUT_EP AUDIO_EP_IDX
-#define AUDIO_IN_EP (AUDIO_EP_IDX | IN_EP_DIR)
-
-#if HRDW_HAS_USB_IQ
-	#define IQ_IN_EP (IQ_EP_IDX | IN_EP_DIR)
+#if !HRDW_HAS_USB_IQ && !HRDW_HAS_SD && (!HRDW_HAS_USB_CAT || !HRDW_HAS_USB_DEBUG)
+	#define SHORT_USB_DESCRIPTOR true
 #endif
 
-#if HRDW_HAS_SD
-	#define MSC_EPIN_ADDR (STORAGE_EP_IDX | IN_EP_DIR)
-	#define MSC_EPOUT_ADDR STORAGE_EP_IDX
-	#define MSC_MEDIA_PACKET 512U
-	#define MSC_MAX_FS_PACKET 0x40U
+#if !SHORT_USB_DESCRIPTOR
+	#define DEBUG_INTERFACE_IDX 0x0	  // Index of DEBUG interface
+	#define DEBUG_EP_IDX 0x01
+	#define DEBUG_CMD_IDX 0x06
+	#define DEBUG_OUT_EP DEBUG_EP_IDX
+	#define DEBUG_CMD_EP (DEBUG_CMD_IDX | IN_EP_DIR)
+	#define DEBUG_IN_EP (DEBUG_EP_IDX | IN_EP_DIR)
+	
+	#define CAT_INTERFACE_IDX 0x2			// Index of CAT interface
+	#define CAT_EP_IDX 0x02
+	#define CAT_CMD_IDX 0x07
+	#define CAT_OUT_EP CAT_EP_IDX
+	#define CAT_CMD_EP (CAT_CMD_IDX | IN_EP_DIR)
+	#define CAT_IN_EP (CAT_EP_IDX | IN_EP_DIR)
+	
+	#define AUDIO_INTERFACE_IDX 0x4	// Index of AUDIO interface
+	#define AUDIO_EP_IDX 0x03
+	#define AUDIO_OUT_EP AUDIO_EP_IDX
+	#define AUDIO_IN_EP (AUDIO_EP_IDX | IN_EP_DIR)
+	
+	#if HRDW_HAS_USB_IQ
+		#define IQ_INTERFACE_IDX 0x7	  // Index of IQ interface
+		#define IQ_EP_IDX 0x04
+		#define IQ_IN_EP (IQ_EP_IDX | IN_EP_DIR)
+	#endif
+
+	#if HRDW_HAS_SD
+		#define STORAGE_INTERFACE_IDX 0x9 // Index of STORAGE interface
+		#define STORAGE_EP_IDX 0x05
+		#define MSC_EPIN_ADDR (STORAGE_EP_IDX | IN_EP_DIR)
+		#define MSC_EPOUT_ADDR STORAGE_EP_IDX
+		#define MSC_MEDIA_PACKET 512U
+		#define MSC_MAX_FS_PACKET 0x40U
+	#endif
+#else //SHORT_USB_DESCRIPTOR
+	#if HRDW_HAS_USB_DEBUG
+		#define DEBUG_INTERFACE_IDX 0x0	  // Index of DEBUG interface
+		#define DEBUG_EP_IDX 0x01
+		#define DEBUG_CMD_IDX 0x02
+		#define DEBUG_OUT_EP DEBUG_EP_IDX
+		#define DEBUG_CMD_EP (DEBUG_CMD_IDX | IN_EP_DIR)
+		#define DEBUG_IN_EP (DEBUG_EP_IDX | IN_EP_DIR)
+	#endif
+	
+	#if HRDW_HAS_USB_CAT
+		#define CAT_INTERFACE_IDX 0x0	  // Index of CAT interface
+		#define CAT_EP_IDX 0x01
+		#define CAT_CMD_IDX 0x02
+		#define CAT_OUT_EP CAT_EP_IDX
+		#define CAT_CMD_EP (CAT_CMD_IDX | IN_EP_DIR)
+		#define CAT_IN_EP (CAT_EP_IDX | IN_EP_DIR)
+	#endif
+	
+	#define AUDIO_INTERFACE_IDX 0x2	// Index of AUDIO interface
+	#define AUDIO_EP_IDX 0x03
+	#define AUDIO_OUT_EP AUDIO_EP_IDX
+	#define AUDIO_IN_EP (AUDIO_EP_IDX | IN_EP_DIR)
 #endif
 
 #ifndef CDC_HS_BINTERVAL
@@ -70,12 +89,8 @@ extern "C"
 #define CDC_DATA_FS_MAX_PACKET_SIZE 16U /* Endpoint IN & OUT Packet size */
 #define CDC_CMD_PACKET_SIZE 16U			/* Control Endpoint Packet size */
 
-#if !HRDW_HAS_USB_IQ && !HRDW_HAS_SD
-	#define SHORT_USB_DESCRIPTOR true
-#endif
-
 #if SHORT_USB_DESCRIPTOR
-	#define USB_CDC_CONFIG_DESC_SIZ 314U
+	#define USB_CDC_CONFIG_DESC_SIZ 248U
 #else
 	#define USB_CDC_CONFIG_DESC_SIZ 436U
 #endif
@@ -83,18 +98,19 @@ extern "C"
 #define CDC_DATA_FS_IN_PACKET_SIZE CDC_DATA_FS_MAX_PACKET_SIZE
 #define CDC_DATA_FS_OUT_PACKET_SIZE CDC_DATA_FS_MAX_PACKET_SIZE
 
+#define CDC_REQ_MAX_DATA_SIZE                       0x7U
 /*---------------------------------------------------------------------*/
 /*  CDC definitions                                                    */
 /*---------------------------------------------------------------------*/
-#define CDC_SEND_ENCAPSULATED_COMMAND 0x00U
-#define CDC_GET_ENCAPSULATED_RESPONSE 0x01U
-#define CDC_SET_COMM_FEATURE 0x02U
-#define CDC_GET_COMM_FEATURE 0x03U
-#define CDC_CLEAR_COMM_FEATURE 0x04U
-#define CDC_SET_LINE_CODING 0x20U
-#define CDC_GET_LINE_CODING 0x21U
-#define CDC_SET_CONTROL_LINE_STATE 0x22U
-#define CDC_SEND_BREAK 0x23U
+#define CDC_SEND_ENCAPSULATED_COMMAND               0x00U
+#define CDC_GET_ENCAPSULATED_RESPONSE               0x01U
+#define CDC_SET_COMM_FEATURE                        0x02U
+#define CDC_GET_COMM_FEATURE                        0x03U
+#define CDC_CLEAR_COMM_FEATURE                      0x04U
+#define CDC_SET_LINE_CODING                         0x20U
+#define CDC_GET_LINE_CODING                         0x21U
+#define CDC_SET_CONTROL_LINE_STATE                  0x22U
+#define CDC_SEND_BREAK                              0x23U
 
 // AUDIO
 #define USBD_AUDIO_FREQ 48000U
@@ -149,6 +165,7 @@ extern "C"
 		uint8_t unit;
 	} USBD_AUDIO_ControlTypeDef;
 
+	#if HRDW_HAS_USB_DEBUG
 	typedef struct _USBD_DEBUG_Itf
 	{
 		int8_t (*Init)(void);
@@ -157,15 +174,18 @@ extern "C"
 		int8_t (*Receive)(uint8_t *Buf);
 
 	} USBD_DEBUG_ItfTypeDef;
+	#endif
 
+	#if HRDW_HAS_USB_CAT
 	typedef struct _USBD_CAT_Itf
 	{
 		int8_t (*Init)(void);
 		int8_t (*DeInit)(void);
-		int8_t (*Control)(uint8_t cmd, uint8_t *pbuf);
+		int8_t (*Control)(uint8_t cmd, uint8_t *pbuf, uint32_t len);
 		int8_t (*Receive)(uint8_t *Buf, uint32_t *Len);
 
 	} USBD_CAT_ItfTypeDef;
+	#endif
 
 	typedef struct
 	{
@@ -199,6 +219,7 @@ extern "C"
 	} USBD_IQ_HandleTypeDef;
 	#endif
 
+	#if HRDW_HAS_USB_DEBUG
 	typedef struct
 	{
 		uint32_t data[CDC_DATA_FS_MAX_PACKET_SIZE / 4U]; /* Force 32bits alignment */
@@ -212,7 +233,9 @@ extern "C"
 		__IO uint32_t TxState;
 		__IO uint32_t RxState;
 	} USBD_DEBUG_HandleTypeDef;
+	#endif
 
+	#if HRDW_HAS_USB_CAT
 	typedef struct
 	{
 		uint32_t data[CDC_DATA_FS_MAX_PACKET_SIZE / 4U]; /* Force 32bits alignment */
@@ -226,6 +249,7 @@ extern "C"
 		__IO uint32_t TxState;
 		__IO uint32_t RxState;
 	} USBD_CAT_HandleTypeDef;
+	#endif
 
 	#if HRDW_HAS_SD
 	typedef struct _USBD_STORAGE
@@ -270,18 +294,22 @@ extern "C"
 
 #define USBD_UA3REO_CLASS &USBD_UA3REO
 
+#if HRDW_HAS_USB_DEBUG
 	extern uint8_t USBD_DEBUG_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_DEBUG_ItfTypeDef *fops);
 	extern uint8_t USBD_DEBUG_SetTxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff, uint16_t length);
 	extern uint8_t USBD_DEBUG_SetRxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff);
 	extern uint8_t USBD_DEBUG_ReceivePacket(USBD_HandleTypeDef *pdev);
 	extern uint8_t USBD_DEBUG_TransmitPacket(USBD_HandleTypeDef *pdev);
-
+#endif
+	
+#if HRDW_HAS_USB_CAT
 	extern uint8_t USBD_CAT_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_CAT_ItfTypeDef *fops);
 	extern uint8_t USBD_CAT_SetTxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff, uint16_t length);
 	extern uint8_t USBD_CAT_SetRxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff);
 	extern uint8_t USBD_CAT_ReceivePacket(USBD_HandleTypeDef *pdev);
 	extern uint8_t USBD_CAT_TransmitPacket(USBD_HandleTypeDef *pdev);
-
+#endif
+	
 	extern uint8_t USBD_AUDIO_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_AUDIO_ItfTypeDef *fops);
 	extern uint8_t USBD_AUDIO_StartTransmit(USBD_HandleTypeDef *pdev);
 	extern uint8_t USBD_AUDIO_StartReceive(USBD_HandleTypeDef *pdev);

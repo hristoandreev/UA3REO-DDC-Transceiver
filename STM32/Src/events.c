@@ -11,11 +11,11 @@
 #include "usbd_cat_if.h"
 #include "usbd_audio_if.h"
 #include "usbd_ua3reo.h"
-#include "FT8\FT8_main.h"
+#include "FT8/FT8_main.h"
 #include "front_unit.h"
 #include "rf_unit.h"
 #include "fpga.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "audio_processor.h"
 #include "agc.h"
 #include "fft.h"
@@ -29,6 +29,7 @@
 #include "sd.h"
 #include "cw.h"
 #include "functions.h"
+#include "snap.h"
 
 void EVENTS_do_WSPR(void) // 1,4648 hz
 {
@@ -49,7 +50,7 @@ void EVENTS_do_WIFI(void) // 1000 hz
   {
 		#if HRDW_HAS_WIFI
     // we work with WiFi by timer, or send it if it is turned off (to turn it on, we need a restart)
-    if (TRX.WIFI_Enabled)
+    if (WIFI.Enabled)
       WIFI_Process();
     else
       WIFI_GoSleep();
@@ -68,7 +69,9 @@ void EVENTS_do_FFT(void) // 1000 hz
   if (FFT_need_fft)
     FFT_doFFT();
 
+	#if HRDW_HAS_USB_CAT
   ua3reo_dev_cat_parseCommand();
+	#endif
 }
 
 void EVENTS_do_AUDIO_PROCESSOR(void) // 20 000 hz
@@ -104,7 +107,7 @@ void EVENTS_do_USB_FIFO(void) // 1000 hz
   // unmute after transition process end
   if (TRX_Temporary_Mute_StartTime > 0 && (HAL_GetTick() - TRX_Temporary_Mute_StartTime) > 100)
   {
-    WM8731_UnMute();
+    CODEC_UnMute();
     TRX_Temporary_Mute_StartTime = 0;
   }
 }
@@ -128,6 +131,8 @@ void EVENTS_do_PERIPHERAL(void) // 1000 hz
   //EEPROM SPI
   if (NeedSaveCalibration) // save calibration data to EEPROM
     SaveCalibration();
+	if (NeedSaveWiFi) // save WiFi settings data to EEPROM
+    SaveWiFiSettings();
 
 	#if HRDW_HAS_SD
   //SD-Card SPI
@@ -159,10 +164,10 @@ void EVENTS_do_ENC(void) // 20 0000 hz
 #ifdef HAS_TOUCHPAD
   static bool TOUCH_Int_Last = true;
   bool TOUCH_Int_Now = HAL_GPIO_ReadPin(ENC2SW_AND_TOUCHPAD_GPIO_Port, ENC2SW_AND_TOUCHPAD_Pin);
-  if (TOUCH_Int_Last != TOUCH_Int_Now)
+  //if (TOUCH_Int_Last != TOUCH_Int_Now)
   {
     TOUCH_Int_Last = TOUCH_Int_Now;
-    if (TOUCH_Int_Now)
+    //if (TOUCH_Int_Now)
       TOUCHPAD_reserveInterrupt();
   }
   return;
@@ -199,13 +204,13 @@ void EVENTS_do_EVERY_10ms(void) // 100 hz
   prev_pwr_state = HAL_GPIO_ReadPin(PWR_ON_GPIO_Port, PWR_ON_Pin);
 
   if ((HAL_GPIO_ReadPin(PWR_ON_GPIO_Port, PWR_ON_Pin) == GPIO_PIN_RESET) && ((HAL_GetTick() - powerdown_start_delay) > POWERDOWN_TIMEOUT) 
-		&& ((!NeedSaveCalibration && !HRDW_SPI_Locked && !EEPROM_Busy && !LCD_busy) || ((HAL_GetTick() - powerdown_start_delay) > POWERDOWN_FORCE_TIMEOUT)))
+		&& ((!NeedSaveCalibration && !NeedSaveWiFi && !HRDW_SPI_Locked && !EEPROM_Busy && !LCD_busy) || ((HAL_GetTick() - powerdown_start_delay) > POWERDOWN_FORCE_TIMEOUT)))
   {
     TRX_Inited = false;
     LCD_busy = true;
     HAL_Delay(10);
-    WM8731_Mute();
-    WM8731_CleanBuffer();
+    CODEC_Mute();
+    CODEC_CleanBuffer();
     LCDDriver_Fill(COLOR_BLACK);
     LCD_showInfo("GOOD BYE!", false);
     SaveSettings();
@@ -387,7 +392,7 @@ void EVENTS_do_EVERY_100ms(void) // 10 hz
 #endif
 
 	// reset error flags
-	WM8731_Buffer_underrun = false;
+	CODEC_Buffer_underrun = false;
 	FPGA_Buffer_underrun = false;
 	RX_USB_AUDIO_underrun = false;
 	APROC_IFGain_Overflow = false;
@@ -417,42 +422,49 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 	}
 
 	#if HRDW_HAS_WIFI
-	bool maySendIQ = true;
-	if (!WIFI_IP_Gotted) { //Get resolved IP
-		WIFI_GetIP(NULL);
-		maySendIQ = false;
+	if(!WIFI_download_inprogress) {
+		bool maySendIQ = true;
+		if (!WIFI_IP_Gotted) { //Get resolved IP
+			WIFI_GetIP(NULL);
+			maySendIQ = false;
+		}
+		uint32_t mstime = HAL_GetTick();
+		if (TRX_SNTP_Synced == 0 || (mstime > (SNTP_SYNC_INTERVAL * 1000) && TRX_SNTP_Synced < (mstime - SNTP_SYNC_INTERVAL * 1000))) {//Sync time from internet
+			WIFI_GetSNTPTime(NULL);
+			maySendIQ = false;
+		}
+		if (WIFI.CAT_Server && !WIFI_CAT_server_started) { //start WiFi CAT Server
+			WIFI_StartCATServer(NULL);
+			maySendIQ = false;
+		}
+		if(CALIBRATE.OTA_update && !WIFI_NewFW_checked) {	//check OTA FW updates
+			WIFI_checkFWUpdates();
+			maySendIQ = false;
+		}
+		if(TRX.FFT_DXCluster && ((HAL_GetTick() - TRX_DXCluster_UpdateTime) > DXCLUSTER_UPDATE_TIME || TRX_DXCluster_UpdateTime == 0)) //get and show dx cluster
+		{
+			if(WIFI_getDXCluster_background())
+				TRX_DXCluster_UpdateTime = HAL_GetTick();
+			maySendIQ = false;
+		}
+		WIFI_maySendIQ = maySendIQ;
 	}
-	uint32_t mstime = HAL_GetTick();
-	if (TRX_SNTP_Synced == 0 || (mstime > (SNTP_SYNC_INTERVAL * 1000) && TRX_SNTP_Synced < (mstime - SNTP_SYNC_INTERVAL * 1000))) {//Sync time from internet
-		WIFI_GetSNTPTime(NULL);
-		maySendIQ = false;
-	}
-	if (TRX.WIFI_CAT_SERVER && !WIFI_CAT_server_started) { //start WiFi CAT Server
-		WIFI_StartCATServer(NULL);
-		maySendIQ = false;
-	}
-	if(CALIBRATE.OTA_update && !WIFI_NewFW_checked) {	//check OTA FW updates
-		WIFI_checkFWUpdates();
-		maySendIQ = false;
-	}
-	if(TRX.FFT_DXCluster && ((HAL_GetTick() - TRX_DXCluster_UpdateTime) > DXCLUSTER_UPDATE_TIME || TRX_DXCluster_UpdateTime == 0)) //get and show dx cluster
-	{
-		if(WIFI_getDXCluster_background())
-			TRX_DXCluster_UpdateTime = HAL_GetTick();
-		maySendIQ = false;
-	}
-	WIFI_maySendIQ = maySendIQ;
 	#endif
 	
 	//Check vBAT
 	static bool vbat_checked = false;
-	if(!vbat_checked && TRX_Inited)
+	if(!vbat_checked && TRX_Inited && !LCD_busy)
 	{
 		vbat_checked = true;
 		if(TRX_VBAT_Voltage <= 2.5f)
 		{
 			LCD_showError("Replace BAT", true);
 		}
+	}
+	
+	//Auto Snap
+	if (TRX.Auto_Snap) {
+		SNAP_DoSnap(true);
 	}
 	
 	CPULOAD_Calc(); // Calculate CPU load
@@ -467,7 +479,7 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 	if (TRX.Debug_Type == TRX_DEBUG_SYSTEM)
 	{
 		//Print debug
-		uint32_t dbg_WM8731_DMA_samples = (uint32_t)((float32_t)WM8731_DMA_samples / 2.0f * dbg_coeff);
+		uint32_t dbg_WM8731_DMA_samples = (uint32_t)((float32_t)CODEC_DMA_samples / 2.0f * dbg_coeff);
 		uint32_t dbg_AUDIOPROC_samples = (uint32_t)((float32_t)AUDIOPROC_samples * dbg_coeff);
 		float32_t *FPGA_Audio_Buffer_RX1_I_current = !FPGA_RX_Buffer_Current ? (float32_t *)&FPGA_Audio_Buffer_RX1_I_A : (float32_t *)&FPGA_Audio_Buffer_RX1_I_B;
 		float32_t *FPGA_Audio_Buffer_RX1_Q_current = !FPGA_RX_Buffer_Current ? (float32_t *)&FPGA_Audio_Buffer_RX1_Q_A : (float32_t *)&FPGA_Audio_Buffer_RX1_Q_B;
@@ -484,22 +496,28 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 		//Print Debug info
 		println("FPGA Samples: ", dbg_FPGA_samples);            //~96000
 		println("Audio DMA samples: ", dbg_WM8731_DMA_samples); //~48000
+		print_flush();
 		println("Audioproc blocks: ", dbg_AUDIOPROC_samples);
 		println("CPU Load: ", cpu_load);
+		print_flush();
 		println("RF/STM32 Temperature: ", (int16_t)TRX_RF_Temperature, " / ", (int16_t)TRX_STM32_TEMPERATURE);
 		println("STM32 Voltage: ", TRX_STM32_VREF);
+		print_flush();
 		println("TIM6 delay: ", dbg_tim6_delay);
 		println("FFT FPS: ", FFT_FPS);
+		print_flush();
 		println("First byte of RX-FPGA I/Q: ", dbg_FPGA_Audio_Buffer_I_tmp, " / ", dbg_FPGA_Audio_Buffer_Q_tmp); //first byte of IQ
 		println("IQ Phase error: ", TRX_IQ_phase_error);                                                         //first byte of Q
+		print_flush();
 		println("USB Audio RX/TX samples: ", dbg_RX_USB_AUDIO_SAMPLES, " / ", dbg_TX_USB_AUDIO_SAMPLES);         //~48000
 		println("ADC MIN/MAX Amplitude: ", TRX_ADC_MINAMPLITUDE, " / ", TRX_ADC_MAXAMPLITUDE);
-		//print_bin16(TRX_ADC_MINAMPLITUDE, true); print_str(" / "); print_bin16(TRX_ADC_MAXAMPLITUDE, false);
+		print_flush();
 		println("VCXO Error: ", TRX_VCXO_ERROR);
 		#if HRDW_HAS_WIFI
 		println("WIFI State: ", WIFI_State);
 		#endif
 		println("");
+		print_flush();
 		PrintProfilerResult();
 	}
 	
@@ -511,13 +529,13 @@ void EVENTS_do_EVERY_1000ms(void) // 1 hz
 	tim6_delay = HAL_GetTick();
 	FPGA_samples = 0;
 	AUDIOPROC_samples = 0;
-	WM8731_DMA_samples = 0;
+	CODEC_DMA_samples = 0;
 	FFT_FPS_Last = FFT_FPS;
 	FFT_FPS = 0;
 	RX_USB_AUDIO_SAMPLES = 0;
 	TX_USB_AUDIO_SAMPLES = 0;
 	FPGA_NeedSendParams = true;
-	WM8731_Beeping = false;
+	CODEC_Beeping = false;
 
 //redraw lcd to fix problem
 #ifdef LCD_HX8357B

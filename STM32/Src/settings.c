@@ -10,7 +10,18 @@
 #include "bands.h"
 #include "front_unit.h"
 
-const char version_string[19] = "4.3.0";
+const char version_string[19] = "6.2.0";
+
+const char ota_config_frontpanel[] = OTA_CONFIG_FRONT_PANEL;
+const char ota_config_lcd[] = OTA_CONFIG_LCD;
+const char ota_config_touchpad[] = OTA_CONFIG_TOUCHPAD;
+
+const float32_t ATU_5x5_I_VALS[ATU_MAXLENGTH + 1] = {0.0, 0.1, 0.22, 0.45, 1.0, 2.2};
+const float32_t ATU_5x5_C_VALS[ATU_MAXLENGTH + 1] = {0.0, 10.0, 22.0, 47.0, 100.0, 220.0};
+const float32_t ATU_7x7_I_VALS[ATU_MAXLENGTH + 1] = {0.0, 0.05, 0.1, 0.22, 0.45, 1.0, 2.2, 4.4};
+const float32_t ATU_7x7_C_VALS[ATU_MAXLENGTH + 1] = {0.0, 10.0, 22.0, 47.0, 100.0, 220.0, 470.0, 1000.0};
+const float32_t ATU_0x0_I_VALS[ATU_MAXLENGTH + 1] = {0.0};
+const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1] = {0.0};
 
 // W25Q16
 IRAM2 static uint8_t Write_Enable = W25Q16_COMMAND_Write_Enable;
@@ -24,6 +35,7 @@ IRAM2 static uint8_t Power_Up = W25Q16_COMMAND_Power_Up;
 IRAM2 static uint8_t Address[3] = {0x00};
 struct TRX_SETTINGS TRX;
 struct TRX_CALIBRATE CALIBRATE = {0};
+struct TRX_WIFI WIFI = {0};
 bool EEPROM_Enabled = true;
 static uint8_t settings_bank = 1;
 
@@ -35,6 +47,7 @@ IRAM2 static uint8_t verify_clone[MAX_CLONE_SIZE] = {0};
 
 volatile bool NeedSaveSettings = false;
 volatile bool NeedSaveCalibration = false;
+volatile bool NeedSaveWiFi = false;
 volatile bool EEPROM_Busy = false;
 VFO *CurrentVFO = &TRX.VFO_A;
 VFO *SecondaryVFO = &TRX.VFO_B;
@@ -48,6 +61,7 @@ static void EEPROM_PowerUp(void);
 static void EEPROM_WaitWrite(void);
 static uint8_t calculateCSUM(void);
 static uint8_t calculateCSUM_EEPROM(void);
+static uint8_t calculateCSUM_WIFI(void);
 
 const char *MODE_DESCR[TRX_MODE_COUNT] = {
 	"LSB",
@@ -138,6 +152,9 @@ void LoadSettings(bool clear)
 		TRX.ATT = false;					  // attenuator
 		TRX.ATT_DB = 12.0f;					  // suppress the attenuator
 		TRX.ATT_STEP = 6.0f;				  // step of tuning the attenuator
+#if HRDW_HAS_VGA
+		TRX.VGA_GAIN = 21.0f;				// VGA Gain, dB
+#endif
 		TRX.RF_Filters = true;				  // LPF / HPF / BPF
 		TRX.ANT_selected = false;					  // ANT-1
 		TRX.ANT_mode = false;					  // RX=TX
@@ -168,7 +185,8 @@ void LoadSettings(bool clear)
 		TRX.FRQ_FAST_STEP = 100;			// frequency tuning step by the main encoder in FAST mode
 		TRX.FRQ_ENC_STEP = 25000;			// frequency tuning step by main add. encoder
 		TRX.FRQ_ENC_FAST_STEP = 50000;		// frequency tuning step by main add. encoder in FAST mode
-		TRX.FRQ_CW_STEP_DIVIDER = 10;		// Step divider for CW mode
+		TRX.FRQ_ENC_WFM_STEP_KHZ = 20;		// frequency WFM tuning step by the main encoder
+		TRX.FRQ_CW_STEP_DIVIDER = 4;		// Step divider for CW mode
 		TRX.Debug_Type = TRX_DEBUG_OFF;		// Debug output to DEBUG / UART port
 		TRX.BandMapEnabled = true;			// automatic change of mode according to the range map
 		TRX.InputType_MAIN = TRX_INPUT_MIC; // type of input to transfer (SSB/FM/AM)
@@ -187,6 +205,7 @@ void LoadSettings(bool clear)
 		TRX.Encoder_Accelerate = true;	  // Accelerate Encoder on fast rate
 		strcpy(TRX.CALLSIGN, "HamRad");	  // Callsign
 		strcpy(TRX.LOCATOR, "LO02RR");	  // Locator
+		strcpy(TRX.URSI_CODE, "SO148");	  // URSI Ionogramm location CODE https://digisonde.com/index.html#stationmap-section
 		TRX.Custom_Transverter_Enabled = false;  // Enable transverter mode
 		TRX.Transverter_Offset_Mhz = 144; // Offset from VFO
 #ifdef FRONTPANEL_LITE
@@ -204,22 +223,30 @@ void LoadSettings(bool clear)
 		TRX.Transverter_3cm = false;	  // Transvertrs enable (2m IF)
 		TRX.FineRITTune = true;			  // Fine or coarse tune for split/shift
 		TRX.Auto_Input_Switch = false;	  // Auto Mic/USB Switch
+		TRX.Auto_Snap = false;				// Auto track and snap to signal frequency
 		// AUDIO
 		TRX.Volume = 25;					 // AF Volume
+		TRX.Volume_Step = 5;			 // AF Volume step by sec encoder
 		TRX.IF_Gain = 15;					 // IF gain, dB (before all processing and AGC)
 		TRX.AGC_GAIN_TARGET = -30;			 // Maximum (target) AGC gain
-		TRX.MIC_GAIN = 3;					 // Microphone gain
-		TRX.MIC_Boost = true;				 // +20db mic amplifier
+		TRX.MIC_GAIN_DB = 3.0f;					 // Microphone gain, dB
+		TRX.MIC_Boost = true;				 // +20dB mic amplifier
 		TRX.MIC_NOISE_GATE = -120;			 // Mic noise gate
-		TRX.RX_EQ_LOW = 0;					 // Receiver Equalizer (Low)
-		TRX.RX_EQ_MID = 0;					 // Receiver EQ (mids)
-		TRX.RX_EQ_HIG = 0;					 // Receiver EQ (high)
-		TRX.MIC_EQ_LOW_SSB = 0;				 // Mic EQ (Low) SSB
-		TRX.MIC_EQ_MID_SSB = 0;				 // Mic Equalizer (Mids) SSB
-		TRX.MIC_EQ_HIG_SSB = 0;				 // Mic EQ (high) SSB
-		TRX.MIC_EQ_LOW_AMFM = 0;			 // Mic EQ (Low) AM/FM
-		TRX.MIC_EQ_MID_AMFM = 0;			 // Mic Equalizer (Mids) AM/FM
-		TRX.MIC_EQ_HIG_AMFM = 0;			 // Mic EQ (high) AM/FM
+		TRX.RX_EQ_P1 = 0;					 // Receiver Equalizer 300hz
+		TRX.RX_EQ_P2 = 0;					 // Receiver Equalizer 700hz 
+		TRX.RX_EQ_P3 = 0;					 // Receiver Equalizer 1200hz 
+		TRX.RX_EQ_P4 = 0;					 // Receiver Equalizer 1800hz 
+		TRX.RX_EQ_P5 = 0;					 // Receiver Equalizer 2300hz
+		TRX.MIC_EQ_P1_SSB = 0;				 // Mic EQ SSB
+		TRX.MIC_EQ_P2_SSB = 0;				 // Mic EQ SSB
+		TRX.MIC_EQ_P3_SSB = 0;				 // Mic EQ SSB
+		TRX.MIC_EQ_P4_SSB = 0;				 // Mic EQ SSB
+		TRX.MIC_EQ_P5_SSB = 0;				 // Mic EQ SSB
+		TRX.MIC_EQ_P1_AMFM = 0;			 // Mic EQ AM/FM
+		TRX.MIC_EQ_P2_AMFM = 0;			 // Mic EQ AM/FM
+		TRX.MIC_EQ_P3_AMFM = 0;			 // Mic EQ AM/FM
+		TRX.MIC_EQ_P4_AMFM = 0;			 // Mic EQ AM/FM
+		TRX.MIC_EQ_P5_AMFM = 0;			 // Mic EQ AM/FM
 		TRX.MIC_REVERBER = 0;				 // Mic Reveerber
 		TRX.DNR1_SNR_THRESHOLD = 50;		 // Digital noise reduction 1 level
 		TRX.DNR2_SNR_THRESHOLD = 35;		 // Digital noise reduction 2 level
@@ -228,10 +255,13 @@ void LoadSettings(bool clear)
 		#ifdef STM32F407xx
 		TRX.NOISE_BLANKER = false;			 // suppressor of short impulse noise NOISE BLANKER
 		TRX.AGC_Spectral = false;			//Spectral AGC mode
+		TRX.TX_CESSB = false;					//Controlled-envelope single-sideband modulation
 		#else
 		TRX.NOISE_BLANKER = false;			 // suppressor of short impulse noise NOISE BLANKER
 		TRX.AGC_Spectral = true;			//Spectral AGC mode
+		TRX.TX_CESSB = true;					//Controlled-envelope single-sideband modulation
 		#endif
+		TRX.TX_CESSB_COMPRESS_DB = 3.0f;					//CSSB additional gain (compress)
 		TRX.RX_AGC_SSB_speed = 10;			 // AGC receive rate on SSB
 		TRX.RX_AGC_CW_speed = 1;			 // AGC receive rate on CW
 		TRX.RX_AGC_Max_gain = 30;			 // Maximum AGC gain
@@ -249,7 +279,7 @@ void LoadSettings(bool clear)
 		TRX.AM_LPF_RX_Filter = 6000;		 // default value of AM filter width
 		TRX.AM_LPF_TX_Filter = 6000;		 // default value of AM filter width
 		TRX.FM_LPF_RX_Filter = 12000;		 // default value of the FM filter width
-		TRX.FM_LPF_TX_Filter = 12000;		 // default value of the FM filter width
+		TRX.FM_LPF_TX_Filter = 8000;		 // default value of the FM filter width
 		TRX.Beeper = true;					 // Keyboard beeper
 		TRX.CTCSS_Freq = 0;					 // CTCSS FM Frequency
 		TRX.SELFHEAR_Volume = 50;			 // Selfhearing volume
@@ -268,10 +298,14 @@ void LoadSettings(bool clear)
 		TRX.CW_DotToDashRate = 3.0f;   // Dot To Dash length rate
 		TRX.CW_Iambic = false;		   // CW Iambic Keyer
 		TRX.CW_Invert = false;		   // CW dash/dot inversion
-		TRX.CW_PTT_Type = KEY_PTT;	   // CW PTT type (Key / External tangent ptt)
+		TRX.CW_PTT_Type = KEY_AND_EXT_PTT;	   // CW PTT type (Key / External tangent ptt)
 		// SCREEN
 		TRX.ColorThemeId = 0;	// Selected Color theme
 		TRX.LayoutThemeId = 0;	// Selected Layout theme
+#ifdef LAY_800x480
+		TRX.ColorThemeId = 3;
+		TRX.LayoutThemeId = 7;
+#endif
 		TRX.FFT_Enabled = true; // use FFT spectrum
 #ifdef LAY_160x128
 		TRX.FFT_Zoom = 2;	// approximation of the FFT spectrum
@@ -295,7 +329,7 @@ void LoadSettings(bool clear)
 		TRX.FFT_Automatic = true;  // Automatic FFT Scale
 		TRX.FFT_Sensitivity = 8;   // Threshold of FFT autocalibrate
 		TRX.FFT_Speed = 3;		   // FFT Speed
-		TRX.FFT_Averaging = 8;	   // averaging the FFT to make it smoother
+		TRX.FFT_Averaging = 10;	   // averaging the FFT to make it smoother
 #ifdef STM32F407xx
 		TRX.FFT_Averaging = 6;
 #endif
@@ -318,12 +352,12 @@ void LoadSettings(bool clear)
 		TRX.FFT_HoldPeaks = false;		   // Show FFT Peaks
 		TRX.FFT_3D = 0;					   // FFT 3D mode
 		TRX.FFT_ManualBottom = -130;	   // Minimal threshold for manual FFT scale
-		TRX.FFT_ManualTop = -80;		   // Maximum threshold for manual FFT scale
+		TRX.FFT_ManualTop = -90;		   // Maximum threshold for manual FFT scale
 		TRX.FFT_DXCluster = false;		   // Show DX cluster over FFT
 		TRX.FFT_DXCluster_Azimuth = false; // Add azimut to callsign
 		TRX.FFT_DXCluster_Timeout = 5;	   // DXCluser timeout in minutes
 		TRX.Show_Sec_VFO = false;		   // Show secondary VFO on FFT
-		TRX.FFT_Scale_Type = 0;			   // Scale type (0 - amplitude, 1 - dbm)
+		TRX.FFT_Scale_Type = 1;			   // Scale type (0 - amplitude, 1 - squared, 2 - dbm)
 		TRX.AnalogMeterShowPWR = false;	// false - SWR, true - PWR
 		for (uint8_t i = 0; i < FUNCBUTTONS_COUNT; i++)
 			TRX.FuncButtons[i] = i;
@@ -346,21 +380,11 @@ void LoadSettings(bool clear)
 		TRX.ADC_RAND = false;   // ADC encryption (xor randomizer)
 		TRX.ADC_SHDN = false;  // ADC disable
 		TRX.ADC_DITH = false;  // ADC dither
-		// WIFI
-		TRX.WIFI_Enabled = true;					 // activate WiFi
-		strcpy(TRX.WIFI_AP1, "WIFI-AP");			 // WiFi hotspot
-		strcpy(TRX.WIFI_PASSWORD1, "WIFI-PASSWORD"); // password to the WiFi point 1
-		strcpy(TRX.WIFI_AP2, "WIFI-AP");			 // WiFi hotspot
-		strcpy(TRX.WIFI_PASSWORD2, "WIFI-PASSWORD"); // password to the WiFi point 2
-		strcpy(TRX.WIFI_AP3, "WIFI-AP");			 // WiFi hotspot
-		strcpy(TRX.WIFI_PASSWORD3, "WIFI-PASSWORD"); // password to the WiFi point 3
-		TRX.WIFI_TIMEZONE = 3;						 // time zone (for time synchronization)
-		TRX.WIFI_CAT_SERVER = false;				 // Server for receiving CAT commands via WIFI
 		// SERVICES
 		TRX.SWR_CUSTOM_Begin = 6500; // start spectrum analyzer range
 		TRX.SWR_CUSTOM_End = 7500;	 // end of spectrum analyzer range
-		TRX.SPEC_Begin = 1000;		 // start spectrum analyzer range
-		TRX.SPEC_End = 30000;		 // end of spectrum analyzer range
+		TRX.SPEC_Begin = 1;		 // start spectrum analyzer range
+		TRX.SPEC_End = 150;		 // end of spectrum analyzer range
 		TRX.SPEC_TopDBM = -60;		 // chart thresholds
 		TRX.SPEC_BottomDBM = -130;	 // chart thresholds
 		TRX.WSPR_FREQ_OFFSET = 0;	 // offset beacon from freq center
@@ -383,6 +407,7 @@ void LoadSettings(bool clear)
 		{
 			TRX.BANDS_SAVED_SETTINGS[i].Freq = BANDS[i].startFreq + (BANDS[i].endFreq - BANDS[i].startFreq) / 2; // saved frequencies by bands
 			TRX.BANDS_SAVED_SETTINGS[i].Mode = (uint8_t)getModeFromFreq(TRX.BANDS_SAVED_SETTINGS[i].Freq);
+			TRX.BANDS_SAVED_SETTINGS[i].IF_Gain = TRX.IF_Gain;
 			if(TRX.BANDS_SAVED_SETTINGS[i].Freq > 30000000)
 				TRX.BANDS_SAVED_SETTINGS[i].LNA = true;
 			else
@@ -413,10 +438,11 @@ void LoadSettings(bool clear)
 		TRX.Notch_on_shadow = false;
 		TRX.FM_SQL_threshold_dbm_shadow = TRX.VFO_A.FM_SQL_threshold_dbm;
 		TRX.FRONTPANEL_funcbuttons_page = 0;
-		TRX.ENC2_func_mode_idx = 0; // 0 - fast-step, 1 - WPM, 2 - RIT/XIT, 3 - NOTCH, 4 - LPF, 5 - SQL
+		TRX.ENC2_func_mode = ENC_FUNC_FAST_STEP;
 
 		LCD_showError("Loaded default settings", true);
-		SaveSettings();
+		SaveSettings(); // save to primary bank
+		SaveSettings(); // save to second bank
 		SaveSettingsToEEPROM();
 	}
 
@@ -469,7 +495,7 @@ void LoadCalibration(bool clear)
 	{
 		memset(&CALIBRATE, 0x00, sizeof(CALIBRATE));
 		
-		println("[ERR] CALIBRATE Flash check CODE:", CALIBRATE.flash_id, false);
+		println("[ERR] CALIBRATE Flash check CODE:", CALIBRATE.flash_id);
 		CALIBRATE.flash_id = CALIB_VERSION; // code for checking the firmware in the eeprom, if it does not match, we use the default
 
 		CALIBRATE.ENCODER_INVERT = false;	   // invert left-right rotation of the main encoder
@@ -483,7 +509,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.ENCODER_ON_FALLING = true;  // encoder only triggers when level A falls
 		CALIBRATE.ENCODER_ACCELERATION = 75;   // acceleration rate if rotate
 		CALIBRATE.TangentType = TANGENT_MH48;  // Tangent type
-		CALIBRATE.RF_unit_type = RF_UNIT_QRP;  // RF-unit type
+		CALIBRATE.RF_unit_type = RF_UNIT_NONE;  // RF-unit type
 		CALIBRATE.CICFIR_GAINER_48K_val = 7;   // Offset from the output of the CIC compensator
 		CALIBRATE.CICFIR_GAINER_96K_val = 12;  // Offset from the output of the CIC compensator
 		CALIBRATE.CICFIR_GAINER_192K_val = 17; // Offset from the output of the CIC compensator
@@ -491,6 +517,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.TXCICFIR_GAINER_val = 5;	   // Offset from the TX-CIC output of the compensator
 		CALIBRATE.DAC_GAINER_val = 5;		   // DAC shift
 		// Calibrate the maximum output power for each band
+		CALIBRATE.DAC_driver_mode = 2;			//OPA2673 bias mode
 		CALIBRATE.rf_out_power_2200m = 29;		  // 2200m
 		CALIBRATE.rf_out_power_160m = 29;		  // 160m
 		CALIBRATE.rf_out_power_80m = 27;		  // 80m
@@ -503,18 +530,19 @@ void LoadCalibration(bool clear)
 		CALIBRATE.rf_out_power_cb = 24;			  // 27mhz
 		CALIBRATE.rf_out_power_10m = 24;		  // 10m
 		CALIBRATE.rf_out_power_6m = 13;			  // 6m
-		CALIBRATE.rf_out_power_2m = 300;		  // 2m
+		CALIBRATE.rf_out_power_4m = 13;				// 4m
+		CALIBRATE.rf_out_power_2m = 100;		  // 2m
 		CALIBRATE.smeter_calibration_hf = 0;	  // S-Meter calibration, set when calibrating the transceiver to S9 (ATT, PREAMP off) HF
 		CALIBRATE.smeter_calibration_vhf = 0;	  // S-Meter calibration, set when calibrating the transceiver to S9 (ATT, PREAMP off) VHF
 		CALIBRATE.adc_offset = 0;				  // Calibrate the offset at the ADC input (DC)
 		CALIBRATE.SWR_FWD_Calibration_HF = 11.0f; // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_HF = 11.0f; // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_HF = 11.0f; // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_6M = 10.0f; // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_6M = 10.0f; // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_6M = 10.0f; // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_VHF = 3.6f; // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_VHF = 3.6f; // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_VHF = 3.6f; // SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 2;			  // Maximum RF power in Tune mode
-		CALIBRATE.MAX_RF_POWER = 7;				  // Max TRX Power for indication
+		CALIBRATE.MAX_RF_POWER_ON_METER = 7;				  // Max TRX Power for indication
 #if defined(FRONTPANEL_X1)
 		CALIBRATE.ENCODER_INVERT = true;	   // invert left-right rotation of the main encoder
 		CALIBRATE.ENCODER_ON_FALLING = true;  // encoder only triggers when level A falls
@@ -533,30 +561,47 @@ void LoadCalibration(bool clear)
 		CALIBRATE.RFU_BPF_5_END = 32000 * 1000;	
 		CALIBRATE.RFU_BPF_6_START = 135000 * 1000;
 		CALIBRATE.RFU_BPF_6_END = 150000 * 1000;
+		CALIBRATE.rf_out_power_2200m = 20;		  // 2200m
+		CALIBRATE.rf_out_power_160m = 41;		  // 160m
+		CALIBRATE.rf_out_power_80m = 29;		  // 80m
+		CALIBRATE.rf_out_power_40m = 26;		  // 40m
+		CALIBRATE.rf_out_power_30m = 26;		  // 30m
+		CALIBRATE.rf_out_power_20m = 32;		  // 20m
+		CALIBRATE.rf_out_power_17m = 36;		  // 17m
+		CALIBRATE.rf_out_power_15m = 42;		  // 15m
+		CALIBRATE.rf_out_power_12m = 39;		  // 12m
+		CALIBRATE.rf_out_power_cb = 39;			  // 27mhz
+		CALIBRATE.rf_out_power_10m = 42;		  // 10m
+		CALIBRATE.rf_out_power_6m = 20;			  // 6m
+		CALIBRATE.rf_out_power_4m = 13;				// 4m
+		CALIBRATE.rf_out_power_2m = 20;		  // 2m
+		CALIBRATE.smeter_calibration_hf = 12;	  // S-Meter calibration, set when calibrating the transceiver to S9 (ATT, PREAMP off) HF
+		CALIBRATE.smeter_calibration_vhf = 12;	  // S-Meter calibration, set when calibrating the transceiver to S9 (ATT, PREAMP off) VHF
 		CALIBRATE.SWR_FWD_Calibration_HF = 10.0f;	   //SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_HF = 10.0f;	   //SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_HF = 10.0f;	   //SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_6M = 10.0f;	   //SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_6M = 10.0f;	   //SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_6M = 10.0f;	   //SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_VHF = 8.5f;	   //SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_VHF = 8.5f;	   //SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_VHF = 8.5f;	   //SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 5;			   // Maximum RF power in Tune mode
-		CALIBRATE.MAX_RF_POWER = 15;				//Max TRX Power for indication
+		CALIBRATE.MAX_RF_POWER_ON_METER = 15;				//Max TRX Power for indication
 #elif defined(FRONTPANEL_WF_100D)
 		CALIBRATE.ENCODER2_INVERT = true; // invert left-right rotation of the optional encoder
 		CALIBRATE.RF_unit_type = RF_UNIT_WF_100D;
-		CALIBRATE.rf_out_power_2200m = 17;			   // 2200m
-		CALIBRATE.rf_out_power_160m = 17;			   // 160m
-		CALIBRATE.rf_out_power_80m = 20;			   // 80m
-		CALIBRATE.rf_out_power_40m = 22;			   // 40m
-		CALIBRATE.rf_out_power_30m = 24;			   // 30m
-		CALIBRATE.rf_out_power_20m = 25;			   // 20m
-		CALIBRATE.rf_out_power_17m = 30;			   // 17m
-		CALIBRATE.rf_out_power_15m = 35;			   // 15m
-		CALIBRATE.rf_out_power_12m = 38;			   // 12m
-		CALIBRATE.rf_out_power_cb = 40;				   // 27mhz
-		CALIBRATE.rf_out_power_10m = 40;			   // 10m
-		CALIBRATE.rf_out_power_6m = 40;				   // 6m
-		CALIBRATE.rf_out_power_2m = 270;				   // 2m
+		CALIBRATE.rf_out_power_2200m = 16;			   // 2200m
+		CALIBRATE.rf_out_power_160m = 26;			   // 160m
+		CALIBRATE.rf_out_power_80m = 27;			   // 80m
+		CALIBRATE.rf_out_power_40m = 32;			   // 40m
+		CALIBRATE.rf_out_power_30m = 31;			   // 30m
+		CALIBRATE.rf_out_power_20m = 39;			   // 20m
+		CALIBRATE.rf_out_power_17m = 43;			   // 17m
+		CALIBRATE.rf_out_power_15m = 49;			   // 15m
+		CALIBRATE.rf_out_power_12m = 43;			   // 12m
+		CALIBRATE.rf_out_power_cb = 61;				   // 27mhz
+		CALIBRATE.rf_out_power_10m = 67;			   // 10m
+		CALIBRATE.rf_out_power_6m = 80;				   // 6m
+		CALIBRATE.rf_out_power_4m = 80;				   // 4m
+		CALIBRATE.rf_out_power_2m = 57;				   // 2m
 		CALIBRATE.RFU_LPF_END = 53 * 1000 * 1000;	   // LPF
 		CALIBRATE.RFU_HPF_START = 60 * 1000 * 1000;	   // HPF
 		CALIBRATE.RFU_BPF_0_START = 1600 * 1000;	   // 1.6-2.5mH
@@ -577,18 +622,18 @@ void LoadCalibration(bool clear)
 		CALIBRATE.RFU_BPF_7_END = 150 * 1000 * 1000;   //
 		CALIBRATE.RFU_BPF_8_START = 0;				   // disabled
 		CALIBRATE.RFU_BPF_8_END = 0;				   // disabled
-		CALIBRATE.SWR_FWD_Calibration_HF = 17.5f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_HF = 17.5f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_FWD_Calibration_HF = 19.5f;	   // SWR Transormator rate forward
+		CALIBRATE.SWR_BWD_Calibration_HF = 19.5f;	   // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_6M = 19.0f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_6M = 19.0f;	   // SWR Transormator rate return
-		CALIBRATE.SWR_FWD_Calibration_VHF = 21.0f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_VHF = 9.5f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_6M = 19.0f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_FWD_Calibration_VHF = 16.6f;	   // SWR Transormator rate forward
+		CALIBRATE.SWR_BWD_Calibration_VHF = 9.5f;	   // SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 15;				   // Maximum RF power in Tune mode
-		CALIBRATE.MAX_RF_POWER = 100;				   // Max TRX Power for indication
+		CALIBRATE.MAX_RF_POWER_ON_METER = 100;				   // Max TRX Power for indication
 #elif defined(FRONTPANEL_LITE)
 		CALIBRATE.smeter_calibration_hf = 15;
 		CALIBRATE.TUNE_MAX_POWER = 5;				   // Maximum RF power in Tune mode
-		CALIBRATE.MAX_RF_POWER = 15;				   // Max TRX Power for indication
+		CALIBRATE.MAX_RF_POWER_ON_METER = 15;				   // Max TRX Power for indication
 #else
 		CALIBRATE.RFU_LPF_END = 60000 * 1000;		   // LPF
 		CALIBRATE.RFU_HPF_START = 60000 * 1000;		   // HPF U14-RF1
@@ -623,7 +668,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.TRX_MAX_SWR = 3;				// Maximum SWR to enable protect on TX (NOT IN TUNE MODE!)
 		CALIBRATE.FM_DEVIATION_SCALE = 4;		// FM Deviation scale
 		CALIBRATE.SSB_POWER_ADDITION = 0;		// Additional power in SSB mode
-		CALIBRATE.AM_MODULATION_INDEX = 50;		// AM Modulation Index
+		CALIBRATE.AM_MODULATION_INDEX = 100;		// AM Modulation Index
 		CALIBRATE.RTC_Coarse_Calibration = 127; // Coarse RTC calibration
 		CALIBRATE.RTC_Calibration = 0;			// Real Time Clock calibration
 		CALIBRATE.EXT_2200m = 0;				// External port by band
@@ -639,6 +684,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.EXT_CB = 10;					// External port by band
 		CALIBRATE.EXT_10m = 11;					// External port by band
 		CALIBRATE.EXT_6m = 12;					// External port by band
+		CALIBRATE.EXT_4m = 13;					// External port by band
 		CALIBRATE.EXT_FM = 13;					// External port by band
 		CALIBRATE.EXT_2m = 14;					// External port by band
 		CALIBRATE.EXT_70cm = 15;				// External port by band
@@ -651,7 +697,7 @@ void LoadCalibration(bool clear)
 		CALIBRATE.NOTX_2200m = false; // disable TX on some bands
 		CALIBRATE.NOTX_160m = false;
 		CALIBRATE.NOTX_80m = false;
-		CALIBRATE.NOTX_60m = true;
+		CALIBRATE.NOTX_60m = false;
 		CALIBRATE.NOTX_40m = false;
 		CALIBRATE.NOTX_30m = false;
 		CALIBRATE.NOTX_20m = false;
@@ -661,8 +707,9 @@ void LoadCalibration(bool clear)
 		CALIBRATE.NOTX_CB = false;
 		CALIBRATE.NOTX_10m = false;
 		CALIBRATE.NOTX_6m = false;
+		CALIBRATE.NOTX_4m = false;
 		CALIBRATE.NOTX_2m = false;
-		CALIBRATE.NOTX_70cm = true;
+		CALIBRATE.NOTX_70cm = false;
 		CALIBRATE.ENABLE_60m_band = false; // enable hidden bands
 		CALIBRATE.ENABLE_4m_band = false;
 		CALIBRATE.ENABLE_AIR_band = false;
@@ -679,12 +726,15 @@ void LoadCalibration(bool clear)
 		CALIBRATE.LNA_compensation = 0; // Compensation for LNA, db
 		CALIBRATE.TwoSignalTune_Balance = 50; //balance of signals on twosignal-tune
 		CALIBRATE.LinearPowerControl = false; //linear or logrithmic power control
+		CALIBRATE.IF_GAIN_MIN = 0;			// min limit for if gain regulator
+		CALIBRATE.IF_GAIN_MAX = 40;			// max limit for if gain regulator
 
 		// Default memory channels
 		for (uint8_t i = 0; i < MEMORY_CHANNELS_COUNT; i++)
 		{
 			CALIBRATE.MEMORY_CHANNELS[i].Freq = 0;
 			CALIBRATE.MEMORY_CHANNELS[i].Mode = (uint8_t)getModeFromFreq(CALIBRATE.MEMORY_CHANNELS[i].Freq);
+			CALIBRATE.MEMORY_CHANNELS[i].IF_Gain = TRX.IF_Gain;
 			CALIBRATE.MEMORY_CHANNELS[i].LNA = TRX.LNA;
 			CALIBRATE.MEMORY_CHANNELS[i].ATT = TRX.ATT;
 			CALIBRATE.MEMORY_CHANNELS[i].ATT_DB = TRX.ATT_DB;
@@ -720,6 +770,47 @@ void LoadCalibration(bool clear)
 	BANDS[BANDID_4m].selectable = CALIBRATE.ENABLE_4m_band;
 	BANDS[BANDID_AIR].selectable = CALIBRATE.ENABLE_AIR_band;
 	BANDS[BANDID_Marine].selectable = CALIBRATE.ENABLE_marine_band;
+	
+	//load WiFi settings after calibrations
+	LoadWiFiSettings(false);
+}
+
+void LoadWiFiSettings(bool clear)
+{
+	EEPROM_PowerUp();
+	uint8_t tryes = 0;
+	while (tryes < EEPROM_REPEAT_TRYES && !EEPROM_Read_Data((uint8_t *)&WIFI, sizeof(WIFI), EEPROM_SECTOR_WIFI, true, false))
+	{
+		tryes++;
+	}
+	if (tryes >= EEPROM_REPEAT_TRYES)
+	{
+		println("[ERR] Read EEPROM WIFI multiple errors");
+		LCD_showError("EEPROM Error", true);
+	}
+
+	if (WIFI.ENDBit != 100 || WIFI.flash_id != WIFI_SETTINGS_VERSION || clear || WIFI.csum != calculateCSUM_WIFI()) // code for checking the firmware in the eeprom, if it does not match, we use the default
+	{
+		memset(&WIFI, 0x00, sizeof(WIFI));
+		
+		println("[ERR] WIFI Flash check CODE:", WIFI.flash_id);
+		WIFI.flash_id = WIFI_SETTINGS_VERSION; // code for checking the firmware in the eeprom, if it does not match, we use the default
+
+		WIFI.Enabled = true;					 // activate WiFi
+		strcpy(WIFI.AP_1, "WIFI-AP");			 // WiFi access point 1
+		strcpy(WIFI.Password_1, "WIFI-PASSWORD"); // password to the WiFi point 1
+		strcpy(WIFI.AP_2, "WIFI-AP");			 // WiFi access point 2
+		strcpy(WIFI.Password_2, "WIFI-PASSWORD"); // password to the WiFi point 2
+		strcpy(WIFI.AP_3, "WIFI-AP");			 // WiFi access point 3
+		strcpy(WIFI.Password_3, "WIFI-PASSWORD"); // password to the WiFi point 3
+		WIFI.Timezone = 3;						 // time zone (for time synchronization)
+		WIFI.CAT_Server = false;				 // Server for receiving CAT commands via WIFI
+		
+		WIFI.ENDBit = 100; // Bit for the end of a successful write to eeprom
+
+		SaveWiFiSettings();
+	}
+	EEPROM_PowerDown();
 }
 
 void SaveSettings(void)
@@ -842,6 +933,53 @@ void SaveCalibration(void)
 	println("[OK] EEPROM Calibrations Saved");
 	print_flush();
 	NeedSaveCalibration = false;
+}
+
+void SaveWiFiSettings(void)
+{
+	if (EEPROM_Busy)
+		return;
+	EEPROM_PowerUp();
+	EEPROM_Busy = true;
+
+	WIFI.csum = calculateCSUM_WIFI();
+	uint8_t tryes = 0;
+	while (tryes < EEPROM_REPEAT_TRYES && !EEPROM_Sector_Erase(EEPROM_SECTOR_WIFI, false))
+	{
+		println("[ERR] Erase EEPROM WIFI error");
+		print_flush();
+		tryes++;
+	}
+	if (tryes >= EEPROM_REPEAT_TRYES)
+	{
+		println("[ERR] Erase EEPROM WIFI multiple errors");
+		print_flush();
+		LCD_showError("EEPROM Error", true);
+		EEPROM_Busy = false;
+		return;
+	}
+	tryes = 0;
+	while (tryes < EEPROM_REPEAT_TRYES && !EEPROM_Write_Data((uint8_t *)&WIFI, sizeof(WIFI), EEPROM_SECTOR_WIFI, true, false))
+	{
+		println("[ERR] Write EEPROM WIFI error");
+		print_flush();
+		EEPROM_Sector_Erase(EEPROM_SECTOR_WIFI, false);
+		tryes++;
+	}
+	if (tryes >= EEPROM_REPEAT_TRYES)
+	{
+		println("[ERR] Write EEPROM WIFI multiple errors");
+		print_flush();
+		LCD_showError("EEPROM Error", true);
+		EEPROM_Busy = false;
+		return;
+	}
+
+	EEPROM_Busy = false;
+	EEPROM_PowerDown();
+	println("[OK] EEPROM WIFI Settings Saved");
+	print_flush();
+	NeedSaveWiFi = false;
 }
 
 static bool EEPROM_Sector_Erase(uint8_t sector, bool force)
@@ -1102,6 +1240,23 @@ static uint8_t calculateCSUM_EEPROM(void)
 	for (uint16_t i = 0; i < sizeof(CALIBRATE); i++)
 		csum_new = sd_crc7_byte(csum_new, *(CALIBRATE_addr + i));
 	CALIBRATE.csum = csum_old;
+	return csum_new;
+	#else
+	return 100;
+	#endif
+}
+
+static uint8_t calculateCSUM_WIFI(void)
+{
+	#if HRDW_HAS_SD
+	sd_crc_generate_table();
+	uint8_t csum_old = WIFI.csum;
+	uint8_t csum_new = 0;
+	WIFI.csum = 0;
+	uint8_t *WIFI_addr = (uint8_t *)&WIFI;
+	for (uint16_t i = 0; i < sizeof(WIFI); i++)
+		csum_new = sd_crc7_byte(csum_new, *(WIFI_addr + i));
+	WIFI.csum = csum_old;
 	return csum_new;
 	#else
 	return 100;

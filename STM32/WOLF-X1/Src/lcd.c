@@ -5,10 +5,10 @@
 #include "agc.h"
 #include "settings.h"
 #include "system_menu.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "audio_filters.h"
 #include "fonts.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "usbd_ua3reo.h"
 #include "noise_reduction.h"
 #include "cw_decoder.h"
@@ -147,15 +147,15 @@ static void LCD_displayTopButtons(bool redraw)
 		if(strcmp((char *)PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + i]].name, "DNR") == 0)
 		{
 			if(CurrentVFO->DNR_Type == 0)
-				printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, "DNR", COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, false, TRX.ENC2_func_mode_idx == 0, full_redraw);
+				printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, "DNR", COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, false, TRX.ENC2_func_mode == ENC_FUNC_PAGER, full_redraw);
 			if(CurrentVFO->DNR_Type == 1)
-				printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, "NR1", COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, true, TRX.ENC2_func_mode_idx == 0, full_redraw);
+				printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, "NR1", COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, true, TRX.ENC2_func_mode == ENC_FUNC_PAGER, full_redraw);
 			if(CurrentVFO->DNR_Type == 2)
-				printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, "NR2", COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, true, TRX.ENC2_func_mode_idx == 0, full_redraw);
+				printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, "NR2", COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, true, TRX.ENC2_func_mode == ENC_FUNC_PAGER, full_redraw);
 		}
 		else
 		{
-			printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, (char *)PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + i]].name, COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, enabled, TRX.ENC2_func_mode_idx == 0, full_redraw);
+			printInfo(curr_x, LAYOUT->TOPBUTTONS_Y1, LAYOUT->TOPBUTTONS_WIDTH - 1, LAYOUT->TOPBUTTONS_HEIGHT, (char *)PERIPH_FrontPanel_FuncButtonsList[TRX.FuncButtons[TRX.FRONTPANEL_funcbuttons_page * FUNCBUTTONS_ON_PAGE + i]].name, COLOR->BUTTON_BACKGROUND, COLOR->BUTTON_TEXT, COLOR->BUTTON_INACTIVE_TEXT, enabled, TRX.ENC2_func_mode == ENC_FUNC_PAGER, full_redraw);
 		}
 		curr_x += LAYOUT->TOPBUTTONS_WIDTH + LAYOUT->TOPBUTTONS_LR_MARGIN;
 	}
@@ -278,7 +278,7 @@ static void LCD_displayFreqInfo(bool redraw)
 		int_fast8_t channel = -1;
 		
 		uint16_t hz_color = COLOR->FREQ_HZ;
-		if (TRX.ENC2_func_mode_idx == 1)
+		if (TRX.ENC2_func_mode == ENC_FUNC_FAST_STEP)
 			hz_color = COLOR->ACTIVE_BORDER;
 		
 		if(TRX.ChannelMode)
@@ -671,11 +671,11 @@ static void LCD_displayStatusInfoBar(bool redraw)
 
 		//SWR Meter
 		float32_t fwd_power = TRX_PWR_Forward_SMOOTHED;
-		if (fwd_power > CALIBRATE.MAX_RF_POWER)
-			fwd_power = CALIBRATE.MAX_RF_POWER;
-		uint16_t ref_width = (uint16_t)(TRX_PWR_Backward_SMOOTHED * (LAYOUT->STATUS_PMETER_WIDTH - 2) / CALIBRATE.MAX_RF_POWER);
-		uint16_t fwd_width = (uint16_t)(fwd_power * (LAYOUT->STATUS_PMETER_WIDTH - 2) / CALIBRATE.MAX_RF_POWER);
-		uint16_t est_width = (uint16_t)((CALIBRATE.MAX_RF_POWER - fwd_power) * (LAYOUT->STATUS_PMETER_WIDTH - 2) / CALIBRATE.MAX_RF_POWER);
+		if (fwd_power > CALIBRATE.MAX_RF_POWER_ON_METER)
+			fwd_power = CALIBRATE.MAX_RF_POWER_ON_METER;
+		uint16_t ref_width = (uint16_t)(TRX_PWR_Backward_SMOOTHED * (LAYOUT->STATUS_PMETER_WIDTH - 2) / CALIBRATE.MAX_RF_POWER_ON_METER);
+		uint16_t fwd_width = (uint16_t)(fwd_power * (LAYOUT->STATUS_PMETER_WIDTH - 2) / CALIBRATE.MAX_RF_POWER_ON_METER);
+		uint16_t est_width = (uint16_t)((CALIBRATE.MAX_RF_POWER_ON_METER - fwd_power) * (LAYOUT->STATUS_PMETER_WIDTH - 2) / CALIBRATE.MAX_RF_POWER_ON_METER);
 		if (ref_width > fwd_width)
 			ref_width = fwd_width;
 		fwd_width -= ref_width;
@@ -794,7 +794,7 @@ static void LCD_displayStatusInfoBar(bool redraw)
 			color = COLOR->BUTTON_INACTIVE_TEXT;
 		}
 		
-		if (TRX.ENC2_func_mode_idx == 2)
+		if (TRX.ENC2_func_mode == ENC_FUNC_SET_NOTCH)
 		{
 			color = COLOR->ACTIVE_BORDER;
 			
@@ -867,7 +867,7 @@ static void LCD_displayStatusInfoBar(bool redraw)
 		CLEAN_SPACE
 		LCDDriver_printText("OVR", LAYOUT->STATUS_ERR_OFFSET_X, LAYOUT->STATUS_ERR_OFFSET_Y, COLOR->STATUS_ERR, BG_COLOR, LAYOUT->STATUS_LABELS_FONT_SIZE);
 	}
-	else if (WM8731_Buffer_underrun && !TRX_on_TX) {
+	else if (CODEC_Buffer_underrun && !TRX_on_TX) {
 		CLEAN_SPACE
 		LCDDriver_printText("WBF", LAYOUT->STATUS_ERR_OFFSET_X, LAYOUT->STATUS_ERR_OFFSET_Y, COLOR->STATUS_ERR, BG_COLOR, LAYOUT->STATUS_LABELS_FONT_SIZE);
 	}

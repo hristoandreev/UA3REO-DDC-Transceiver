@@ -10,8 +10,8 @@ volatile bool FPGA_NeedGetParams = false;	 // flag of the need to get parameters
 volatile bool FPGA_NeedRestart_RX = false;		 // flag of necessity to restart FPGA modules
 volatile bool FPGA_NeedRestart_TX = false;		 // flag of necessity to restart FPGA modules
 volatile bool FPGA_Buffer_underrun = false;	 // flag of lack of data from FPGA
-uint_fast16_t FPGA_Audio_RXBuffer_Index = 0; // current index in FPGA buffers
-uint_fast16_t FPGA_Audio_TXBuffer_Index = 0; // current index in FPGA buffers
+static uint_fast16_t FPGA_Audio_RXBuffer_Index = 0; // current index in FPGA buffers
+static uint_fast16_t FPGA_Audio_TXBuffer_Index = 0; // current index in FPGA buffers
 bool FPGA_Audio_Buffer_State = true;		 // buffer state, half or full full true - compleate; false - half
 bool FPGA_RX_Buffer_Current = true;			 // buffer state, false - fill B, work A
 bool FPGA_RX_buffer_ready = true;
@@ -35,8 +35,9 @@ static GPIO_InitTypeDef FPGA_GPIO_InitStruct; // structure of GPIO ports
 // Prototypes
 static inline void FPGA_clockFall(void);			// remove CLK signal
 static inline void FPGA_clockRise(void);			// raise the CLK signal
+static inline void FPGA_clockPulse(void);			// raise and fall the CLK signal
 static inline void FPGA_syncAndClockRiseFall(void); // raise CLK and SYNC signals, then release
-static void FPGA_fpgadata_sendiq(void);				// send IQ data
+static void FPGA_fpgadata_sendiq(bool clean);				// send IQ data
 static void FPGA_fpgadata_getiq(void);				// get IQ data
 static void FPGA_fpgadata_getparam(void);			// get parameters
 static void FPGA_fpgadata_sendparam(void);			// send parameters
@@ -235,14 +236,23 @@ void FPGA_fpgadata_iqclock(void)
 		return;
 	// data exchange
 
+	bool need_send_tx_zeroes = TRX_TX_sendZeroes < 100;
+	
 	// STAGE 1
 	// out
 	FPGA_setBusOutput();
+	if (need_send_tx_zeroes)
+	{
+		TRX_TX_sendZeroes++;
+		FPGA_writePacket(3); // TX SEND CLEAN IQ
+		FPGA_syncAndClockRiseFall();
+		FPGA_fpgadata_sendiq(true);
+	}
 	if (TRX_on_TX)
 	{
 		FPGA_writePacket(3); // TX SEND IQ
 		FPGA_syncAndClockRiseFall();
-		FPGA_fpgadata_sendiq();
+		FPGA_fpgadata_sendiq(false);
 	}
 	else
 	{
@@ -703,50 +713,39 @@ static float32_t *FPGA_Audio_Buffer_RX2_Q_current = (float32_t *)&FPGA_Audio_Buf
 
 static inline void FPGA_fpgadata_getiq(void)
 {
-	int32_t FPGA_fpgadata_in_tmp32 = 0;
-	float32_t FPGA_fpgadata_in_float32_i = 0;
-	float32_t FPGA_fpgadata_in_float32_q = 0;
+	float32_t FPGA_fpgadata_in_float32_i;
+	float32_t FPGA_fpgadata_in_float32_q;
+	struct {signed int q:24; signed int i:24;} FPGA_fpgadata_in_int24;
+	
 	FPGA_samples++;
 
 	// STAGE 2 in Q RX1
-	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 = (FPGA_readPacket << 16);
-	if (bitRead(FPGA_fpgadata_in_tmp32, 23) == 1)
-		FPGA_fpgadata_in_tmp32 |= 0xFF000000; // int24 to int32 extension
-	FPGA_clockFall();
+	FPGA_clockPulse();
+	FPGA_fpgadata_in_int24.q = (FPGA_readPacket << 16);
 
 	// STAGE 3
-	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket << 8);
-	FPGA_clockFall();
+	FPGA_clockPulse();
+	FPGA_fpgadata_in_int24.q |= (FPGA_readPacket << 8);
 
 	// STAGE 4
-	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket);
-	FPGA_clockFall();
-
-	FPGA_fpgadata_in_float32_q = (float32_t)FPGA_fpgadata_in_tmp32;
+	FPGA_clockPulse();
+	FPGA_fpgadata_in_int24.q |= (FPGA_readPacket);
 
 	// STAGE 5 in I RX1
-	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 = (FPGA_readPacket << 16);
-	if (bitRead(FPGA_fpgadata_in_tmp32, 23) == 1)
-		FPGA_fpgadata_in_tmp32 |= 0xFF000000; // int24 to int32 extension
-	FPGA_clockFall();
+	FPGA_clockPulse();
+	FPGA_fpgadata_in_int24.i = (FPGA_readPacket << 16);
 
 	// STAGE 6
-	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket << 8);
-	FPGA_clockFall();
+	FPGA_clockPulse();
+	FPGA_fpgadata_in_int24.i |= (FPGA_readPacket << 8);
 
 	// STAGE 7
-	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket);
-	FPGA_clockFall();
-
-	FPGA_fpgadata_in_float32_q = FPGA_fpgadata_in_float32_q * 1.192093037616377e-7f; // int24 to float (+-8388607.0f)
-	FPGA_fpgadata_in_float32_i = (float32_t)FPGA_fpgadata_in_tmp32 * 1.192093037616377e-7f;
-
+	FPGA_clockPulse();
+	FPGA_fpgadata_in_int24.i |= (FPGA_readPacket);
+	
+	FPGA_fpgadata_in_float32_i = FPGA_fpgadata_in_int24.i * 1.192093037616377e-7f; // int24 to float (+-8388607.0f)
+	FPGA_fpgadata_in_float32_q = FPGA_fpgadata_in_int24.q * 1.192093037616377e-7f; // int24 to float (+-8388607.0f)
+	
 	*FFTInput_Q_current++ = FPGA_fpgadata_in_float32_q;
 	*FPGA_Audio_Buffer_RX1_Q_current++ = FPGA_fpgadata_in_float32_q;
 	*FFTInput_I_current++ = FPGA_fpgadata_in_float32_i;
@@ -838,21 +837,24 @@ static inline void FPGA_fpgadata_getiq(void)
 }
 
 // send IQ data
-static inline void FPGA_fpgadata_sendiq(void)
+static inline void FPGA_fpgadata_sendiq(bool clean)
 {
 	int32_t FPGA_fpgadata_out_q_tmp32 = 0;
 	int32_t FPGA_fpgadata_out_i_tmp32 = 0;
 	FPGA_samples++;
 
-	if (!TRX_TX_IQ_swap)
+	if (!clean)
 	{
-		FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f); // float -> int24
-		FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
-	}
-	else
-	{
-		FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
-		FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+		if (!TRX_TX_IQ_swap)
+		{
+			FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f); // float -> int24
+			FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+		}
+		else
+		{
+			FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+			FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+		}
 	}
 	
 	// STAGE 2 out Q
@@ -981,6 +983,15 @@ static inline void FPGA_clockFall(void)
 {
 	FPGA_CLK_GPIO_Port->BSRR = (FPGA_CLK_Pin << 16U);
 }
+
+// raise and fall the CLK signal
+static inline void FPGA_clockPulse(void)
+{
+	FPGA_CLK_GPIO_Port->BSRR = FPGA_CLK_Pin;
+	__asm("nop");
+	FPGA_CLK_GPIO_Port->BSRR = (FPGA_CLK_Pin << 16U);
+}
+
 
 // raise CLK and SYNC signal, then lower
 static inline void FPGA_syncAndClockRiseFall(void)

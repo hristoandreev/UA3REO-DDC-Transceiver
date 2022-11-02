@@ -10,8 +10,8 @@ volatile bool FPGA_NeedGetParams = false;	 // flag of the need to get parameters
 volatile bool FPGA_NeedRestart_RX = false;		 // flag of necessity to restart FPGA modules
 volatile bool FPGA_NeedRestart_TX = false;		 // flag of necessity to restart FPGA modules
 volatile bool FPGA_Buffer_underrun = false;	 // flag of lack of data from FPGA
-uint_fast16_t FPGA_Audio_RXBuffer_Index = 0; // current index in FPGA buffers
-uint_fast16_t FPGA_Audio_TXBuffer_Index = 0; // current index in FPGA buffers
+static uint_fast16_t FPGA_Audio_RXBuffer_Index = 0; // current index in FPGA buffers
+static uint_fast16_t FPGA_Audio_TXBuffer_Index = 0; // current index in FPGA buffers
 bool FPGA_Audio_Buffer_State = true;		 // buffer state, half or full full true - compleate; false - half
 bool FPGA_RX_Buffer_Current = true;			 // buffer state, false - fill B, work A
 bool FPGA_RX_buffer_ready = true;
@@ -42,7 +42,7 @@ static GPIO_InitTypeDef FPGA_GPIO_InitStruct; // structure of GPIO ports
 static inline void FPGA_clockFall(void);			// remove CLK signal
 static inline void FPGA_clockRise(void);			// raise the CLK signal
 static inline void FPGA_syncAndClockRiseFall(void); // raise CLK and SYNC signals, then release
-static void FPGA_fpgadata_sendiq(void);				// send IQ data
+static void FPGA_fpgadata_sendiq(bool clean);				// send IQ data
 static void FPGA_fpgadata_getiq(void);				// get IQ data
 static void FPGA_fpgadata_getparam(void);			// get parameters
 static void FPGA_fpgadata_sendparam(void);			// send parameters
@@ -241,14 +241,23 @@ void FPGA_fpgadata_iqclock(void)
 		return;
 	// data exchange
 
+	bool need_send_tx_zeroes = TRX_TX_sendZeroes < 100;
+	
 	// STAGE 1
 	// out
 	FPGA_setBusOutput();
-	if (TRX_on_TX)
+	if (need_send_tx_zeroes)
+	{
+		TRX_TX_sendZeroes++;
+		FPGA_writePacket(3); // TX SEND CLEAN IQ
+		FPGA_syncAndClockRiseFall();
+		FPGA_fpgadata_sendiq(true);
+	}
+	else if (TRX_on_TX)
 	{
 		FPGA_writePacket(3); // TX SEND IQ
 		FPGA_syncAndClockRiseFall();
-		FPGA_fpgadata_sendiq();
+		FPGA_fpgadata_sendiq(false);
 	}
 	else
 	{
@@ -413,10 +422,10 @@ static inline void FPGA_fpgadata_sendparam(void)
 	FPGA_writePacket(CALIBRATE.adc_offset & 0XFFU);
 	FPGA_clockRise();
 	FPGA_clockFall();
-
+	
 	// STAGE 16
 	// OUT VCXO OFFSET
-	FPGA_writePacket(CALIBRATE.VCXO_correction);
+	FPGA_writePacket(CALIBRATE.VCXO_correction & 0XFFU);
 	FPGA_clockRise();
 	FPGA_clockFall();
 
@@ -493,6 +502,12 @@ static inline void FPGA_fpgadata_sendparam(void)
 		bitWrite(FPGA_fpgadata_out_tmp8, 1, 1); // DAC driver shutdown
 	}
 	FPGA_writePacket(FPGA_fpgadata_out_tmp8 & 0XFFU);
+	FPGA_clockRise();
+	FPGA_clockFall();
+	
+	// STAGE 23
+	// OUT VCXO OFFSET 2
+	FPGA_writePacket(((CALIBRATE.VCXO_correction & (0XFFU << 8)) >> 8));
 	FPGA_clockRise();
 	FPGA_clockFall();
 }
@@ -582,49 +597,45 @@ static float32_t *FPGA_Audio_Buffer_RX2_Q_current = (float32_t *)&FPGA_Audio_Buf
 
 static inline void FPGA_fpgadata_getiq(void)
 {
-	int32_t FPGA_fpgadata_in_tmp32 = 0;
 	float32_t FPGA_fpgadata_in_float32_i = 0;
 	float32_t FPGA_fpgadata_in_float32_q = 0;
+	struct {signed int q:24; signed int i:24;} FPGA_fpgadata_rx1_in_int24;
+	struct {signed int q:24; signed int i:24;} FPGA_fpgadata_rx2_in_int24;
+	
 	FPGA_samples++;
 
 	// STAGE 2 in Q RX1
 	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 = (FPGA_readPacket << 16);
-	if (bitRead(FPGA_fpgadata_in_tmp32, 23) == 1)
-		FPGA_fpgadata_in_tmp32 |= 0xFF000000; // int24 to int32 extension
+	FPGA_fpgadata_rx1_in_int24.q = (FPGA_readPacket << 16);
 	FPGA_clockFall();
 
 	// STAGE 3
 	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket << 8);
+	FPGA_fpgadata_rx1_in_int24.q |= (FPGA_readPacket << 8);
 	FPGA_clockFall();
 
 	// STAGE 4
 	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket);
+	FPGA_fpgadata_rx1_in_int24.q |= (FPGA_readPacket);
 	FPGA_clockFall();
-
-	FPGA_fpgadata_in_float32_q = (float32_t)FPGA_fpgadata_in_tmp32;
 
 	// STAGE 5 in I RX1
 	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 = (FPGA_readPacket << 16);
-	if (bitRead(FPGA_fpgadata_in_tmp32, 23) == 1)
-		FPGA_fpgadata_in_tmp32 |= 0xFF000000; // int24 to int32 extension
+	FPGA_fpgadata_rx1_in_int24.i = (FPGA_readPacket << 16);
 	FPGA_clockFall();
 
 	// STAGE 6
 	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket << 8);
+	FPGA_fpgadata_rx1_in_int24.i |= (FPGA_readPacket << 8);
 	FPGA_clockFall();
 
 	// STAGE 7
 	FPGA_clockRise();
-	FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket);
+	FPGA_fpgadata_rx1_in_int24.i |= (FPGA_readPacket);
 	FPGA_clockFall();
 
-	FPGA_fpgadata_in_float32_q = FPGA_fpgadata_in_float32_q * 1.192093037616377e-7f; // int24 to float (+-8388607.0f)
-	FPGA_fpgadata_in_float32_i = (float32_t)FPGA_fpgadata_in_tmp32 * 1.192093037616377e-7f;
+	FPGA_fpgadata_in_float32_i = FPGA_fpgadata_rx1_in_int24.i * 1.192093037616377e-7f;
+	FPGA_fpgadata_in_float32_q = FPGA_fpgadata_rx1_in_int24.q * 1.192093037616377e-7f; // int24 to float (+-8388607.0f)
 
 	*FFTInput_Q_current++ = FPGA_fpgadata_in_float32_q;
 	*FPGA_Audio_Buffer_RX1_Q_current++ = FPGA_fpgadata_in_float32_q;
@@ -636,42 +647,36 @@ static inline void FPGA_fpgadata_getiq(void)
 	{
 		// STAGE 8 in Q RX2
 		FPGA_clockRise();
-		FPGA_fpgadata_in_tmp32 = (FPGA_readPacket << 16);
-		if (bitRead(FPGA_fpgadata_in_tmp32, 23) == 1)
-			FPGA_fpgadata_in_tmp32 |= 0xFF000000; // int24 to int32 extension
+		FPGA_fpgadata_rx2_in_int24.q = (FPGA_readPacket << 16);
 		FPGA_clockFall();
 
 		// STAGE 9
 		FPGA_clockRise();
-		FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket << 8);
+		FPGA_fpgadata_rx2_in_int24.q |= (FPGA_readPacket << 8);
 		FPGA_clockFall();
 
 		// STAGE 10
 		FPGA_clockRise();
-		FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket);
+		FPGA_fpgadata_rx2_in_int24.q |= (FPGA_readPacket);
 		FPGA_clockFall();
-
-		FPGA_fpgadata_in_float32_q = (float32_t)FPGA_fpgadata_in_tmp32;
 
 		// STAGE 11 in I RX2
 		FPGA_clockRise();
-		FPGA_fpgadata_in_tmp32 = (FPGA_readPacket << 16);
-		if (bitRead(FPGA_fpgadata_in_tmp32, 23) == 1)
-			FPGA_fpgadata_in_tmp32 |= 0xFF000000; // int24 to int32 extension
+		FPGA_fpgadata_rx2_in_int24.i = (FPGA_readPacket << 16);
 		FPGA_clockFall();
 
 		// STAGE 12
 		FPGA_clockRise();
-		FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket << 8);
+		FPGA_fpgadata_rx2_in_int24.i |= (FPGA_readPacket << 8);
 		FPGA_clockFall();
 
 		// STAGE 13
 		FPGA_clockRise();
-		FPGA_fpgadata_in_tmp32 |= (FPGA_readPacket);
+		FPGA_fpgadata_rx2_in_int24.i |= (FPGA_readPacket);
 		FPGA_clockFall();
 
-		FPGA_fpgadata_in_float32_q = FPGA_fpgadata_in_float32_q * 1.192093037616377e-7f; // int24 to float (+-8388607.0f)
-		FPGA_fpgadata_in_float32_i = (float32_t)FPGA_fpgadata_in_tmp32 * 1.192093037616377e-7f;
+		FPGA_fpgadata_in_float32_i = FPGA_fpgadata_rx2_in_int24.i * 1.192093037616377e-7f;
+		FPGA_fpgadata_in_float32_q = FPGA_fpgadata_rx2_in_int24.q * 1.192093037616377e-7f; // int24 to float (+-8388607.0f)
 
 		*FPGA_Audio_Buffer_RX2_Q_current++ = FPGA_fpgadata_in_float32_q;
 		*FPGA_Audio_Buffer_RX2_I_current++ = FPGA_fpgadata_in_float32_i;
@@ -780,21 +785,24 @@ static inline void FPGA_fpgadata_getiq(void)
 }
 
 // send IQ data
-static inline void FPGA_fpgadata_sendiq(void)
+static inline void FPGA_fpgadata_sendiq(bool clean)
 {
 	int32_t FPGA_fpgadata_out_q_tmp32 = 0;
 	int32_t FPGA_fpgadata_out_i_tmp32 = 0;
 	FPGA_samples++;
 
-	if (!TRX_TX_IQ_swap)
+	if (!clean)
 	{
-		FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f); // float -> int24
-		FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
-	}
-	else
-	{
-		FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
-		FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+		if (!TRX_TX_IQ_swap)
+		{
+			FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f); // float -> int24
+			FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+		}
+		else
+		{
+			FPGA_fpgadata_out_i_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_Q[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+			FPGA_fpgadata_out_q_tmp32 = (int32_t)((float32_t)FPGA_Audio_SendBuffer_I[FPGA_Audio_TXBuffer_Index] * 8388607.0f);
+		}
 	}
 
 	// STAGE 2 out Q
@@ -878,7 +886,7 @@ static inline void FPGA_setBusInput(void)
 	temp |= ((GPIO_MODE_INPUT & 0x00000003U) << (6 * 2U));
 	temp &= ~(GPIO_MODER_MODE0 << (7 * 2U));
 	temp |= ((GPIO_MODE_INPUT & 0x00000003U) << (7 * 2U));
-	//println(temp,false);
+	println("I: ", temp);
 	GPIOA->MODER = temp;*/
 
 	FPGA_setGPIOBusInput; // macros
@@ -905,7 +913,7 @@ static inline void FPGA_setBusOutput(void)
 	temp |= ((GPIO_MODE_OUTPUT_PP & 0x00000003U) << (6 * 2U));
 	temp &= ~(GPIO_MODER_MODE0 << (7 * 2U));
 	temp |= ((GPIO_MODE_OUTPUT_PP & 0x00000003U) << (7 * 2U));
-	//println(temp,false);
+	println("O: ", temp);
 	GPIOA->MODER = temp;*/
 
 	FPGA_setGPIOBusOutput; // macros

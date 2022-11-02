@@ -10,8 +10,8 @@
 #include "vad.h"
 #include "cw.h"
 
-#define CAT_APP_RX_DATA_SIZE 32
-#define CAT_APP_TX_DATA_SIZE 32
+#define CAT_APP_RX_DATA_SIZE CDC_DATA_FS_MAX_PACKET_SIZE
+#define CAT_APP_TX_DATA_SIZE CDC_DATA_FS_MAX_PACKET_SIZE
 
 #define CAT_BUFFER_SIZE 64
 static char cat_buffer[CAT_BUFFER_SIZE] = {0};
@@ -32,24 +32,28 @@ static uint8_t setFT450Mode(char *FT450_Mode);
 static uint8_t setTS2000Mode(char *TS2000_Mode);
 static int8_t CAT_Init_FS(void);
 static int8_t CAT_DeInit_FS(void);
-static int8_t CAT_Control_FS(uint8_t cmd, uint8_t *pbuf);
+static int8_t CAT_Control_FS(uint8_t cmd, uint8_t *pbuf, uint32_t len);
 static int8_t CAT_Receive_FS(uint8_t *pbuf, uint32_t *Len);
 static void CAT_Transmit(char *data);
 static uint8_t CAT_Transmit_FS(uint8_t *Buf, uint16_t Len);
 
+#if HRDW_HAS_USB_CAT
 USBD_CAT_ItfTypeDef USBD_CAT_fops_FS =
 	{
 		CAT_Init_FS,
 		CAT_DeInit_FS,
 		CAT_Control_FS,
 		CAT_Receive_FS};
+#endif
 
 static int8_t CAT_Init_FS(void)
 {
 	/* USER CODE BEGIN 3 */
 	/* Set Application Buffers */
+	#if HRDW_HAS_USB_CAT
 	USBD_CAT_SetTxBuffer(&hUsbDeviceFS, CAT_UserTxBufferFS, 0);
 	USBD_CAT_SetRxBuffer(&hUsbDeviceFS, CAT_UserRxBufferFS);
+	#endif
 	return (USBD_OK);
 	/* USER CODE END 3 */
 }
@@ -72,7 +76,7 @@ static int8_t CAT_DeInit_FS(void)
  * @param  length: Number of data to be sent (in bytes)
  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
  */
-static int8_t CAT_Control_FS(uint8_t cmd, uint8_t *pbuf)
+static int8_t CAT_Control_FS(uint8_t cmd, uint8_t *pbuf, uint32_t len)
 {
 	/* USER CODE BEGIN 5 */
 	switch (cmd)
@@ -118,7 +122,31 @@ static int8_t CAT_Control_FS(uint8_t cmd, uint8_t *pbuf)
 		break;
 
 	case CDC_SET_CONTROL_LINE_STATE:
+		#if !HRDW_HAS_USB_DEBUG
+		if ((pbuf[2] & 0x1) == 0x1) // DTR
+		{
+			CW_key_serial = true;
+		}
+		else
+		{
+			CW_key_serial = false;
+		}
 
+		if ((pbuf[2] & 0x2) == 0x2) // RTS
+		{
+			if (!CW_key_serial && !TRX_ptt_soft)
+			{
+				TRX_ptt_soft = true;
+			}
+		}
+		else
+		{
+			if (!CW_key_serial && TRX_ptt_soft)
+			{
+				TRX_ptt_soft = false;
+			}
+		}
+		#endif
 		break;
 
 	case CDC_SEND_BREAK:
@@ -203,6 +231,8 @@ static int8_t CAT_Receive_FS(uint8_t *Buf, uint32_t *Len)
 static uint8_t CAT_Transmit_FS(uint8_t *Buf, uint16_t Len)
 {
 	uint8_t result = USBD_OK;
+	
+	#if HRDW_HAS_USB_CAT
 	USBD_CAT_HandleTypeDef *hcdc = (USBD_CAT_HandleTypeDef *)hUsbDeviceFS.pClassDataCAT;
 	if (hcdc->TxState != 0)
 	{
@@ -210,6 +240,8 @@ static uint8_t CAT_Transmit_FS(uint8_t *Buf, uint16_t Len)
 	}
 	USBD_CAT_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
 	result = USBD_CAT_TransmitPacket(&hUsbDeviceFS);
+	#endif
+	
 	return result;
 }
 
@@ -227,6 +259,7 @@ static void CAT_Transmit(char *data)
 	}
 }
 
+#if HRDW_HAS_USB_CAT
 void CAT_SetWIFICommand(char *data, uint32_t length, uint32_t link_id)
 {
 	CAT_processingWiFiCommand = true;
@@ -264,7 +297,8 @@ void ua3reo_dev_cat_parseCommand(void)
 		println("New CAT command: |", _command, "|");
 
 	char command[3] = {0};
-	strncpy(command, _command, 2);
+//	strncpy(command, _command, 2);
+	memcpy(command, _command, 2);
 	bool has_args = false;
 	char arguments[32] = {0};
 	char ctmp[30] = {0};
@@ -1072,6 +1106,7 @@ void ua3reo_dev_cat_parseCommand(void)
 
 	println("Unknown CAT command: ", _command);
 }
+#endif
 
 static void getFT450Mode(uint8_t VFO_Mode, char *out)
 {

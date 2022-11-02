@@ -47,7 +47,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
 ADC_HandleTypeDef hadc3;
 
@@ -244,7 +244,7 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim4);
 	
   println("[OK] AudioCodec init");
-  WM8731_Init();
+  CODEC_Init();
 	
   println("[OK] TRX init");
   TRX_Init();
@@ -1525,11 +1525,13 @@ int fputc(int ch, FILE *f)
     ITM_SendChar((uint32_t)ch);
 
   //USB
+	#if HRDW_HAS_USB_DEBUG
   if (USB_DEBUG_ENABLED)
   {
     char usb_char = (char)ch;
     DEBUG_Transmit_FIFO((uint8_t *)&usb_char, 1);
   }
+	#endif
 
   //LCD
   if (LCD_DEBUG_ENABLED)

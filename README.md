@@ -1,8 +1,8 @@
 # Transceiver "Wolf"
 DDC-DUC SDR Tranceiver project https://ua3reo.ru/tag/transiver-ua3reo/
-Community telegram channel: https://t.me/TRX_Wolf
 
-На русском https://github.com/XGudron/UA3REO-DDC-Transceiver/blob/master/README.ru-RU.md
+* Community telegram channel: https://t.me/TRX_Wolf
+* На русском https://github.com/XGudron/UA3REO-DDC-Transceiver/blob/master/README.ru-RU.md
 
 ## Principle of operation
 
@@ -14,20 +14,20 @@ When transmitting, the process occurs in the opposite order, only at the end of 
 
 ## Specifications
 
-* Receiving frequencies: 0 MHz - 750 MHz
-* Transmission frequencies: 0 MHz - 160 MHz
+* Receiving frequencies: 0 MHz - 750 MHz with fading each 61.44 Mhz
+* Transmission frequencies: 0 MHz - 200 MHz with fading on 55, 110, 165 Mhz
+* Transmission frequencies in harmonics mode (CW, FM): 360 Mhz - 480 Mhz
 * TX power (QRP version): 7W+ (HF), 5W (VHF)
 * TX power (QRP++ DB5AT version): 20W (HF), 7W (VHF)
-* TX power (RU4PN version): 100W (HF), 50W+ (VHF)
+* TX power (RU4PN/WF-100D version): 100W (HF), 50W+ (VHF)
 * Two antenna inputs
 * Modulation types (TX / RX): CW, LSB, USB, AM, FM, WFM, DIGI
 * LNA, Preamplifier
 * Adjustable attenuator 0-31dB
-* Two antenna inputs
 * Band pass filters
 * ADC dynamic range (16 bit) ~100dB
 * Supply voltage: 13.8V (overvoltage and polarity reversal protection)
-* Consumption current when receiving: ~0.7А (3'2 QRP), 1.1A (7' BIG)
+* Consumption current when receiving: ~0.7А (3'2 QRP), 0.9A (7' BIG)
 * Current consumption during transmission: ~2.5А+ (QRP), 15A+ (BIG)
 
 ## Transceiver Features
@@ -35,13 +35,13 @@ When transmitting, the process occurs in the opposite order, only at the end of 
 * Panorama (spectrum + waterfall) up to 384 kHz wide
 * Panorama tweaks and themes
 * Dual receiver (mixing A + B or A&B audio in stereo)
-* Adjustable bandwidth: HPF from 0Hz to 600Hz, LPF from 100Hz to 20kHz
+* Adjustable bandwidth: HPF from 0Hz to 2700Hz, LPF from 100Hz to 20kHz
 * Integrated SWR/power meter (HF)
 * Automatic and manual Notch filter
 * Switchable AGC (AGC) with adjustable attack rate
 * Range map, with the ability to automatically switch modes
 * Digital Noise Reduction (DNR), Pulse Noise Reduction (NB)
-* CAT virtual COM port (FT-450 emulation, RTS - PTT, DTR - CW)
+* CAT virtual COM port (FT-450 / TS-2000 emulation, RTS - PTT, DTR - CW)
 * USB operation (audio transmission, IQ, CAT, KEY, PTT)
 * RDS/CW/RTTY decoder, self-control, gauss filter
 * SWR Graphs
@@ -67,21 +67,15 @@ At 10dB signal-to-noise ratio, LNA is on, ATT, LPF, BPF are off
 
 Frequency, mHz | Sensitivity, dBm | Sensitivity
 ------------ | ------------- | -------------
-<100	| -131	| 63.0 nV
-145	| -128	| 88.9 nV
+<150	| -131	| 63.0 nV
 435	| -121	| 0.2 uV
 
 ## Build
 
 I ordered the boards in the Chinese service JLCPCB, they and their schemes are in the Scheme folder. <br>
 After assembly, you need to flash FPGA and STM32 chips. <br>
-STM32 firmware is performed via Keil or via USB lanyard in DFU Mode (by STM32 / FLASH.bat script). Or via ST-LINK v2. You must hold down the power button while flashing. <br>
-FPGA firmware is performed through the Quartus program using a USB-Blaster. <br>
-A properly assembled device does not require debugging, but if problems arise, the first thing to do is to check for clock signals: <br>
-90 FGPA pin and ADC clock input - 122.88 MHz, PC9 STM32 pin - 12.288 MHz, PB10 STM32 pin - 48 kHz. <br>
 If necessary, calibrate the transceiver through the appropriate menu <br>
 WiFi module ESP-01 must have fresh firmware with SDK 3.0.4 and higher, and AT commands 1.7.4 and higher <br>
-Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 ## Management
 
@@ -149,14 +143,18 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **Freq Step FAST** - Frequency step by the main encoder in FAST mode
 * **Freq Step ENC2** - Frequency tuning step by main add. encoder
 * **Freq Step ENC2 FAST** - Frequency step by main add. encoder in FAST mode
+* **Freq Step WFM, kHz** - Frequency step by main encoder in WFM mode
 * **CW Freq Step divider** - Frequency step divider for CW mode
 * **Encoder Accelerate** - Accelerate encoder on fast rates
 * **Att step, dB** - Attenuator tuning step
+* **Attenuation, dB** - Current attenuation
 * **DEBUG Type** - Output of debug and service information to USB / UART ports
 * **Auto Input Switch** - Auto input switch (PTT - mix, CAT - USB)
+* **Auto Snap** - Automaticly track and snap to near signal frequency (CW mode)
 * **Input Type** - Select audio input (microphone, line in, USB)
 * **Callsign** - User callsign
 * **Locator** - User QTH locator
+* **URSI Code** - Ionogramm URSI Code https://digisonde.com/index.html#stationmap-section
 * **TUNER Enabled** - Turning on the antenna tuner
 * **ATU Enabled** - Turning on the automatic antenna tuner
 * **ATU Ind** - Combination of tuner inductances
@@ -168,6 +166,8 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 ### AUDIO Settings
 
+* **Volume** - AF gain
+* **Volume step** - AF gain step by ENC2 (X1, Lite)
 * **IF Gain, dB** - IF gain
 * **AGC Gain target, LKFS** - Maximum AGC gain (Maximum volume with AGC on)
 * **Mic Gain** - Microphone gain
@@ -193,7 +193,9 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **CTCSS Frequency** - Transmit FM CTCSS sub-tone frequency
 * **SelfHear Volume** - Self Hearing (CW/DIGI) volume relative to the overall transceiver volume
 * **WFM Stereo** - select WFM stereo or mono decoder
-* **AGC Spectral** - Enable experimental FFT-based AGC
+* **AGC Spectral** - Enable FFT-based AGC
+* **TX CESSB** - Enable controlled-envelope single-sideband modulation
+* **TX CESSB Compress, dB** - Level of signal compression in CESSB
 * **VAD Threshold** - VAD voice detector threshold (noise suppressor for SSB mode and SCAN mode)
 * **VOX** - TX Voice activation
 * **VOX Timeout, ms** - VOX transmission delay after silence, milliseconds
@@ -267,7 +269,7 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 ### WIFI Settings
 
-* **WIFI Enabled** - Enable WiFi module (need restart)
+* **WIFI Enabled** - Enable WiFi module (need restart after enable)
 * **WIFI Network** - WiFi hotspot selection
 * **WIFI Network Pass** - Set password for WiFi hotspot
 * **WIFI Timezone** - Time zone (for updating the time via the Internet)
@@ -276,6 +278,7 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 ### SD Card
 
+* **File Manager** - Show SD Card file manager, support WAV playback and deleteing files, listening and broadcasting recordings, as well as updating firmware from a memory card
 * **USB SD Card Reader** - Enable USB SD Card reader
 * **Export Settings** - Export settings and calibration data to SD card
 * **Import Settings** - Import settings and calibration data from SD card
@@ -295,14 +298,14 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **CICCOMP Shift** - Bit shift after CIC compensator
 * **TX CICCOMP Shift** - Bit shift after TX CIC compensator
 * **DAC Shift** - Bit shift of the output to the DAC
+* **DAC Driver Mode** - DAC Driver OPA2673 bias mode (2 = 100% bias, 1 = 75% bias, 0 = 50% bias)
 * **RF GAIN xxx** - Calibration of the maximum output power for each range. RF GAIN 0-100% - 50% driver bias, 101-200% - 75% driver bias, 201-300% - 100% driver bias.
 * **S METER** - S-meter calibration
 * **ADC OFFSET** - ADC offset calibration
 * **LPF END** - LPF filter parameters
 * **HPF START** - HPF filter parameters
 * **BPF x** - Bandpass filter parameters
-* **MAX RF Power** - Maximim RF power (for indication)
-* **SWR FWD/REF RATE** - Adjustment of the transformation ratio of the SWR meter (forward / return)
+* **SWR FWD/BWD RATE** - Adjustment of the transformation ratio of the SWR meter (forward / return)
 * **VCXO Correction** - Frequency adjustment of the reference oscillator
 * **FAN Medium start** - Temperature of the PA for starting the fan at medium speed
 * **FAN Medium stop** - Temperature of the PA for stopping the fan
@@ -312,7 +315,8 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **SSB Power addition** - Addition of RF power in SSB power, %
 * **FM Deviation Scale** - Set TX FM Deviation Scale
 * **AM Modulation Index** - Set TX AM Modulation Scale
-* **TUNE Max Power** - Maximum RF power in Tune mode
+* **MAX PWR on Meter** - Maximim RF power (for indication)
+* **MAX Power in TUNE** - Maximum RF power in Tune mode
 * **RTC COARSE CALIBR** - Very coarse clock crystal calibration
 * **RTC FINE CALIBR** - Clock crystal calibration, one division is 0.954 ppm
 * **EXT xxx** - External port control by band (EXT3, EXT2, EXT1, EXT0) - open drain
@@ -326,6 +330,10 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 * **LNA Compensation** - Compensates the S-meter value when the LNA is turned on, dBm
 * **TSignal Balance** - Sets the power balance between signals in Two signal tune mode
 * **Linear Pwr Control** - Sets a linear way to change the signal amplitude when adjusting the power (if disabled - logarithmic)
+* **Flash GT911** - Starting the touchpad update procedure according to LCD screen resolution
+* **IF Gain MIN/MAX** - IF Gain adjusting limits
+* **Settings reset** - Reset all settings to defaults
+* **Calibrate reset** - Reset all calibrations to defaults
 
 ### Set Clock Time
 
@@ -371,6 +379,10 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 * Displaying the day/night terminator on the map (from internet)
 
+### Ionogram 
+
+* Displaying the ionogram for the selected URSI Code (from internet)
+
 ### SWR Analyser
 
 * Run SWR analizer (Band SWR - on current band, HF SWR - on all HF bands, Custom SWR - in selected range)
@@ -379,15 +391,11 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 
 * Print statistics from RDA award (from internet)
 
-### File Manager 
-
-* Show SD Card file manager, support WAV playback and deleteing files, listening and broadcasting recordings, as well as updating firmware from a memory card
-
 ### Record CQ message
 
 * Record a short message for quick broadcast
 
-### FT8-Decoder
+### FT8
 
 * FT8 Receiver / transmitter
 
@@ -402,3 +410,8 @@ Supported LCD: ILI9481, ILI9486, HX8357B, HX8357C, ST7796S, RA8875+GT911
 ### Self Test
 
 * Run hardware self diagnostic
+
+### Auto calibration
+
+* **Calibrate SWR** - Assistant in measuring SWR and power meter
+* **Calibrate Power** - Assistant in adjusting RF Power output

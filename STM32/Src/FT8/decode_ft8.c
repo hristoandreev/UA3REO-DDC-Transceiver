@@ -285,7 +285,7 @@ int CheckRecieved73(int index, char CQ_Answer)
 */
 int FindPartnerIDX(int num_decoded)
 {
-	uint8_t Partner_Idx;
+	uint8_t Partner_Idx = 0;
 
 	for (int i = 0; i < num_decoded; i++)
 	{

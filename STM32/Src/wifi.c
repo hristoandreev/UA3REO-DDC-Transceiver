@@ -62,6 +62,7 @@ SRAM4 static char WIFI_HTTResponseHTML[WIFI_HTML_RESP_BUFFER_SIZE] = {0};
 bool WIFI_NewFW_checked = false;
 bool WIFI_NewFW_STM32 = false;
 bool WIFI_NewFW_FPGA = false;
+bool WIFI_download_inprogress = false;
 bool WIFI_downloadFileToSD_compleated = false;
 bool WIFI_maySendIQ = false;
 
@@ -98,18 +99,39 @@ void WIFI_Init(void)
 	if (strstr(WIFI_readedLine, "OK") != NULL)
 	{
 		WIFI_SendCommand("AT+GMR\r\n"); // system info ESP8266
-		WIFI_WaitForOk();
 		/*
-		AT version:1.7.4.0(May 11 2020 19:13:04)
-		SDK version:3.0.4(9532ceb)
-		compile time:May 27 2020 10:12:20
-		Bin version(Wroom 02):1.7.4
+		AT version:1.7.5.0(Oct 20 2021 19:14:04)
+		SDK version:3.0.5(b29dcd3)
+		compile time:Oct 20 2021 20:13:50
+		Bin version(Wroom 02):1.7.5
 		*/
+		bool has_correct_sdk_version = false;
+		char *sep = "SDK version:3";
+		uint32_t startTime = HAL_GetTick();
+		while ((HAL_GetTick() - startTime) < WIFI_COMMAND_TIMEOUT)
+		{
+			if (WIFI_TryGetLine())
+			{
+				// OK
+				char *istr = strstr(WIFI_readedLine, sep);
+				if (istr != NULL) {
+					has_correct_sdk_version = true;
+					break;
+				}
+			}
+			CPULOAD_GoToSleepMode();
+			CPULOAD_WakeUp();
+		}
+		
 		WIFI_SendCommand("AT\r\n");
 		WIFI_WaitForOk();
 		
 		println("[WIFI] WIFI Module Inited");
 		WIFI_State = WIFI_INITED;
+		
+		if (!has_correct_sdk_version) {
+			LCD_showError("Wrong ESP FW Version", true);
+		}
 
 		// check if there are active connections, if yes - don't create a new one
 		WIFI_SendCommand("AT+CIPSTATUS\r\n");
@@ -196,7 +218,7 @@ void WIFI_Process(void)
 		WIFI_WaitForOk();
 
 		strcat(com_t, "AT+CIPSNTPCFG=1,");
-		sprintf(tz, "%d", TRX.WIFI_TIMEZONE);
+		sprintf(tz, "%d", WIFI.Timezone);
 		strcat(com_t, tz);
 		strcat(com_t, ",\"0.pool.ntp.org\",\"1.pool.ntp.org\"\r\n");
 		WIFI_SendCommand(com_t); // configure SNMP
@@ -207,8 +229,8 @@ void WIFI_Process(void)
 		WIFI_State = WIFI_CONFIGURED;
 		break;
 	case WIFI_CONFIGURED:
-		if (strcmp(TRX.WIFI_AP1, "WIFI-AP") == 0 && strcmp(TRX.WIFI_AP2, "WIFI-AP") == 0 && strcmp(TRX.WIFI_AP3, "WIFI-AP") == 0 &&
-			strcmp(TRX.WIFI_PASSWORD1, "WIFI-PASSWORD") == 0 && strcmp(TRX.WIFI_PASSWORD2, "WIFI-PASSWORD") == 0 && strcmp(TRX.WIFI_PASSWORD3, "WIFI-PASSWORD") == 0)
+		if (strcmp(WIFI.AP_1, "WIFI-AP") == 0 && strcmp(WIFI.AP_2, "WIFI-AP") == 0 && strcmp(WIFI.AP_3, "WIFI-AP") == 0 &&
+			strcmp(WIFI.Password_1, "WIFI-PASSWORD") == 0 && strcmp(WIFI.Password_2, "WIFI-PASSWORD") == 0 && strcmp(WIFI.Password_3, "WIFI-PASSWORD") == 0)
 			break;
 		if (WIFI_stop_auto_ap_list)
 			break;
@@ -218,51 +240,51 @@ void WIFI_Process(void)
 		bool AP3_exist = false;
 		for (uint8_t i = 0; i < WIFI_FOUNDED_AP_MAXCOUNT; i++)
 		{
-			if (strcmp((char *)WIFI_FoundedAP[i], TRX.WIFI_AP1) == 0)
+			if (strcmp((char *)WIFI_FoundedAP[i], WIFI.AP_1) == 0)
 				AP1_exist = true;
-			else if (strcmp((char *)WIFI_FoundedAP[i], TRX.WIFI_AP2) == 0)
+			else if (strcmp((char *)WIFI_FoundedAP[i], WIFI.AP_2) == 0)
 				AP2_exist = true;
-			else if (strcmp((char *)WIFI_FoundedAP[i], TRX.WIFI_AP3) == 0)
+			else if (strcmp((char *)WIFI_FoundedAP[i], WIFI.AP_3) == 0)
 				AP3_exist = true;
 		}
-		if (AP1_exist && strlen(TRX.WIFI_PASSWORD1) > 5)
+		if (AP1_exist && strlen(WIFI.AP_1) > 0 && strlen(WIFI.Password_1) > 5)
 		{
-			println("[WIFI] Start connecting to AP1: ", TRX.WIFI_AP1);
+			println("[WIFI] Start connecting to AP1: ", WIFI.AP_1);
 			strcat(com, "AT+CWJAP_CUR=\"");
-			strcat(com, TRX.WIFI_AP1);
+			strcat(com, WIFI.AP_1);
 			strcat(com, "\",\"");
-			strcat(com, TRX.WIFI_PASSWORD1);
+			strcat(com, WIFI.Password_1);
 			strcat(com, "\"\r\n");
 			WIFI_SendCommand(com); // connect to AP
 			// WIFI_WaitForOk();
 			WIFI_State = WIFI_CONNECTING;
-			strcpy(WIFI_AP, TRX.WIFI_AP1);
+			strcpy(WIFI_AP, WIFI.AP_1);
 		}
-		if (AP2_exist && !AP1_exist && strlen(TRX.WIFI_PASSWORD2) > 5)
+		if (AP2_exist && !AP1_exist && strlen(WIFI.AP_2) > 0 && strlen(WIFI.Password_2) > 5)
 		{
-			println("[WIFI] Start connecting to AP2: ", TRX.WIFI_AP2);
+			println("[WIFI] Start connecting to AP2: ", WIFI.AP_2);
 			strcat(com, "AT+CWJAP_CUR=\"");
-			strcat(com, TRX.WIFI_AP2);
+			strcat(com, WIFI.AP_2);
 			strcat(com, "\",\"");
-			strcat(com, TRX.WIFI_PASSWORD2);
+			strcat(com, WIFI.Password_2);
 			strcat(com, "\"\r\n");
 			WIFI_SendCommand(com); // connect to AP
 			// WIFI_WaitForOk();
 			WIFI_State = WIFI_CONNECTING;
-			strcpy(WIFI_AP, TRX.WIFI_AP2);
+			strcpy(WIFI_AP, WIFI.AP_2);
 		}
-		if (AP3_exist && !AP1_exist && !AP2_exist && strlen(TRX.WIFI_PASSWORD3) > 5)
+		if (AP3_exist && !AP1_exist && !AP2_exist && strlen(WIFI.AP_3) > 0 && strlen(WIFI.Password_3) > 5)
 		{
-			println("[WIFI] Start connecting to AP: ", TRX.WIFI_AP3);
+			println("[WIFI] Start connecting to AP: ", WIFI.AP_3);
 			strcat(com, "AT+CWJAP_CUR=\"");
-			strcat(com, TRX.WIFI_AP3);
+			strcat(com, WIFI.AP_3);
 			strcat(com, "\",\"");
-			strcat(com, TRX.WIFI_PASSWORD3);
+			strcat(com, WIFI.Password_3);
 			strcat(com, "\"\r\n");
 			WIFI_SendCommand(com); // connect to AP
 			// WIFI_WaitForOk();
 			WIFI_State = WIFI_CONNECTING;
-			strcpy(WIFI_AP, TRX.WIFI_AP3);
+			strcpy(WIFI_AP, WIFI.AP_3);
 		}
 		break;
 
@@ -457,6 +479,9 @@ void WIFI_Process(void)
 								WIFI_FoundedAP_Index++;
 						}
 					}
+					if(sysmenu_wifi_selectap1_menu_opened || sysmenu_wifi_selectap2_menu_opened || sysmenu_wifi_selectap3_menu_opened) {
+						LCD_UpdateQuery.SystemMenuRedraw = true;
+					}
 				}
 			}
 			else if (WIFI_ProcessingCommand == WIFI_COMM_GETSNTP) // Get and sync SNTP time
@@ -586,7 +611,7 @@ void WIFI_Process(void)
 
 												// reset SNTP
 												char com_t[64] = {0};
-												sprintf(com_t, "AT+CIPSNTPCFG=1,%d,\"0.pool.ntp.org\",\"1.pool.ntp.org\"\r\n", TRX.WIFI_TIMEZONE);
+												sprintf(com_t, "AT+CIPSNTPCFG=1,%d,\"0.pool.ntp.org\",\"1.pool.ntp.org\"\r\n", WIFI.Timezone);
 												WIFI_SendCommand(com_t); // configure SNMP
 												WIFI_WaitForOk();
 												WIFI_State = WIFI_READY;
@@ -619,7 +644,7 @@ void WIFI_Process(void)
 							println("[WIFI] GOT IP: ", WIFI_IP);
 							WIFI_IP_Gotted = true;
 							if (LCD_systemMenuOpened)
-								LCD_UpdateQuery.SystemMenuRedraw = true;
+								LCD_UpdateQuery.SystemMenuInfolines = true;
 						}
 					}
 				}
@@ -696,7 +721,7 @@ static bool WIFI_ListAP_Sync(void)
 	WIFI_SendCommand("AT+CWLAP\r\n"); // List AP
 	WIFI_FoundedAP_Index = 0;
 	for (uint8_t i = 0; i < WIFI_FOUNDED_AP_MAXCOUNT; i++)
-		dma_memset((char *)&WIFI_FoundedAP[i], 0x00, sizeof WIFI_FoundedAP[i]);
+		dma_memset((char *)&WIFI_FoundedAP_InWork[i], 0x00, sizeof WIFI_FoundedAP_InWork[i]);
 	uint32_t startTime = HAL_GetTick();
 	char *sep = "OK";
 	char *istr;
@@ -713,8 +738,13 @@ static bool WIFI_ListAP_Sync(void)
 		istr = strstr(WIFI_readedLine, sep);
 		if (istr != NULL) // OK
 		{
+			for (uint8_t i = 0; i < WIFI_FOUNDED_AP_MAXCOUNT; i++)
+			{
+				strcpy((char *)&WIFI_FoundedAP[i], (char *)&WIFI_FoundedAP_InWork[i]);
+			}
+				
 			if (WIFI_FoundedAP_Index > 0)
-				LCD_UpdateQuery.SystemMenuRedraw = true;
+				LCD_UpdateQuery.SystemMenuInfolines = true;
 
 			return true;
 		}
@@ -729,9 +759,12 @@ static bool WIFI_ListAP_Sync(void)
 				if (end != NULL)
 				{
 					*end = 0x00;
-					strcat((char *)&WIFI_FoundedAP[WIFI_FoundedAP_Index], start);
+					strcat((char *)&WIFI_FoundedAP_InWork[WIFI_FoundedAP_Index], start);
 					if (WIFI_FoundedAP_Index < (WIFI_FOUNDED_AP_MAXCOUNT - 1))
 						WIFI_FoundedAP_Index++;
+				}
+				if(sysmenu_wifi_selectap1_menu_opened || sysmenu_wifi_selectap2_menu_opened || sysmenu_wifi_selectap3_menu_opened) {
+					LCD_UpdateQuery.SystemMenuRedraw = true;
 				}
 			}
 		}
@@ -1114,7 +1147,8 @@ static void WIFI_printImage_stream_partial_callback(void)
 	while (*istr != 0 && (len >= ((WIFI_RLEStreamBuffer_index * 4) + 4)))
 	{
 		// Get hex
-		strncpy(hex, istr, 4);
+//		strncpy(hex, istr, 4);
+		memcpy(hex, istr, 4);
 		val = (int16_t)(strtol(hex, NULL, 16));
 		istr += 4;
 		// Save
@@ -1129,7 +1163,8 @@ static void WIFI_printImage_stream_partial_callback(void)
 	if (strlen(WIFI_HTTResponseHTML) > (WIFI_RLEStreamBuffer_index * 4)) // part buffer preceed, move to begin
 	{
 		istr = &WIFI_HTTResponseHTML[(WIFI_RLEStreamBuffer_index * 4)];
-		strcpy(WIFI_HTTResponseHTML, istr);
+//		strcpy(WIFI_HTTResponseHTML, istr);
+		memmove(WIFI_HTTResponseHTML, istr, strlen(istr) + 1);
 	}
 	else
 		dma_memset(WIFI_HTTResponseHTML, 0x00, sizeof(WIFI_HTTResponseHTML));
@@ -1164,7 +1199,9 @@ static void WIFI_printImage_Propagination_callback(void)
 				{
 					LCDDriver_printImage_RLECompressed_StartStream(LCD_WIDTH / 2 - width / 2, LCD_HEIGHT / 2 - height / 2, width, height);
 					WIFI_RLEStreamBuffer_part = 0;
-					WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php?part=0", WIFI_printImage_stream_callback, false, false);
+					char buff[64] = {0};
+					sprintf(buff, "/trx_services/propagination.php?part=0&width=%u&height=%u", LCD_WIDTH, LCD_HEIGHT);
+					WIFI_getHTTPpage("ua3reo.ru", buff, WIFI_printImage_stream_callback, false, false);
 				}
 			}
 		}
@@ -1206,12 +1243,45 @@ static void WIFI_printImage_DayNight_callback(void)
 			}
 		}
 	}
-	else
-#ifdef LCD_SMALL_INTERFACE
-	LCDDriver_printText("Network error", 10, 20, FG_COLOR, BG_COLOR, 1);
-#else
-	LCDDriver_printTextFont("Network error", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
-#endif
+	else {
+		LCDDriver_printTextFont("Network error", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+	}
+}
+
+static void WIFI_printImage_Ionogram_callback(void)
+{
+	LCDDriver_Fill(BG_COLOR);
+	if (WIFI_HTTP_Response_Status == 200)
+	{
+		char *istr1 = strchr(WIFI_HTTResponseHTML, ',');
+		if (istr1 != NULL)
+		{
+			*istr1 = 0;
+			uint32_t filesize = atoi(WIFI_HTTResponseHTML);
+			istr1++;
+			char *istr2 = strchr(istr1, ',');
+			if (istr2 != NULL)
+			{
+				*istr2 = 0;
+				uint16_t width = (uint16_t)(atoi(istr1));
+				istr2++;
+
+				uint16_t height = (uint16_t)(atoi(istr2));
+
+				if (filesize > 0 && width > 0 && height > 0)
+				{
+					LCDDriver_printImage_RLECompressed_StartStream(LCD_WIDTH / 2 - width / 2, LCD_HEIGHT / 2 - height / 2, width, height);
+					WIFI_RLEStreamBuffer_part = 0;
+					char buff[64] = {0};
+					sprintf(buff, "/trx_services/ionogram.php?part=0&ursiCode=%s", TRX.URSI_CODE);
+					WIFI_getHTTPpage("ua3reo.ru", buff, WIFI_printImage_stream_callback, false, false);
+				}
+			}
+		}
+	}
+	else {
+		LCDDriver_printTextFont("Network error", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+	}
 }
 
 void WIFI_getRDA(void)
@@ -1308,11 +1378,12 @@ bool WIFI_getDXCluster_background(void)
 {
 	if (!WIFI_connected || WIFI_State != WIFI_READY)
 		return false;
-	char url[64] = "/trx_services/cluster.php?background&band=";
+	char url[64];
+	char *url1 = "/trx_services/cluster.php?background&band=";
 	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
 	if (band >= 0)
-		strcat(url, BANDS[band].name);
-	sprintf(url, "%s&timeout=%d", url, TRX.FFT_DXCluster_Timeout);
+		strcat(url1, BANDS[band].name);
+	sprintf(url, "%s&timeout=%d", url1, TRX.FFT_DXCluster_Timeout);
 	WIFI_getHTTPpage("ua3reo.ru", url, WIFI_getDXCluster_background_callback, false, false);
 	return true;
 }
@@ -1360,28 +1431,35 @@ void WIFI_getPropagination(void)
 		
 		return;
 	}
-	WIFI_getHTTPpage("ua3reo.ru", "/trx_services/propagination.php", WIFI_printImage_Propagination_callback, false, false);
+	char buff[64] = {0};
+	sprintf(buff, "/trx_services/propagination.php?width=%u&height=%u", LCD_WIDTH, LCD_HEIGHT);
+	WIFI_getHTTPpage("ua3reo.ru", buff, WIFI_printImage_Propagination_callback, false, false);
 }
 
 void WIFI_getDayNightMap(void)
 {
 	LCDDriver_Fill(BG_COLOR);
 	if (WIFI_connected && WIFI_State == WIFI_READY) {
-		#ifdef LCD_SMALL_INTERFACE
-			LCDDriver_printText("Loading...", 10, 20, FG_COLOR, BG_COLOR, 1);
-		#else
-			LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
-		#endif
+		LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
 	} else {
-		#ifdef LCD_SMALL_INTERFACE
-			LCDDriver_printText("No connection", 10, 20, FG_COLOR, BG_COLOR, 1);
-		#else
-			LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
-		#endif
-		
+		LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
 		return;
 	}
 	WIFI_getHTTPpage("ua3reo.ru", "/trx_services/daynight.php", WIFI_printImage_DayNight_callback, false, false);
+}
+
+void WIFI_getIonogram(void)
+{
+	LCDDriver_Fill(BG_COLOR);
+	if (WIFI_connected && WIFI_State == WIFI_READY) {
+		LCDDriver_printTextFont("Loading...", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+	} else {
+		LCDDriver_printTextFont("No connection", 10, 20, FG_COLOR, BG_COLOR, &FreeSans9pt7b);
+		return;
+	}
+	char buff[64] = {0};
+	sprintf(buff, "/trx_services/ionogram.php?ursiCode=%s", TRX.URSI_CODE);
+	WIFI_getHTTPpage("ua3reo.ru", buff, WIFI_printImage_Ionogram_callback, false, false);
 }
 
 bool WIFI_SW_Restart(void (*callback)(void))
@@ -1447,10 +1525,11 @@ static void WIFI_WIFI_downloadFileToSD_callback_writed(void)
 	{
 		LCD_busy = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
+		WIFI_download_inprogress = false;
 	}
 	else
 	{
-		char url[128] = {0};
+		char url[160] = {0};
 		sprintf(url, "%s&start=%d&count=%d", WIFI_downloadFileToSD_url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
 		println("[WIFI] Get next file part");
 		WIFI_getHTTPpage("ua3reo.ru", url, WIFI_downloadFileToSD_callback, false, false);
@@ -1483,7 +1562,8 @@ static void WIFI_downloadFileToSD_callback(void)
 		while (*istr != 0 && (len >= ((WIFI_DecodedStreamBuffer_index * 2) + 2)))
 		{
 			// Get hex
-			strncpy(hex, istr, 2);
+//			strncpy(hex, istr, 2);
+            memcpy(hex, istr, 2);
 			val = (int16_t)(strtol(hex, NULL, 16));
 			istr += 2;
 			// Save
@@ -1530,15 +1610,17 @@ static void WIFI_downloadFileToSD_callback(void)
 
 void WIFI_downloadFileToSD(char *url, char *filename)
 {
+    char url1[128];
 	if (WIFI_connected && WIFI_State != WIFI_READY)
 		return;
 	get_HTTP_tryes = 0;
+	WIFI_download_inprogress = true;
 	WIFI_downloadFileToSD_compleated = false;
 	WIFI_downloadFileToSD_filename = filename;
 	WIFI_downloadFileToSD_startIndex = 0;
 	strcpy(WIFI_downloadFileToSD_url, url);
-	sprintf(url, "%s&start=%d&count=%d", url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
-	WIFI_getHTTPpage("ua3reo.ru", url, WIFI_downloadFileToSD_callback, false, false);
+	sprintf(url1, "%s&start=%d&count=%d", url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
+	WIFI_getHTTPpage("ua3reo.ru", url1, WIFI_downloadFileToSD_callback, false, false);
 }
 
 #endif

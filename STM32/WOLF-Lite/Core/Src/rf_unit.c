@@ -167,7 +167,7 @@ void RF_UNIT_ProcessSensors(void)
 	
 	//PWR Voltage
 	float32_t PWR_Voltage = (float32_t)HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1) * TRX_STM32_VREF / B12_RANGE;
-	PWR_Voltage = PWR_Voltage * (CALIBRATE.PWR_VLT_Calibration);
+	PWR_Voltage = PWR_Voltage * (CALIBRATE.PWR_VLT_Calibration) / 100.0f;
 	if(fabsf(PWR_Voltage - TRX_PWR_Voltage) > 0.3f)
 		TRX_PWR_Voltage = TRX_PWR_Voltage * 0.99f + PWR_Voltage * 0.01f;
 	if(fabsf(PWR_Voltage - TRX_PWR_Voltage) > 1.0f)
@@ -206,11 +206,11 @@ void RF_UNIT_ProcessSensors(void)
 
 			// Transformation ratio of the SWR meter
 			if (CurrentVFO->Freq >= 80000000)
-				backward = backward * CALIBRATE.SWR_REF_Calibration_VHF;
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_VHF;
 			else if (CurrentVFO->Freq >= 40000000)
-				backward = backward * CALIBRATE.SWR_REF_Calibration_6M;
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_6M;
 			else
-				backward = backward * CALIBRATE.SWR_REF_Calibration_HF;
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_HF;
 		}
 		else
 			backward = 0.001f;

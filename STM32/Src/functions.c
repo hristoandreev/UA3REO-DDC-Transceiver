@@ -111,9 +111,11 @@ void print_chr_LCDOnly(char chr)
 
 void print_flush(void)
 {
+	#if HRDW_HAS_USB_DEBUG
 	uint_fast16_t tryes = 0;
 	while (DEBUG_Transmit_FIFO_Events() == USBD_BUSY && tryes < 512)
 		tryes++;
+	#endif
 }
 
 void print_hex(uint8_t data, bool _inline)
@@ -188,15 +190,41 @@ uint32_t getTXPhraseFromFrequency(float64_t freq) // calculate the frequency fro
 		return 0;
 	bool inverted = false;
 	int32_t _freq = (int32_t)freq;
-
-	uint8_t nyquist = _freq / (DAC_CLOCK / 2);
-	if (nyquist == 0) // <99.84mhz (good 0mhz - 79.872mhz) 0-0.4 dac freq
-	{
-		TRX_DAC_HP2 = false; // low-pass
+	
+	uint8_t TRX_TX_Harmonic_new = 0;
+	if (_freq > MAX_TX_FREQ_HZ) { // harmonics mode
+		while (_freq > MAX_TX_FREQ_HZ) {
+			_freq /= 3; // third-harmonics
+			TRX_TX_Harmonic_new += 3;
+		}
 	}
-	if (nyquist == 1) // 99.84-199.68mhz (good 119.808mhz - 159.744mhz) dac freq - (0.2-0.4 dac freq)
+	if (TRX_TX_Harmonic_new == 0)
+		TRX_TX_Harmonic = 1;
+	else
+		TRX_TX_Harmonic = TRX_TX_Harmonic_new;
+	
+
+	TRX_DAC_X4 = true;
+	uint8_t nyquist = _freq / (DAC_CLOCK / 2);
+	if (nyquist == 0) // <55,2mhz (good 0mhz - 44,16mhz) 0-0.4 dac freq
 	{
-		TRX_DAC_HP2 = true; // high-pass
+		TRX_DAC_HP1 = false; // HP1 low-pass
+		TRX_DAC_HP2 = false; // HP2 low-pass
+	}
+	if (nyquist == 1) // 55,2-110,4mhz (good 66,24mhz - 88,32mhz) dac freq - (0.6-0.9 dac freq)
+	{
+		TRX_DAC_HP1 = true; // HP1 high-pass
+		TRX_DAC_HP2 = false; // HP2 low-pass
+	}
+	if (nyquist == 2) // 110,4-165,6mhz (good 132,48mhz - 154,56mhz) dac freq - (1.2-1.4 dac freq)
+	{
+		TRX_DAC_HP1 = true; // HP1 high-pass
+		TRX_DAC_HP2 = true; // HP3 high-pass
+	}
+	if (nyquist == 3) // 165,6-220,8mhz (good 176,64mhz - 200,0mhz) dac freq - (1.6-1.9 dac freq)
+	{
+		TRX_DAC_HP1 = false; // HP1 low-pass
+		TRX_DAC_HP2 = true; // HP3 high-pass
 	}
 
 	if (_freq > (DAC_CLOCK / 2)) // Go Nyquist
@@ -219,7 +247,7 @@ uint32_t getTXPhraseFromFrequency(float64_t freq) // calculate the frequency fro
 
 void addSymbols(char *dest, char *str, uint_fast8_t length, char *symbol, bool toEnd) // add zeroes
 {
-	char res[50] = "";
+	char res[70] = "";
 	strcpy(res, str);
 	while (strlen(res) < length)
 	{
@@ -240,7 +268,7 @@ float32_t log10f_fast(float32_t X)
 {
 	float32_t Y, F;
 	int32_t E;
-	F = frexpf(fabsf(X), &E);
+	F = frexpf(fabsf(X), (int *)&E);
 	Y = 1.23149591368684f;
 	Y *= F;
 	Y += -4.11852516267426f;
@@ -308,8 +336,11 @@ void shiftTextLeft(char *string, uint_fast16_t shiftLength)
 
 float32_t getMaxTXAmplitudeOnFreq(uint32_t freq)
 {
-	if (freq > MAX_TX_FREQ_HZ)
-		return 0.0f;
+	if (freq > MAX_TX_FREQ_HZ) { // harmonics mode
+		while (freq > MAX_TX_FREQ_HZ) {
+			freq /= 3.0f; // third-harmonics
+		}
+	}
 
 	uint16_t calibrate_level = 0;
 
@@ -335,24 +366,27 @@ float32_t getMaxTXAmplitudeOnFreq(uint32_t freq)
 		calibrate_level = CALIBRATE.rf_out_power_cb;
 	else if (freq < 40.0 * 1000000)
 		calibrate_level = CALIBRATE.rf_out_power_10m;
-	else if (freq < 80.0 * 1000000)
+	else if (freq < 60.0 * 1000000)
 		calibrate_level = CALIBRATE.rf_out_power_6m;
+	else if (freq < 110.0 * 1000000)
+		calibrate_level = CALIBRATE.rf_out_power_4m;
 	else
 		calibrate_level = CALIBRATE.rf_out_power_2m;
 
-	if (calibrate_level > 200) // dac driver bias
+	if (calibrate_level > 100)
+		calibrate_level = 100;
+	
+	if (CALIBRATE.DAC_driver_mode == 2) // dac driver bias
 	{
-		calibrate_level -= 200;
 		TRX_DAC_DRV_A0 = false;
 		TRX_DAC_DRV_A1 = false;
 	}
-	else if (calibrate_level > 100) // dac driver bias 75%
+	else if (CALIBRATE.DAC_driver_mode == 1) // dac driver bias 75%
 	{
-		calibrate_level -= 100;
 		TRX_DAC_DRV_A0 = true;
 		TRX_DAC_DRV_A1 = false;
 	}
-	else if (calibrate_level > 0) // dac driver bias 50%
+	else if (CALIBRATE.DAC_driver_mode == 0) // dac driver bias 50%
 	{
 		TRX_DAC_DRV_A0 = false;
 		TRX_DAC_DRV_A1 = true;
@@ -977,7 +1011,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 	float32_t *pOut_I = pDst_I;
 	float32_t *pOut_Q = pDst_Q;
 
-	for (uint32_t stage = 0; stage < I->numStages; stage++)
+	uint32_t stage = I->numStages;
+	while (stage > 0)
 	{
 		float32_t b0 = pCoeffs[0];
 		float32_t b1 = pCoeffs[1];
@@ -991,7 +1026,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 		float32_t d1_Q = pState_Q[0];
 		float32_t d2_Q = pState_Q[1];
 
-		for (uint32_t sample = 0; sample < blockSize; sample++)
+		uint32_t sample = blockSize;
+		while (sample > 0)
 		{
 			float32_t Xn1_I = *pIn_I++;
 			float32_t Xn1_Q = *pIn_Q++;
@@ -1007,6 +1043,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 
 			*pOut_I++ = acc1_I;
 			*pOut_Q++ = acc1_Q;
+			
+			sample--;
 		}
 
 		pState_I[0] = d1_I;
@@ -1020,6 +1058,8 @@ void arm_biquad_cascade_df2T_f32_IQ(const arm_biquad_cascade_df2T_instance_f32 *
 		pIn_Q = pDst_Q;
 		pOut_I = pDst_I;
 		pOut_Q = pDst_Q;
+		
+		stage--;
 	}
 }
 
@@ -1069,4 +1109,17 @@ float fast_sqrt(const float x)
   u.x = x;
   u.i = SQRT_MAGIC_F - (u.i >> 1);  // gives initial guess y0
   return x*u.x*(1.5f - xhalf*u.x*u.x);// Newton step, repeating increases accuracy 
+}
+
+uint8_t getPowerFromALC(float32_t alc) {
+	float32_t volt = alc - 1.0f; // 0.0-1.0v - ALC disabled
+	float32_t power = volt * 100.0f / 2.3f; // 1.0v - 3.3v - power 0-100%
+	
+	if (power < 0)
+		return 0;
+	
+	if (power > 100)
+		return 100;
+	
+	return power;
 }

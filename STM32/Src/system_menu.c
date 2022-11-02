@@ -26,6 +26,7 @@
 #include "cw.h"
 #include "FT8/FT8_main.h"
 #include "INA226_PWR_monitor.h"
+#include "auto_calibration.h"
 
 static void SYSMENU_HANDL_TRX_RFPower(int8_t direction);
 static void SYSMENU_HANDL_TRX_BandMap(int8_t direction);
@@ -36,6 +37,7 @@ static void SYSMENU_HANDL_TRX_RFFilters(int8_t direction);
 static void SYSMENU_HANDL_TRX_INPUT_TYPE_MAIN(int8_t direction);
 static void SYSMENU_HANDL_TRX_INPUT_TYPE_DIGI(int8_t direction);
 static void SYSMENU_HANDL_TRX_Auto_Input_Switch(int8_t direction);
+static void SYSMENU_HANDL_TRX_Auto_Snap(int8_t direction);
 static void SYSMENU_HANDL_TRX_RIT_INTERVAL(int8_t direction);
 static void SYSMENU_HANDL_TRX_XIT_INTERVAL(int8_t direction);
 static void SYSMENU_HANDL_TRX_SAMPLERATE_MAIN(int8_t direction);
@@ -44,12 +46,15 @@ static void SYSMENU_HANDL_TRX_FRQ_STEP(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_FAST_STEP(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_ENC_STEP(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP(int8_t direction);
+static void SYSMENU_HANDL_TRX_FRQ_ENC_WFM_STEP_KHZ(int8_t direction);
 static void SYSMENU_HANDL_TRX_FRQ_CW_STEP_DIVIDER(int8_t direction);
 static void SYSMENU_HANDL_TRX_ENC_ACCELERATE(int8_t direction);
 static void SYSMENU_HANDL_TRX_ATT_STEP(int8_t direction);
+static void SYSMENU_HANDL_TRX_ATT_DB(int8_t direction);
 static void SYSMENU_HANDL_TRX_DEBUG_TYPE(int8_t direction);
 static void SYSMENU_HANDL_TRX_SetCallsign(int8_t direction);
 static void SYSMENU_HANDL_TRX_SetLocator(int8_t direction);
+static void SYSMENU_HANDL_TRX_SetURSICode(int8_t direction);
 static void SYSMENU_HANDL_TRX_TRANSV_ENABLE(int8_t direction);
 static void SYSMENU_HANDL_TRX_TRANSV_OFFSET(int8_t direction);
 static void SYSMENU_HANDL_TRX_ATU_I(int8_t direction);
@@ -63,8 +68,10 @@ static void SYSMENU_HANDL_TRX_TRANSV_13CM(int8_t direction);
 static void SYSMENU_HANDL_TRX_TRANSV_6CM(int8_t direction);
 static void SYSMENU_HANDL_TRX_TRANSV_3CM(int8_t direction);
 static void SYSMENU_HANDL_TRX_FineRITTune(int8_t direction);
+static void SYSMENU_HANDL_TRX_VGA_GAIN(int8_t direction);
 
 static void SYSMENU_HANDL_AUDIO_Volume(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_Volume_Step(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_IFGain(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_DNR(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_NOISE_BLANKER(int8_t direction);
@@ -77,16 +84,22 @@ static void SYSMENU_HANDL_AUDIO_DNR1_THRES(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_DNR2_THRES(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_DNR_AVERAGE(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_DNR_MINMAL(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_LOW_SSB(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_MID_SSB(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_HIG_SSB(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_LOW_AMFM(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_MID_AMFM(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_HIG_AMFM(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P1_SSB(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P2_SSB(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P3_SSB(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P4_SSB(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P5_SSB(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P1_AMFM(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P2_AMFM(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P3_AMFM(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P4_AMFM(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P5_AMFM(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_MIC_REVERBER(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_RX_EQ_LOW(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_RX_EQ_MID(int8_t direction);
-static void SYSMENU_HANDL_AUDIO_RX_EQ_HIG(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P1(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P2(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P3(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P4(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P5(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_RX_AGC_SSB_Speed(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_RX_AGC_CW_Speed(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_RX_AGC_Max_gain(int8_t direction);
@@ -102,6 +115,8 @@ static void SYSMENU_HANDL_AUDIO_CTCSS_Freq(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_SELFHEAR_Volume(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_FM_Stereo(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_AGC_Spectral(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_TX_CESSB(int8_t direction);
+static void SYSMENU_HANDL_AUDIO_TX_CESSB_COMPRESS_DB(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_VAD_THRESHOLD(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_VOX(int8_t direction);
 static void SYSMENU_HANDL_AUDIO_VOX_TIMEOUT(int8_t direction);
@@ -183,8 +198,10 @@ static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON28(int8_t direction);
 #if FUNCBUTTONS_COUNT > 28
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON29(int8_t direction);
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON30(int8_t direction);
+#if FUNCBUTTONS_COUNT > 30
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON31(int8_t direction);
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON32(int8_t direction);
+#endif
 #endif
 
 static void SYSMENU_HANDL_DECODERS_CW_Decoder(int8_t direction);
@@ -216,6 +233,8 @@ static void SYSMENU_HANDL_WIFI_UpdateFW(int8_t direction);
 #endif
 
 #if HRDW_HAS_SD
+static void SYSMENU_HANDL_SD_Filemanager(int8_t direction);
+static void SYSMENU_HANDL_SD_FormatDialog(int8_t direction);
 static void SYSMENU_HANDL_SD_Format(int8_t direction);
 static void SYSMENU_HANDL_SD_ExportSettingsDialog(int8_t direction);
 static void SYSMENU_HANDL_SD_ExportSettings(int8_t direction);
@@ -248,6 +267,7 @@ static void SYSMENU_HANDL_CALIB_CICCOMP_192K_SHIFT(int8_t direction);
 static void SYSMENU_HANDL_CALIB_CICCOMP_384K_SHIFT(int8_t direction);
 static void SYSMENU_HANDL_CALIB_TXCICCOMP_SHIFT(int8_t direction);
 static void SYSMENU_HANDL_CALIB_DAC_SHIFT(int8_t direction);
+static void SYSMENU_HANDL_CALIB_DAC_driver_mode(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_2200M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_160M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_80M(int8_t direction);
@@ -260,6 +280,7 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_12M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_CB(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_10M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_6M(int8_t direction);
+static void SYSMENU_HANDL_CALIB_RF_GAIN_4M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_2M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_S_METER_HF(int8_t direction);
 static void SYSMENU_HANDL_CALIB_S_METER_VHF(int8_t direction);
@@ -286,7 +307,7 @@ static void SYSMENU_HANDL_CALIB_BPF_8_END(int8_t direction);
 static void SYSMENU_HANDL_CALIB_BPF_9_START(int8_t direction);
 static void SYSMENU_HANDL_CALIB_BPF_9_END(int8_t direction);
 static void SYSMENU_HANDL_CALIB_HPF_START(int8_t direction);
-static void SYSMENU_HANDL_CALIB_MAX_RF_POWER(int8_t direction);
+static void SYSMENU_HANDL_CALIB_MAX_RF_POWER_ON_METER(int8_t direction);
 static void SYSMENU_HANDL_CALIB_SWR_FWD_RATE_HF(int8_t direction);
 static void SYSMENU_HANDL_CALIB_SWR_REF_RATE_HF(int8_t direction);
 static void SYSMENU_HANDL_CALIB_SWR_FWD_RATE_6M(int8_t direction);
@@ -322,6 +343,7 @@ static void SYSMENU_HANDL_CALIB_EXT_12m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_EXT_CB(int8_t direction);
 static void SYSMENU_HANDL_CALIB_EXT_10m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_EXT_6m(int8_t direction);
+static void SYSMENU_HANDL_CALIB_EXT_4m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_EXT_FM(int8_t direction);
 static void SYSMENU_HANDL_CALIB_EXT_2m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_EXT_70cm(int8_t direction);
@@ -344,6 +366,7 @@ static void SYSMENU_HANDL_CALIB_NOTX_12m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_NOTX_CB(int8_t direction);
 static void SYSMENU_HANDL_CALIB_NOTX_10m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_NOTX_6m(int8_t direction);
+static void SYSMENU_HANDL_CALIB_NOTX_4m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_NOTX_FM(int8_t direction);
 static void SYSMENU_HANDL_CALIB_NOTX_2m(int8_t direction);
 static void SYSMENU_HANDL_CALIB_NOTX_70cm(int8_t direction);
@@ -363,6 +386,12 @@ static void SYSMENU_HANDL_CALIB_CAT_Type(int8_t direction);
 static void SYSMENU_HANDL_CALIB_LNA_compensation(int8_t direction);
 static void SYSMENU_HANDL_CALIB_TwoSignalTune_Balance(int8_t direction);
 static void SYSMENU_HANDL_CALIB_LinearPowerControl(int8_t direction);
+static void SYSMENU_HANDL_CALIB_FlashGT911(int8_t direction);
+static void SYSMENU_HANDL_CALIB_IF_GAIN_MIN(int8_t direction);
+static void SYSMENU_HANDL_CALIB_IF_GAIN_MAX(int8_t direction);
+static void SYSMENU_HANDL_CALIB_SETTINGS_RESET(int8_t direction);
+static void SYSMENU_HANDL_CALIB_CALIBRATION_RESET(int8_t direction);
+static void SYSMENU_HANDL_CALIB_WIFI_RESET(int8_t direction);
 
 static void SYSMENU_HANDL_TRXMENU(int8_t direction);
 static void SYSMENU_HANDL_AUDIOMENU(int8_t direction);
@@ -370,21 +399,21 @@ static void SYSMENU_HANDL_CWMENU(int8_t direction);
 static void SYSMENU_HANDL_LCDMENU(int8_t direction);
 static void SYSMENU_HANDL_DECODERSMENU(int8_t direction);
 static void SYSMENU_HANDL_ADCMENU(int8_t direction);
-static void SYSMENU_HANDL_WIFIMENU(int8_t direction);
-static void SYSMENU_HANDL_SDMENU(int8_t direction);
 static void SYSMENU_HANDL_CALIBRATIONMENU(int8_t direction);
 
 #if HRDW_HAS_WIFI
+static void SYSMENU_HANDL_WIFIMENU(int8_t direction);
 static void SYSMENU_HANDL_DX_CLUSTER(int8_t direction);
 static void SYSMENU_HANDL_RDA_STATS(int8_t direction);
 static void SYSMENU_HANDL_PROPAGINATION(int8_t direction);
 static void SYSMENU_HANDL_DAYNIGHT_MAP(int8_t direction);
+static void SYSMENU_HANDL_IONOGRAM(int8_t direction);
 #endif
 static void SYSMENU_HANDL_SPECTRUMMENU(int8_t direction);
 static void SYSMENU_HANDL_SWR_ANALYSER_MENU(int8_t direction);
 static void SYSMENU_HANDL_WSPRMENU(int8_t direction);
 #if HRDW_HAS_SD
-static void SYSMENU_HANDL_FILEMANAGER(int8_t direction);
+static void SYSMENU_HANDL_SDMENU(int8_t direction);
 static void SYSMENU_HANDL_RECORD_CQ_WAV(int8_t direction);
 #endif
 static void SYSMENU_HANDL_FT8_Decoder(int8_t direction);	 // Tisho
@@ -392,6 +421,7 @@ static void SYSMENU_HANDL_SWR_Tandem_Ctrl(int8_t direction); // Tisho
 static void SYSMENU_HANDL_LOCATOR_INFO(int8_t direction);
 static void SYSMENU_HANDL_CALLSIGN_INFO(int8_t direction);
 static void SYSMENU_HANDL_SELF_TEST(int8_t direction);
+static void SYSMENU_HANDL_AUTO_CALIBRATION(int8_t direction);
 
 static void SYSMENU_HANDL_SPECTRUM_Begin(int8_t direction);
 static void SYSMENU_HANDL_SPECTRUM_Start(int8_t direction);
@@ -419,10 +449,14 @@ static void SYSMENU_HANDL_WSPR_BAND10(int8_t direction);
 static void SYSMENU_HANDL_WSPR_BAND6(int8_t direction);
 static void SYSMENU_HANDL_WSPR_BAND2(int8_t direction);
 
+static void SYSMENU_HANDL_AUTO_CALIBRATION_SWR(int8_t direction);
+static void SYSMENU_HANDL_AUTO_CALIBRATION_POWER(int8_t direction);
+
 static bool SYSMENU_HANDL_CHECK_HAS_LPF(void);
 static bool SYSMENU_HANDL_CHECK_HAS_HPF(void);
 static bool SYSMENU_HANDL_CHECK_HAS_BPF_8(void);
 static bool SYSMENU_HANDL_CHECK_HAS_BPF_9(void);
+static bool SYSMENU_HANDL_CHECK_HAS_BPF_10(void);
 static bool SYSMENU_HANDL_CHECK_HAS_RFFILTERS_BYPASS(void);
 static bool SYSMENU_HANDL_CHECK_HIDDEN_ENABLED(void);
 
@@ -434,240 +468,264 @@ static bool SYSMENU_HANDL_CHECK_HIDDEN_ENABLED(void);
 
 const static struct sysmenu_item_handler sysmenu_handlers[] =
 	{
-		{"TRX Settings", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_TRXMENU},
-		{"AUDIO Settings", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_AUDIOMENU},
-		{"CW Settings", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_CWMENU},
-		{"SCREEN Settings", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_LCDMENU},
-		{"Decoders", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_DECODERSMENU},
-		{"ADC/DAC Settings", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_ADCMENU},
+		{"TRX Settings", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_TRXMENU},
+		{"AUDIO Settings", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_AUDIOMENU},
+		{"CW Settings", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_CWMENU},
+		{"SCREEN Settings", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_LCDMENU},
+		{"Decoders", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_DECODERSMENU},
+		{"ADC/DAC Settings", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_ADCMENU},
 		#if HRDW_HAS_WIFI
-		{"WIFI Settings", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_WIFIMENU},
+		{"WIFI Settings", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_WIFIMENU},
 		#endif
 		#if HRDW_HAS_SD
-		{"SD Card", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_SDMENU},
+		{"SD Card", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_SDMENU},
 		#endif
-		{"Set Clock Time", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SETTIME},
-		{"DFU Mode", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_Bootloader},
+		{"Set Clock Time", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SETTIME},
+		{"DFU Mode", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_Bootloader},
 		#if HRDW_HAS_SD
-		{"OTA Update", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_OTA_Update},
+		{"OTA Update", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_OTA_Update},
 		#endif
-		{"Services", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SERVICESMENU},
-		{"System info", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SYSINFO},
-		{"Support project", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SUPPORT},
-		{"Calibration", SYSMENU_MENU, SYSMENU_HANDL_CHECK_HIDDEN_ENABLED, 0, SYSMENU_HANDL_CALIBRATIONMENU},
+		{"Services", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SERVICESMENU},
+		{"System info", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SYSINFO},
+		{"Support project", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SUPPORT},
+		{"Calibration", SYSMENU_MENU, SYSMENU_HANDL_CHECK_HIDDEN_ENABLED, NULL, SYSMENU_HANDL_CALIBRATIONMENU},
 };
 
 const static struct sysmenu_item_handler sysmenu_trx_handlers[] =
 	{
-		{"RF Power", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.RF_Power, SYSMENU_HANDL_TRX_RFPower},
-		{"Channel Mode", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.ChannelMode, SYSMENU_HANDL_TRX_ChannelMode},
-		{"Band Map", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.BandMapEnabled, SYSMENU_HANDL_TRX_BandMap},
-		{"AutoGainer", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.AutoGain, SYSMENU_HANDL_TRX_AutoGain},
+		{"RF Power", SYSMENU_UINT8, NULL, &TRX.RF_Power, SYSMENU_HANDL_TRX_RFPower},
+		{"Channel Mode", SYSMENU_BOOLEAN, NULL, &TRX.ChannelMode, SYSMENU_HANDL_TRX_ChannelMode},
+		{"Band Map", SYSMENU_BOOLEAN, NULL, &TRX.BandMapEnabled, SYSMENU_HANDL_TRX_BandMap},
+		{"AutoGainer", SYSMENU_BOOLEAN, NULL, &TRX.AutoGain, SYSMENU_HANDL_TRX_AutoGain},
 #if !defined(FRONTPANEL_LITE)
-		{"RF_Filters", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_RFFILTERS_BYPASS, (uint32_t *)&TRX.RF_Filters, SYSMENU_HANDL_TRX_RFFilters},
+		{"RF_Filters", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_RFFILTERS_BYPASS, &TRX.RF_Filters, SYSMENU_HANDL_TRX_RFFilters},
 #endif
-		{"Two Signal TUNE", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.TWO_SIGNAL_TUNE, SYSMENU_HANDL_TRX_TWO_SIGNAL_TUNE},
-		{"RIT Interval", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.RIT_INTERVAL, SYSMENU_HANDL_TRX_RIT_INTERVAL},
-		{"XIT Interval", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.XIT_INTERVAL, SYSMENU_HANDL_TRX_XIT_INTERVAL},
+		{"Two Signal TUNE", SYSMENU_BOOLEAN, NULL, &TRX.TWO_SIGNAL_TUNE, SYSMENU_HANDL_TRX_TWO_SIGNAL_TUNE},
+		{"RIT Interval", SYSMENU_UINT16, NULL, &TRX.RIT_INTERVAL, SYSMENU_HANDL_TRX_RIT_INTERVAL},
+		{"XIT Interval", SYSMENU_UINT16, NULL, &TRX.XIT_INTERVAL, SYSMENU_HANDL_TRX_XIT_INTERVAL},
 #if !defined(FRONTPANEL_LITE) && !defined(FRONTPANEL_X1)
-		{"Fine RIT Tune", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FineRITTune, SYSMENU_HANDL_TRX_FineRITTune},
+		{"Fine RIT Tune", SYSMENU_BOOLEAN, NULL, &TRX.FineRITTune, SYSMENU_HANDL_TRX_FineRITTune},
 #endif
-		{"TRX Samplerate", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.SAMPLERATE_MAIN, SYSMENU_HANDL_TRX_SAMPLERATE_MAIN, {"48khz", "96khz", "192khz", "384khz"}},
-		{"FM Samplerate", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.SAMPLERATE_FM, SYSMENU_HANDL_TRX_SAMPLERATE_FM, {"48khz", "96khz", "192khz", "384khz"}},
-		{"Freq Step", SYSMENU_UINT32R, NULL, (uint32_t *)&TRX.FRQ_STEP, SYSMENU_HANDL_TRX_FRQ_STEP},
-		{"Freq Step FAST", SYSMENU_UINT32R, NULL, (uint32_t *)&TRX.FRQ_FAST_STEP, SYSMENU_HANDL_TRX_FRQ_FAST_STEP},
-		{"Freq Step ENC2", SYSMENU_UINT32R, NULL, (uint32_t *)&TRX.FRQ_ENC_STEP, SYSMENU_HANDL_TRX_FRQ_ENC_STEP},
-		{"Freq Step ENC2 FAST", SYSMENU_UINT32R, NULL, (uint32_t *)&TRX.FRQ_ENC_FAST_STEP, SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP},
-		{"CW Freq Step divider", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FRQ_CW_STEP_DIVIDER, SYSMENU_HANDL_TRX_FRQ_CW_STEP_DIVIDER},
-		{"Encoder Accelerate", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Encoder_Accelerate, SYSMENU_HANDL_TRX_ENC_ACCELERATE},
-		{"Att step, dB", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.ATT_STEP, SYSMENU_HANDL_TRX_ATT_STEP},
-		{"DEBUG Console", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.Debug_Type, SYSMENU_HANDL_TRX_DEBUG_TYPE, {"OFF", "SYSTEM", "WIFI", "BUTTONS", "TOUCH", "CAT"}},
-		{"Auto Input Switch", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Auto_Input_Switch, SYSMENU_HANDL_TRX_Auto_Input_Switch},
-		{"Input Type MAIN", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.InputType_MAIN, SYSMENU_HANDL_TRX_INPUT_TYPE_MAIN, {"MIC", "LINE", "USB"}},
-		{"Input Type DIGI", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.InputType_DIGI, SYSMENU_HANDL_TRX_INPUT_TYPE_DIGI, {"MIC", "LINE", "USB"}},
-		{"Callsign", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_TRX_SetCallsign},
-		{"Locator", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_TRX_SetLocator},
-		{"Transverter 70cm", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Transverter_70cm, SYSMENU_HANDL_TRX_TRANSV_70CM},
-		{"Transverter 23cm", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Transverter_23cm, SYSMENU_HANDL_TRX_TRANSV_23CM},
-		{"Transverter 13cm", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Transverter_13cm, SYSMENU_HANDL_TRX_TRANSV_13CM},
-		{"Transverter 6cm", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Transverter_6cm, SYSMENU_HANDL_TRX_TRANSV_6CM},
-		{"Transverter 3cm", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Transverter_3cm, SYSMENU_HANDL_TRX_TRANSV_3CM},
-		{"Custom Transverter", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Custom_Transverter_Enabled, SYSMENU_HANDL_TRX_TRANSV_ENABLE},
-		{"Transverter Offset, mHz", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.Transverter_Offset_Mhz, SYSMENU_HANDL_TRX_TRANSV_OFFSET},
-		{"TUNER Enabled", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, (uint32_t *)&TRX.TUNER_Enabled, SYSMENU_HANDL_TRX_TUNER_Enabled},
-		{"ATU Enabled", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, (uint32_t *)&TRX.ATU_Enabled, SYSMENU_HANDL_TRX_ATU_Enabled},
-		{"ATU Ind", SYSMENU_ATU_I, SYSMENU_HANDL_CHECK_HAS_ATU, (uint32_t *)&TRX.ATU_I, SYSMENU_HANDL_TRX_ATU_I},
-		{"ATU Cap", SYSMENU_ATU_C, SYSMENU_HANDL_CHECK_HAS_ATU, (uint32_t *)&TRX.ATU_C, SYSMENU_HANDL_TRX_ATU_C},
-		{"ATU T", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, (uint32_t *)&TRX.ATU_T, SYSMENU_HANDL_TRX_ATU_T},
-		{"", SYSMENU_INFOLINE, SYSMENU_HANDL_CHECK_HAS_ATU, 0},
-		{"SWR:", SYSMENU_INFOLINE, SYSMENU_HANDL_CHECK_HAS_ATU, 0},
-		{TRX_SWR_SMOOTHED_STR, SYSMENU_INFOLINE, SYSMENU_HANDL_CHECK_HAS_ATU, 0},
+		{"TRX Samplerate", SYSMENU_ENUM, NULL, &TRX.SAMPLERATE_MAIN, SYSMENU_HANDL_TRX_SAMPLERATE_MAIN, {"48khz", "96khz", "192khz", "384khz"}},
+		{"FM Samplerate", SYSMENU_ENUM, NULL, &TRX.SAMPLERATE_FM, SYSMENU_HANDL_TRX_SAMPLERATE_FM, {"48khz", "96khz", "192khz", "384khz"}},
+		{"Freq Step", SYSMENU_UINT32R, NULL, &TRX.FRQ_STEP, SYSMENU_HANDL_TRX_FRQ_STEP},
+		{"Freq Step FAST", SYSMENU_UINT32R, NULL, &TRX.FRQ_FAST_STEP, SYSMENU_HANDL_TRX_FRQ_FAST_STEP},
+		{"Freq Step ENC2", SYSMENU_UINT32R, NULL, &TRX.FRQ_ENC_STEP, SYSMENU_HANDL_TRX_FRQ_ENC_STEP},
+		{"Freq Step ENC2 FAST", SYSMENU_UINT32R, NULL, &TRX.FRQ_ENC_FAST_STEP, SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP},
+		{"Freq Step WFM, kHz", SYSMENU_UINT32R, NULL, &TRX.FRQ_ENC_WFM_STEP_KHZ, SYSMENU_HANDL_TRX_FRQ_ENC_WFM_STEP_KHZ},
+		{"CW Freq Step divider", SYSMENU_UINT8, NULL, &TRX.FRQ_CW_STEP_DIVIDER, SYSMENU_HANDL_TRX_FRQ_CW_STEP_DIVIDER},
+		{"Encoder Accelerate", SYSMENU_BOOLEAN, NULL, &TRX.Encoder_Accelerate, SYSMENU_HANDL_TRX_ENC_ACCELERATE},
+		{"Att step, dB", SYSMENU_UINT8, NULL, &TRX.ATT_STEP, SYSMENU_HANDL_TRX_ATT_STEP},
+		{"Attenuation, dB", SYSMENU_FLOAT32, NULL, &TRX.ATT_DB, SYSMENU_HANDL_TRX_ATT_DB},
+#if HRDW_HAS_VGA
+        {"VGA Gain, dB", SYSMENU_FLOAT32, NULL, &TRX.VGA_GAIN, SYSMENU_HANDL_TRX_VGA_GAIN},
+#endif
+#if HRDW_HAS_USB_DEBUG
+		{"DEBUG Console", SYSMENU_ENUM, NULL, &TRX.Debug_Type, SYSMENU_HANDL_TRX_DEBUG_TYPE, {"OFF", "SYSTEM", "WIFI", "BUTTONS", "TOUCH", "CAT"}},
+#endif
+		{"Auto Input Switch", SYSMENU_BOOLEAN, NULL, &TRX.Auto_Input_Switch, SYSMENU_HANDL_TRX_Auto_Input_Switch},
+		{"Auto Snap", SYSMENU_BOOLEAN, NULL, &TRX.Auto_Snap, SYSMENU_HANDL_TRX_Auto_Snap},
+		{"Input Type MAIN", SYSMENU_ENUM, NULL, &TRX.InputType_MAIN, SYSMENU_HANDL_TRX_INPUT_TYPE_MAIN, {"MIC", "LINE", "USB"}},
+		{"Input Type DIGI", SYSMENU_ENUM, NULL, &TRX.InputType_DIGI, SYSMENU_HANDL_TRX_INPUT_TYPE_DIGI, {"MIC", "LINE", "USB"}},
+		{"Callsign", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_TRX_SetCallsign},
+		{"Locator", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_TRX_SetLocator},
+		{"URSI Code", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_TRX_SetURSICode},
+		{"Transverter 70cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_70cm, SYSMENU_HANDL_TRX_TRANSV_70CM},
+		{"Transverter 23cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_23cm, SYSMENU_HANDL_TRX_TRANSV_23CM},
+		{"Transverter 13cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_13cm, SYSMENU_HANDL_TRX_TRANSV_13CM},
+		{"Transverter 6cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_6cm, SYSMENU_HANDL_TRX_TRANSV_6CM},
+		{"Transverter 3cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_3cm, SYSMENU_HANDL_TRX_TRANSV_3CM},
+		{"Custom Transverter", SYSMENU_BOOLEAN, NULL, &TRX.Custom_Transverter_Enabled, SYSMENU_HANDL_TRX_TRANSV_ENABLE},
+		{"Transverter Offset, mHz", SYSMENU_UINT16, NULL, &TRX.Transverter_Offset_Mhz, SYSMENU_HANDL_TRX_TRANSV_OFFSET},
+		{"TUNER Enabled", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.TUNER_Enabled, SYSMENU_HANDL_TRX_TUNER_Enabled},
+		{"ATU Enabled", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.ATU_Enabled, SYSMENU_HANDL_TRX_ATU_Enabled},
+		{"ATU Ind", SYSMENU_ATU_I, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.ATU_I, SYSMENU_HANDL_TRX_ATU_I},
+		{"ATU Cap", SYSMENU_ATU_C, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.ATU_C, SYSMENU_HANDL_TRX_ATU_C},
+		{"ATU T", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.ATU_T, SYSMENU_HANDL_TRX_ATU_T},
+		{"", SYSMENU_INFOLINE, SYSMENU_HANDL_CHECK_HAS_ATU, NULL},
+		{"SWR:", SYSMENU_INFOLINE, SYSMENU_HANDL_CHECK_HAS_ATU, NULL},
+		{TRX_SWR_SMOOTHED_STR, SYSMENU_INFOLINE, SYSMENU_HANDL_CHECK_HAS_ATU, NULL},
 };
 
 const static struct sysmenu_item_handler sysmenu_audio_handlers[] =
 	{
 #if defined(FRONTPANEL_X1) || defined(FRONTPANEL_LITE)
-		{"Volume", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.Volume, SYSMENU_HANDL_AUDIO_Volume},
+		{"Volume", SYSMENU_UINT8, NULL, &TRX.Volume, SYSMENU_HANDL_AUDIO_Volume},
+		{"Volume Step", SYSMENU_UINT8, NULL, &TRX.Volume_Step, SYSMENU_HANDL_AUDIO_Volume_Step},
 #endif
-		{"IF Gain, dB", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.IF_Gain, SYSMENU_HANDL_AUDIO_IFGain},
-		{"DNR", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.DNR_shadow, SYSMENU_HANDL_AUDIO_DNR, {"OFF", "DNR1", "DNR2"}},
-		{"Noise blanker", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.NOISE_BLANKER, SYSMENU_HANDL_AUDIO_NOISE_BLANKER},
-		{"AGC", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.AGC_shadow, SYSMENU_HANDL_AUDIO_AGC},
-		{"AGC Gain target, LKFS", SYSMENU_INT8, NULL, (uint32_t *)&TRX.AGC_GAIN_TARGET, SYSMENU_HANDL_AUDIO_AGC_GAIN_TARGET},
-		{"Mic Gain", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.MIC_GAIN, SYSMENU_HANDL_AUDIO_MIC_Gain},
-		{"Mic Boost", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.MIC_Boost, SYSMENU_HANDL_AUDIO_MIC_Boost},
-		{"MIC Noise Gate", SYSMENU_INT8, NULL, (uint32_t *)&TRX.MIC_NOISE_GATE, SYSMENU_HANDL_AUDIO_MIC_NOISE_GATE},
-		{"DNR1 Threshold", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.DNR1_SNR_THRESHOLD, SYSMENU_HANDL_AUDIO_DNR1_THRES},
+		{"IF Gain, dB", SYSMENU_UINT8, NULL, &TRX.IF_Gain, SYSMENU_HANDL_AUDIO_IFGain},
+		{"DNR", SYSMENU_ENUM, NULL, &TRX.DNR_shadow, SYSMENU_HANDL_AUDIO_DNR, {"OFF", "DNR1", "DNR2"}},
+		{"Noise blanker", SYSMENU_BOOLEAN, NULL, &TRX.NOISE_BLANKER, SYSMENU_HANDL_AUDIO_NOISE_BLANKER},
+		{"AGC", SYSMENU_BOOLEAN, NULL, &TRX.AGC_shadow, SYSMENU_HANDL_AUDIO_AGC},
+		{"AGC Gain target, LKFS", SYSMENU_INT8, NULL, &TRX.AGC_GAIN_TARGET, SYSMENU_HANDL_AUDIO_AGC_GAIN_TARGET},
+        {"Mic Gain, dB", SYSMENU_FLOAT32, NULL, &TRX.MIC_GAIN_DB, SYSMENU_HANDL_AUDIO_MIC_Gain},
+		{"Mic Boost", SYSMENU_BOOLEAN, NULL, &TRX.MIC_Boost, SYSMENU_HANDL_AUDIO_MIC_Boost},
+		{"MIC Noise Gate", SYSMENU_INT8, NULL, &TRX.MIC_NOISE_GATE, SYSMENU_HANDL_AUDIO_MIC_NOISE_GATE},
+		{"DNR1 Threshold", SYSMENU_UINT8, NULL, &TRX.DNR1_SNR_THRESHOLD, SYSMENU_HANDL_AUDIO_DNR1_THRES},
 #if !defined(FRONTPANEL_LITE)
-		{"DNR2 Threshold", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.DNR2_SNR_THRESHOLD, SYSMENU_HANDL_AUDIO_DNR2_THRES},
+		{"DNR2 Threshold", SYSMENU_UINT8, NULL, &TRX.DNR2_SNR_THRESHOLD, SYSMENU_HANDL_AUDIO_DNR2_THRES},
 #endif
-		{"DNR Average", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.DNR_AVERAGE, SYSMENU_HANDL_AUDIO_DNR_AVERAGE},
-		{"DNR Minimal", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.DNR_MINIMAL, SYSMENU_HANDL_AUDIO_DNR_MINMAL},
-		{"SSB HPF RX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.SSB_HPF_RX_Filter, SYSMENU_HANDL_AUDIO_SSB_HPF_RX_pass},
-		{"SSB HPF TX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.SSB_HPF_TX_Filter, SYSMENU_HANDL_AUDIO_SSB_HPF_TX_pass},
-		{"SSB LPF RX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.SSB_LPF_RX_Filter, SYSMENU_HANDL_AUDIO_SSB_LPF_RX_pass},
-		{"SSB LPF TX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.SSB_LPF_TX_Filter, SYSMENU_HANDL_AUDIO_SSB_LPF_TX_pass},
-		{"CW LPF Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.CW_LPF_Filter, SYSMENU_HANDL_AUDIO_CW_LPF_pass},
-		{"DIGI LPF Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.DIGI_LPF_Filter, SYSMENU_HANDL_AUDIO_DIGI_LPF_pass},
-		{"AM LPF RX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.AM_LPF_RX_Filter, SYSMENU_HANDL_AUDIO_AM_LPF_RX_pass},
-		{"AM LPF TX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.AM_LPF_TX_Filter, SYSMENU_HANDL_AUDIO_AM_LPF_TX_pass},
-		{"FM LPF RX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.FM_LPF_RX_Filter, SYSMENU_HANDL_AUDIO_FM_LPF_RX_pass},
-		{"FM LPF TX Pass", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.FM_LPF_TX_Filter, SYSMENU_HANDL_AUDIO_FM_LPF_TX_pass},
-		{"Squelch", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.SQL_shadow, SYSMENU_HANDL_AUDIO_Squelch},
-		{"FM Squelch level, dbm", SYSMENU_INT8, NULL, (uint32_t *)&TRX.FM_SQL_threshold_dbm_shadow, SYSMENU_HANDL_AUDIO_FMSquelch},
-		{"MIC EQ Low SSB", SYSMENU_INT8, NULL, (uint32_t *)&TRX.MIC_EQ_LOW_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_LOW_SSB},
-		{"MIC EQ Mid SSB", SYSMENU_INT8, NULL, (uint32_t *)&TRX.MIC_EQ_MID_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_MID_SSB},
-		{"MIC EQ High SSB", SYSMENU_INT8, NULL, (uint32_t *)&TRX.MIC_EQ_HIG_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_HIG_SSB},
-		{"MIC EQ Low AMFM", SYSMENU_INT8, NULL, (uint32_t *)&TRX.MIC_EQ_LOW_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_LOW_AMFM},
-		{"MIC EQ Mid AMFM", SYSMENU_INT8, NULL, (uint32_t *)&TRX.MIC_EQ_MID_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_MID_AMFM},
-		{"MIC EQ High AMFM", SYSMENU_INT8, NULL, (uint32_t *)&TRX.MIC_EQ_HIG_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_HIG_AMFM},
+		{"DNR Average", SYSMENU_UINT8, NULL, &TRX.DNR_AVERAGE, SYSMENU_HANDL_AUDIO_DNR_AVERAGE},
+		{"DNR Minimal", SYSMENU_UINT8, NULL, &TRX.DNR_MINIMAL, SYSMENU_HANDL_AUDIO_DNR_MINMAL},
+		{"SSB HPF RX Pass", SYSMENU_UINT16, NULL, &TRX.SSB_HPF_RX_Filter, SYSMENU_HANDL_AUDIO_SSB_HPF_RX_pass},
+		{"SSB HPF TX Pass", SYSMENU_UINT16, NULL, &TRX.SSB_HPF_TX_Filter, SYSMENU_HANDL_AUDIO_SSB_HPF_TX_pass},
+		{"SSB LPF RX Pass", SYSMENU_UINT16, NULL, &TRX.SSB_LPF_RX_Filter, SYSMENU_HANDL_AUDIO_SSB_LPF_RX_pass},
+		{"SSB LPF TX Pass", SYSMENU_UINT16, NULL, &TRX.SSB_LPF_TX_Filter, SYSMENU_HANDL_AUDIO_SSB_LPF_TX_pass},
+		{"CW LPF Pass", SYSMENU_UINT16, NULL, &TRX.CW_LPF_Filter, SYSMENU_HANDL_AUDIO_CW_LPF_pass},
+		{"DIGI LPF Pass", SYSMENU_UINT16, NULL, &TRX.DIGI_LPF_Filter, SYSMENU_HANDL_AUDIO_DIGI_LPF_pass},
+		{"AM LPF RX Pass", SYSMENU_UINT16, NULL, &TRX.AM_LPF_RX_Filter, SYSMENU_HANDL_AUDIO_AM_LPF_RX_pass},
+		{"AM LPF TX Pass", SYSMENU_UINT16, NULL, &TRX.AM_LPF_TX_Filter, SYSMENU_HANDL_AUDIO_AM_LPF_TX_pass},
+		{"FM LPF RX Pass", SYSMENU_UINT16, NULL, &TRX.FM_LPF_RX_Filter, SYSMENU_HANDL_AUDIO_FM_LPF_RX_pass},
+		{"FM LPF TX Pass", SYSMENU_UINT16, NULL, &TRX.FM_LPF_TX_Filter, SYSMENU_HANDL_AUDIO_FM_LPF_TX_pass},
+		{"Squelch", SYSMENU_BOOLEAN, NULL, &TRX.SQL_shadow, SYSMENU_HANDL_AUDIO_Squelch},
+		{"FM Squelch level, dbm", SYSMENU_INT8, NULL, &TRX.FM_SQL_threshold_dbm_shadow, SYSMENU_HANDL_AUDIO_FMSquelch},
+		{"Beeper", SYSMENU_BOOLEAN, NULL, &TRX.Beeper, SYSMENU_HANDL_AUDIO_Beeper},
 #if !defined(STM32F407xx)
-		{"MIC Reverber", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.MIC_REVERBER, SYSMENU_HANDL_AUDIO_MIC_REVERBER},
+		{"MIC Reverber", SYSMENU_UINT8, NULL, &TRX.MIC_REVERBER, SYSMENU_HANDL_AUDIO_MIC_REVERBER},
 #endif
-		{"RX EQ Low", SYSMENU_INT8, NULL, (uint32_t *)&TRX.RX_EQ_LOW, SYSMENU_HANDL_AUDIO_RX_EQ_LOW},
-		{"RX EQ Mid", SYSMENU_INT8, NULL, (uint32_t *)&TRX.RX_EQ_MID, SYSMENU_HANDL_AUDIO_RX_EQ_MID},
-		{"RX EQ High", SYSMENU_INT8, NULL, (uint32_t *)&TRX.RX_EQ_HIG, SYSMENU_HANDL_AUDIO_RX_EQ_HIG},
-		{"RX AGC SSB Speed", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.RX_AGC_SSB_speed, SYSMENU_HANDL_AUDIO_RX_AGC_SSB_Speed},
-		{"RX AGC CW Speed", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.RX_AGC_CW_speed, SYSMENU_HANDL_AUDIO_RX_AGC_CW_Speed},
-		{"RX AGC Max gain", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.RX_AGC_Max_gain, SYSMENU_HANDL_AUDIO_RX_AGC_Max_gain},
-		{"RX AGC Hold time", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.RX_AGC_Hold, SYSMENU_HANDL_AUDIO_RX_AGC_Hold},
-		{"TX Compr Speed SSB", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.TX_Compressor_speed_SSB, SYSMENU_HANDL_AUDIO_TX_CompressorSpeed_SSB},
-		{"TX Compr MaxGain SSB", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.TX_Compressor_maxgain_SSB, SYSMENU_HANDL_AUDIO_TX_CompressorMaxGain_SSB},
-		{"TX Compr Speed AMFM", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.TX_Compressor_speed_AMFM, SYSMENU_HANDL_AUDIO_TX_CompressorSpeed_AMFM},
-		{"TX Compr MaxGain AMFM", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.TX_Compressor_maxgain_AMFM, SYSMENU_HANDL_AUDIO_TX_CompressorMaxGain_AMFM},
-		{"Beeper", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Beeper, SYSMENU_HANDL_AUDIO_Beeper},
-		{"CTCSS Frequency", SYSMENU_FLOAT32, NULL, (uint32_t *)&TRX.CTCSS_Freq, SYSMENU_HANDL_AUDIO_CTCSS_Freq},
-		{"SelfHear Volume", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.SELFHEAR_Volume, SYSMENU_HANDL_AUDIO_SELFHEAR_Volume},
+		{"MIC EQ 0.3k SSB", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P1_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_P1_SSB},
+		{"MIC EQ 0.7k SSB", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P2_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_P2_SSB},
+		{"MIC EQ 1.2k SSB", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P3_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_P3_SSB},
+		{"MIC EQ 1.8k SSB", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P4_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_P4_SSB},
+		{"MIC EQ 2.3k SSB", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P5_SSB, SYSMENU_HANDL_AUDIO_MIC_EQ_P5_SSB},
+		{"MIC EQ 0.3k AMFM", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P1_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_P1_AMFM},
+		{"MIC EQ 0.7k AMFM", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P2_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_P2_AMFM},
+		{"MIC EQ 1.2k AMFM", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P3_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_P3_AMFM},
+		{"MIC EQ 1.8k AMFM", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P4_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_P4_AMFM},
+		{"MIC EQ 2.3k AMFM", SYSMENU_INT8, NULL, &TRX.MIC_EQ_P5_AMFM, SYSMENU_HANDL_AUDIO_MIC_EQ_P5_AMFM},
+		{"RX EQ 0.3k", SYSMENU_INT8, NULL, &TRX.RX_EQ_P1, SYSMENU_HANDL_AUDIO_RX_EQ_P1},
+		{"RX EQ 0.7k", SYSMENU_INT8, NULL, &TRX.RX_EQ_P2, SYSMENU_HANDL_AUDIO_RX_EQ_P2},
+		{"RX EQ 1.2k", SYSMENU_INT8, NULL, &TRX.RX_EQ_P3, SYSMENU_HANDL_AUDIO_RX_EQ_P3},
+		{"RX EQ 1.8k", SYSMENU_INT8, NULL, &TRX.RX_EQ_P4, SYSMENU_HANDL_AUDIO_RX_EQ_P4},
+		{"RX EQ 2.3k", SYSMENU_INT8, NULL, &TRX.RX_EQ_P5, SYSMENU_HANDL_AUDIO_RX_EQ_P5},
+		{"RX AGC SSB Speed", SYSMENU_UINT8, NULL, &TRX.RX_AGC_SSB_speed, SYSMENU_HANDL_AUDIO_RX_AGC_SSB_Speed},
+		{"RX AGC CW Speed", SYSMENU_UINT8, NULL, &TRX.RX_AGC_CW_speed, SYSMENU_HANDL_AUDIO_RX_AGC_CW_Speed},
+		{"RX AGC Max gain", SYSMENU_UINT8, NULL, &TRX.RX_AGC_Max_gain, SYSMENU_HANDL_AUDIO_RX_AGC_Max_gain},
+		{"RX AGC Hold time", SYSMENU_UINT16, NULL, &TRX.RX_AGC_Hold, SYSMENU_HANDL_AUDIO_RX_AGC_Hold},
+		{"TX Compr Speed SSB", SYSMENU_UINT8, NULL, &TRX.TX_Compressor_speed_SSB, SYSMENU_HANDL_AUDIO_TX_CompressorSpeed_SSB},
+		{"TX Compr MaxGain SSB", SYSMENU_UINT8, NULL, &TRX.TX_Compressor_maxgain_SSB, SYSMENU_HANDL_AUDIO_TX_CompressorMaxGain_SSB},
+		{"TX Compr Speed AMFM", SYSMENU_UINT8, NULL, &TRX.TX_Compressor_speed_AMFM, SYSMENU_HANDL_AUDIO_TX_CompressorSpeed_AMFM},
+		{"TX Compr MaxGain AMFM", SYSMENU_UINT8, NULL, &TRX.TX_Compressor_maxgain_AMFM, SYSMENU_HANDL_AUDIO_TX_CompressorMaxGain_AMFM},
+		{"CTCSS Frequency", SYSMENU_FLOAT32, NULL, &TRX.CTCSS_Freq, SYSMENU_HANDL_AUDIO_CTCSS_Freq},
+		{"SelfHear Volume", SYSMENU_UINT8, NULL, &TRX.SELFHEAR_Volume, SYSMENU_HANDL_AUDIO_SELFHEAR_Volume},
 #if !defined(STM32F407xx)
-		{"WFM Stereo", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FM_Stereo, SYSMENU_HANDL_AUDIO_FM_Stereo},
+		{"WFM Stereo", SYSMENU_BOOLEAN, NULL, &TRX.FM_Stereo, SYSMENU_HANDL_AUDIO_FM_Stereo},
 #endif
-		{"AGC Spectral", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.AGC_Spectral, SYSMENU_HANDL_AUDIO_AGC_Spectral},
-		{"VAD Threshold", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.VAD_THRESHOLD, SYSMENU_HANDL_AUDIO_VAD_THRESHOLD},
-		{"VOX", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.VOX, SYSMENU_HANDL_AUDIO_VOX},
-		{"VOX Timeout, ms", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.VOX_TIMEOUT, SYSMENU_HANDL_AUDIO_VOX_TIMEOUT},
-		{"VOX Threshold, dbFS", SYSMENU_INT8, NULL, (uint32_t *)&TRX.VOX_THRESHOLD, SYSMENU_HANDL_AUDIO_VOX_THRESHOLD},
+		{"AGC Spectral", SYSMENU_BOOLEAN, NULL, &TRX.AGC_Spectral, SYSMENU_HANDL_AUDIO_AGC_Spectral},
+		{"TX CESSB", SYSMENU_BOOLEAN, NULL, &TRX.TX_CESSB, SYSMENU_HANDL_AUDIO_TX_CESSB},
+		{"TX CESSB Compress, dB", SYSMENU_FLOAT32, NULL, &TRX.TX_CESSB_COMPRESS_DB, SYSMENU_HANDL_AUDIO_TX_CESSB_COMPRESS_DB},
+		{"VAD Threshold", SYSMENU_UINT8, NULL, &TRX.VAD_THRESHOLD, SYSMENU_HANDL_AUDIO_VAD_THRESHOLD},
+		{"VOX", SYSMENU_BOOLEAN, NULL, &TRX.VOX, SYSMENU_HANDL_AUDIO_VOX},
+		{"VOX Timeout, ms", SYSMENU_UINT16, NULL, &TRX.VOX_TIMEOUT, SYSMENU_HANDL_AUDIO_VOX_TIMEOUT},
+		{"VOX Threshold, dbFS", SYSMENU_INT8, NULL, &TRX.VOX_THRESHOLD, SYSMENU_HANDL_AUDIO_VOX_THRESHOLD},
 };
 
 const static struct sysmenu_item_handler sysmenu_cw_handlers[] =
 	{
-		{"CW Key timeout", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.CW_Key_timeout, SYSMENU_HANDL_CW_Key_timeout},
-		{"CW Pitch", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.CW_Pitch, SYSMENU_HANDL_CW_Pitch},
-		{"CW Self Hear", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.CW_SelfHear, SYSMENU_HANDL_CW_SelfHear},
-		{"CW Keyer", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.CW_KEYER, SYSMENU_HANDL_CW_Keyer},
-		{"CW Keyer WPM", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.CW_KEYER_WPM, SYSMENU_HANDL_CW_Keyer_WPM},
-		{"CW Gauss filter", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.CW_GaussFilter, SYSMENU_HANDL_CW_GaussFilter},
-		{"CW DotToDash Rate", SYSMENU_FLOAT32, NULL, (uint32_t *)&TRX.CW_DotToDashRate, SYSMENU_HANDL_CW_DotToDashRate},
-		{"CW Iambic Keyer", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.CW_Iambic, SYSMENU_HANDL_CW_Iambic},
-		{"CW Key Invert", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.CW_Invert, SYSMENU_HANDL_CW_Invert},
-		{"CW PTT Type", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.CW_PTT_Type, SYSMENU_HANDL_CW_PTT_Type, {"Key", "PTT"}},
+		{"CW Key timeout", SYSMENU_UINT16, NULL, &TRX.CW_Key_timeout, SYSMENU_HANDL_CW_Key_timeout},
+		{"CW Pitch", SYSMENU_UINT16, NULL, &TRX.CW_Pitch, SYSMENU_HANDL_CW_Pitch},
+		{"CW Self Hear", SYSMENU_BOOLEAN, NULL, &TRX.CW_SelfHear, SYSMENU_HANDL_CW_SelfHear},
+		{"CW Keyer", SYSMENU_BOOLEAN, NULL, &TRX.CW_KEYER, SYSMENU_HANDL_CW_Keyer},
+		{"CW Keyer WPM", SYSMENU_UINT8, NULL, &TRX.CW_KEYER_WPM, SYSMENU_HANDL_CW_Keyer_WPM},
+		{"CW Gauss filter", SYSMENU_BOOLEAN, NULL, &TRX.CW_GaussFilter, SYSMENU_HANDL_CW_GaussFilter},
+		{"CW DotToDash Rate", SYSMENU_FLOAT32, NULL, &TRX.CW_DotToDashRate, SYSMENU_HANDL_CW_DotToDashRate},
+		{"CW Iambic Keyer", SYSMENU_BOOLEAN, NULL, &TRX.CW_Iambic, SYSMENU_HANDL_CW_Iambic},
+		{"CW Key Invert", SYSMENU_BOOLEAN, NULL, &TRX.CW_Invert, SYSMENU_HANDL_CW_Invert},
+		{"CW PTT Type", SYSMENU_ENUMR, NULL, &TRX.CW_PTT_Type, SYSMENU_HANDL_CW_PTT_Type, {"Key", "PTT", "KEY+PTT"}},
 };
 
 const static struct sysmenu_item_handler sysmenu_screen_handlers[] =
 	{
-		{"FFT Zoom", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FFT_Zoom, SYSMENU_HANDL_SCREEN_FFT_Zoom},
-		{"FFT Zoom CW", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FFT_ZoomCW, SYSMENU_HANDL_SCREEN_FFT_ZoomCW},
+		{"FFT Zoom", SYSMENU_UINT8, NULL, &TRX.FFT_Zoom, SYSMENU_HANDL_SCREEN_FFT_Zoom},
+		{"FFT Zoom CW", SYSMENU_UINT8, NULL, &TRX.FFT_ZoomCW, SYSMENU_HANDL_SCREEN_FFT_ZoomCW},
 #ifdef HAS_BRIGHTNESS_CONTROL
-		{"LCD Brightness", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.LCD_Brightness, SYSMENU_HANDL_SCREEN_LCD_Brightness},
-		{"LCD Sleep Timeout", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.LCD_SleepTimeout, SYSMENU_HANDL_SCREEN_LCD_SleepTimeout},
+		{"LCD Brightness", SYSMENU_UINT8, NULL, &TRX.LCD_Brightness, SYSMENU_HANDL_SCREEN_LCD_Brightness},
+		{"LCD Sleep Timeout", SYSMENU_UINT16, NULL, &TRX.LCD_SleepTimeout, SYSMENU_HANDL_SCREEN_LCD_SleepTimeout},
 #endif
-		{"Color Theme", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.ColorThemeId, SYSMENU_HANDL_SCREEN_COLOR_THEME, {"Black", "White", "Colored"}},
+#ifdef LAY_160x128
+		{"Color Theme", SYSMENU_ENUMR, NULL, &TRX.ColorThemeId, SYSMENU_HANDL_SCREEN_COLOR_THEME, {"Black", "White", "Colored", "CN", "C+Green", "C+White"}},
+#else
+		{"Color Theme", SYSMENU_ENUMR, NULL, &TRX.ColorThemeId, SYSMENU_HANDL_SCREEN_COLOR_THEME, {"Black", "White", "Colored", "CN", "CN+Green", "CN+White"}},
+#endif
 #ifdef LAY_480x320
-		{"Layout Theme", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.LayoutThemeId, SYSMENU_HANDL_SCREEN_LAYOUT_THEME, {"Default", "7 Segm"}},
+		{"Layout Theme", SYSMENU_ENUMR, NULL, &TRX.LayoutThemeId, SYSMENU_HANDL_SCREEN_LAYOUT_THEME, {"Default", "7 Segm"}},
 #endif
 #ifdef LAY_800x480
-		{"Layout Theme", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.LayoutThemeId, SYSMENU_HANDL_SCREEN_LAYOUT_THEME, {"Default", "Analog", "7 Segm", "Classic", "LZ1HAA"}},
+		{"Layout Theme", SYSMENU_ENUMR, NULL, &TRX.LayoutThemeId, SYSMENU_HANDL_SCREEN_LAYOUT_THEME, {"Default", "Analog", "7 Segm", "Classic", "Default+", "Analog+", "CN", "CN+"}},
 #endif
-		{"FFT Speed", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FFT_Speed, SYSMENU_HANDL_SCREEN_FFT_Speed},
-		{"FFT Automatic", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_Automatic, SYSMENU_HANDL_SCREEN_FFT_Automatic},
-		{"FFT Sensitivity", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FFT_Sensitivity, SYSMENU_HANDL_SCREEN_FFT_Sensitivity},
-		{"FFT Manual Bottom, dBm", SYSMENU_INT16, NULL, (uint32_t *)&TRX.FFT_ManualBottom, SYSMENU_HANDL_SCREEN_FFT_ManualBottom},
-		{"FFT Manual Top, dBm", SYSMENU_INT16, NULL, (uint32_t *)&TRX.FFT_ManualTop, SYSMENU_HANDL_SCREEN_FFT_ManualTop},
-		{"FFT Height", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FFT_Height, SYSMENU_HANDL_SCREEN_FFT_Height},
-		{"FFT Style", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.FFT_Style, SYSMENU_HANDL_SCREEN_FFT_Style, {"", "Gradien", "Fill", "Dots", "Contour"}},
+		{"FFT Speed", SYSMENU_UINT8, NULL, &TRX.FFT_Speed, SYSMENU_HANDL_SCREEN_FFT_Speed},
+		{"FFT Automatic", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Automatic, SYSMENU_HANDL_SCREEN_FFT_Automatic},
+		{"FFT Scale Type", SYSMENU_ENUM, NULL, &TRX.FFT_Scale_Type, SYSMENU_HANDL_SCREEN_FFT_Scale_Type, {"Ampl", "Squared", "dBm"}},
+		{"FFT Sensitivity", SYSMENU_UINT8, NULL, &TRX.FFT_Sensitivity, SYSMENU_HANDL_SCREEN_FFT_Sensitivity},
+		{"FFT Manual Bottom, dBm", SYSMENU_INT16, NULL, &TRX.FFT_ManualBottom, SYSMENU_HANDL_SCREEN_FFT_ManualBottom},
+		{"FFT Manual Top, dBm", SYSMENU_INT16, NULL, &TRX.FFT_ManualTop, SYSMENU_HANDL_SCREEN_FFT_ManualTop},
+		{"FFT Height", SYSMENU_UINT8, NULL, &TRX.FFT_Height, SYSMENU_HANDL_SCREEN_FFT_Height},
+		{"FFT Style", SYSMENU_ENUMR, NULL, &TRX.FFT_Style, SYSMENU_HANDL_SCREEN_FFT_Style, {"", "Gradien", "Fill", "Dots", "Contour"}},
 #if !defined(FRONTPANEL_LITE)
-		{"FFT BW Style", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.FFT_BW_Style, SYSMENU_HANDL_SCREEN_FFT_BW_Style, {"", "Fill", "LowOp", "Line"}},
+		{"FFT BW Style", SYSMENU_ENUMR, NULL, &TRX.FFT_BW_Style, SYSMENU_HANDL_SCREEN_FFT_BW_Style, {"", "Fill", "LowOp", "Line"}},
 #endif
-		{"FFT Color", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.FFT_Color, SYSMENU_HANDL_SCREEN_FFT_Color, {"", "Blu>Y>R", "BlB>Y>R", "Bla>Y>R", "Bla>Y>G", "Bla>R", "Bla>G", "Bla>Blu", "Bla>W"}},
-		{"WTF Color", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.WTF_Color, SYSMENU_HANDL_SCREEN_WTF_Color, {"", "Blu>Y>R", "BlB>Y>R", "Bla>Y>R", "Bla>Y>G", "Bla>R", "Bla>G", "Bla>Blu", "Bla>W"}},
-		{"FFT Freq Grid", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.FFT_FreqGrid, SYSMENU_HANDL_SCREEN_FFT_FreqGrid, {"NO", "Top", "All", "Bott"}},
+		{"FFT Color", SYSMENU_ENUMR, NULL, &TRX.FFT_Color, SYSMENU_HANDL_SCREEN_FFT_Color, {"", "Blu>Y>R", "BlB>Y>R", "BlR>Y>R", "Bla>Y>R", "Bla>Y>G", "Bla>R", "Bla>G", "Bla>Blu", "Bla>W"}},
+		{"WTF Color", SYSMENU_ENUMR, NULL, &TRX.WTF_Color, SYSMENU_HANDL_SCREEN_WTF_Color, {"", "Blu>Y>R", "BlB>Y>R", "BlR>Y>R", "Bla>Y>R", "Bla>Y>G", "Bla>R", "Bla>G", "Bla>Blu", "Bla>W"}},
+		{"FFT Freq Grid", SYSMENU_ENUM, NULL, &TRX.FFT_FreqGrid, SYSMENU_HANDL_SCREEN_FFT_FreqGrid, {"NO", "Top", "All", "Bott"}},
 #if !defined(FRONTPANEL_LITE)
-		{"FFT dBm Grid", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_dBmGrid, SYSMENU_HANDL_SCREEN_FFT_dBmGrid},
+		{"FFT dBm Grid", SYSMENU_BOOLEAN, NULL, &TRX.FFT_dBmGrid, SYSMENU_HANDL_SCREEN_FFT_dBmGrid},
 #endif
-		{"FFT Background", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_Background, SYSMENU_HANDL_SCREEN_FFT_Background},
+		{"FFT Background", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Background, SYSMENU_HANDL_SCREEN_FFT_Background},
 #if !defined(FRONTPANEL_LITE)
-		{"FFT Lens", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_Lens, SYSMENU_HANDL_SCREEN_FFT_Lens},
-		{"FFT Hold Peaks", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_HoldPeaks, SYSMENU_HANDL_SCREEN_FFT_HoldPeaks},
-		{"FFT 3D Mode", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.FFT_3D, SYSMENU_HANDL_SCREEN_FFT_3D, {"NO", "Lines", "Dots"}},
+		{"FFT Lens", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Lens, SYSMENU_HANDL_SCREEN_FFT_Lens},
+		{"FFT Hold Peaks", SYSMENU_BOOLEAN, NULL, &TRX.FFT_HoldPeaks, SYSMENU_HANDL_SCREEN_FFT_HoldPeaks},
+		{"FFT 3D Mode", SYSMENU_ENUM, NULL, &TRX.FFT_3D, SYSMENU_HANDL_SCREEN_FFT_3D, {"NO", "Lines", "Dots"}},
 #endif
-		{"FFT Enabled", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_Enabled, SYSMENU_HANDL_SCREEN_FFT_Enabled},
-		{"WTF Moving", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WTF_Moving, SYSMENU_HANDL_SCREEN_WTF_Moving},
-		{"FFT Compressor", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_Compressor, SYSMENU_HANDL_SCREEN_FFT_Compressor},
-		{"FFT Averaging", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FFT_Averaging, SYSMENU_HANDL_SCREEN_FFT_Averaging},
-		{"FFT Window", SYSMENU_ENUMR, NULL, (uint32_t *)&TRX.FFT_Window, SYSMENU_HANDL_SCREEN_FFT_Window, {"", "Dolph", "Blckman", "Nutall", "BlNutll", "Hann", "Hamming", "No"}},
+		{"FFT Enabled", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Enabled, SYSMENU_HANDL_SCREEN_FFT_Enabled},
+		{"WTF Moving", SYSMENU_BOOLEAN, NULL, &TRX.WTF_Moving, SYSMENU_HANDL_SCREEN_WTF_Moving},
+		{"FFT Compressor", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Compressor, SYSMENU_HANDL_SCREEN_FFT_Compressor},
+		{"FFT Averaging", SYSMENU_UINT8, NULL, &TRX.FFT_Averaging, SYSMENU_HANDL_SCREEN_FFT_Averaging},
+		{"FFT Window", SYSMENU_ENUMR, NULL, &TRX.FFT_Window, SYSMENU_HANDL_SCREEN_FFT_Window, {"", "Dolph", "Blckman", "Nutall", "BlNutll", "Hann", "Hamming", "No"}},
 #if HRDW_HAS_WIFI
-		{"FFT DXCluster", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_DXCluster, SYSMENU_HANDL_SCREEN_FFT_DXCluster},
-		{"FFT DXCluster Azimuth", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.FFT_DXCluster_Azimuth, SYSMENU_HANDL_SCREEN_FFT_DXCluster_Azimuth},
-		{"FFT DXCluster Timeout", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.FFT_DXCluster_Timeout, SYSMENU_HANDL_SCREEN_FFT_DXCluster_Timeout},
+		{"FFT DXCluster", SYSMENU_BOOLEAN, NULL, &TRX.FFT_DXCluster, SYSMENU_HANDL_SCREEN_FFT_DXCluster},
+		{"FFT DXCluster Azimuth", SYSMENU_BOOLEAN, NULL, &TRX.FFT_DXCluster_Azimuth, SYSMENU_HANDL_SCREEN_FFT_DXCluster_Azimuth},
+		{"FFT DXCluster Timeout", SYSMENU_UINT8, NULL, &TRX.FFT_DXCluster_Timeout, SYSMENU_HANDL_SCREEN_FFT_DXCluster_Timeout},
 #endif
 #if !defined(FRONTPANEL_LITE)
-		{"Show Sec VFO", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.Show_Sec_VFO, SYSMENU_HANDL_SCREEN_Show_Sec_VFO},
+		{"Show Sec VFO", SYSMENU_BOOLEAN, NULL, &TRX.Show_Sec_VFO, SYSMENU_HANDL_SCREEN_Show_Sec_VFO},
 #endif
-		{"FFT Scale Type", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.FFT_Scale_Type, SYSMENU_HANDL_SCREEN_FFT_Scale_Type, {"Ampl", "dBm"}},
 #ifdef HRDW_HAS_FUNCBUTTONS
-		{"Func button 1", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[0], SYSMENU_HANDL_SCREEN_FUNC_BUTTON1},
-		{"Func button 2", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[1], SYSMENU_HANDL_SCREEN_FUNC_BUTTON2},
-		{"Func button 3", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[2], SYSMENU_HANDL_SCREEN_FUNC_BUTTON3},
-		{"Func button 4", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[3], SYSMENU_HANDL_SCREEN_FUNC_BUTTON4},
-		{"Func button 5", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[4], SYSMENU_HANDL_SCREEN_FUNC_BUTTON5},
-		{"Func button 6", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[5], SYSMENU_HANDL_SCREEN_FUNC_BUTTON6},
-		{"Func button 7", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[6], SYSMENU_HANDL_SCREEN_FUNC_BUTTON7},
-		{"Func button 8", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[7], SYSMENU_HANDL_SCREEN_FUNC_BUTTON8},
-		{"Func button 9", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[8], SYSMENU_HANDL_SCREEN_FUNC_BUTTON9},
-		{"Func button 10", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[9], SYSMENU_HANDL_SCREEN_FUNC_BUTTON10},
-		{"Func button 11", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[10], SYSMENU_HANDL_SCREEN_FUNC_BUTTON11},
-		{"Func button 12", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[11], SYSMENU_HANDL_SCREEN_FUNC_BUTTON12},
-		{"Func button 13", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[12], SYSMENU_HANDL_SCREEN_FUNC_BUTTON13},
-		{"Func button 14", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[13], SYSMENU_HANDL_SCREEN_FUNC_BUTTON14},
-		{"Func button 15", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[14], SYSMENU_HANDL_SCREEN_FUNC_BUTTON15},
-		{"Func button 16", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[15], SYSMENU_HANDL_SCREEN_FUNC_BUTTON16},
-		{"Func button 17", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[16], SYSMENU_HANDL_SCREEN_FUNC_BUTTON17},
-		{"Func button 18", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[17], SYSMENU_HANDL_SCREEN_FUNC_BUTTON18},
-		{"Func button 19", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[18], SYSMENU_HANDL_SCREEN_FUNC_BUTTON19},
-		{"Func button 20", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[19], SYSMENU_HANDL_SCREEN_FUNC_BUTTON20},
-		{"Func button 21", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[20], SYSMENU_HANDL_SCREEN_FUNC_BUTTON21},
-		{"Func button 22", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[21], SYSMENU_HANDL_SCREEN_FUNC_BUTTON22},
-		{"Func button 23", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[22], SYSMENU_HANDL_SCREEN_FUNC_BUTTON23},
-		{"Func button 24", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[23], SYSMENU_HANDL_SCREEN_FUNC_BUTTON24},
-		{"Func button 25", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[24], SYSMENU_HANDL_SCREEN_FUNC_BUTTON25},
+		{"Func button 1", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[0], SYSMENU_HANDL_SCREEN_FUNC_BUTTON1},
+		{"Func button 2", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[1], SYSMENU_HANDL_SCREEN_FUNC_BUTTON2},
+		{"Func button 3", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[2], SYSMENU_HANDL_SCREEN_FUNC_BUTTON3},
+		{"Func button 4", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[3], SYSMENU_HANDL_SCREEN_FUNC_BUTTON4},
+		{"Func button 5", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[4], SYSMENU_HANDL_SCREEN_FUNC_BUTTON5},
+		{"Func button 6", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[5], SYSMENU_HANDL_SCREEN_FUNC_BUTTON6},
+		{"Func button 7", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[6], SYSMENU_HANDL_SCREEN_FUNC_BUTTON7},
+		{"Func button 8", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[7], SYSMENU_HANDL_SCREEN_FUNC_BUTTON8},
+		{"Func button 9", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[8], SYSMENU_HANDL_SCREEN_FUNC_BUTTON9},
+		{"Func button 10", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[9], SYSMENU_HANDL_SCREEN_FUNC_BUTTON10},
+		{"Func button 11", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[10], SYSMENU_HANDL_SCREEN_FUNC_BUTTON11},
+		{"Func button 12", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[11], SYSMENU_HANDL_SCREEN_FUNC_BUTTON12},
+		{"Func button 13", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[12], SYSMENU_HANDL_SCREEN_FUNC_BUTTON13},
+		{"Func button 14", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[13], SYSMENU_HANDL_SCREEN_FUNC_BUTTON14},
+		{"Func button 15", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[14], SYSMENU_HANDL_SCREEN_FUNC_BUTTON15},
+		{"Func button 16", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[15], SYSMENU_HANDL_SCREEN_FUNC_BUTTON16},
+		{"Func button 17", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[16], SYSMENU_HANDL_SCREEN_FUNC_BUTTON17},
+		{"Func button 18", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[17], SYSMENU_HANDL_SCREEN_FUNC_BUTTON18},
+		{"Func button 19", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[18], SYSMENU_HANDL_SCREEN_FUNC_BUTTON19},
+		{"Func button 20", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[19], SYSMENU_HANDL_SCREEN_FUNC_BUTTON20},
+		{"Func button 21", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[20], SYSMENU_HANDL_SCREEN_FUNC_BUTTON21},
+		{"Func button 22", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[21], SYSMENU_HANDL_SCREEN_FUNC_BUTTON22},
+		{"Func button 23", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[22], SYSMENU_HANDL_SCREEN_FUNC_BUTTON23},
+		{"Func button 24", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[23], SYSMENU_HANDL_SCREEN_FUNC_BUTTON24},
+		{"Func button 25", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[24], SYSMENU_HANDL_SCREEN_FUNC_BUTTON25},
 #if (FUNCBUTTONS_ON_PAGE * FUNCBUTTONS_PAGES) > 25
-		{"Func button 26", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[25], SYSMENU_HANDL_SCREEN_FUNC_BUTTON26},
-		{"Func button 27", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[26], SYSMENU_HANDL_SCREEN_FUNC_BUTTON27},
+		{"Func button 26", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[25], SYSMENU_HANDL_SCREEN_FUNC_BUTTON26},
+		{"Func button 27", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[26], SYSMENU_HANDL_SCREEN_FUNC_BUTTON27},
 #if (FUNCBUTTONS_ON_PAGE * FUNCBUTTONS_PAGES) > 27
-		{"Func button 28", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[27], SYSMENU_HANDL_SCREEN_FUNC_BUTTON28},
-		{"Func button 29", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[28], SYSMENU_HANDL_SCREEN_FUNC_BUTTON29},
-		{"Func button 30", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[29], SYSMENU_HANDL_SCREEN_FUNC_BUTTON30},
-		{"Func button 31", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[30], SYSMENU_HANDL_SCREEN_FUNC_BUTTON31},
-		{"Func button 32", SYSMENU_FUNCBUTTON, NULL, (uint32_t *)&TRX.FuncButtons[31], SYSMENU_HANDL_SCREEN_FUNC_BUTTON32},
+		{"Func button 28", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[27], SYSMENU_HANDL_SCREEN_FUNC_BUTTON28},
+		{"Func button 29", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[28], SYSMENU_HANDL_SCREEN_FUNC_BUTTON29},
+		{"Func button 30", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[29], SYSMENU_HANDL_SCREEN_FUNC_BUTTON30},
+#if (FUNCBUTTONS_ON_PAGE * FUNCBUTTONS_PAGES) > 30
+		{"Func button 31", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[30], SYSMENU_HANDL_SCREEN_FUNC_BUTTON31},
+		{"Func button 32", SYSMENU_FUNCBUTTON, NULL, &TRX.FuncButtons[31], SYSMENU_HANDL_SCREEN_FUNC_BUTTON32},
+#endif
 #endif
 #endif
 #endif
@@ -676,301 +734,328 @@ const static struct sysmenu_item_handler sysmenu_screen_handlers[] =
 const static struct sysmenu_item_handler sysmenu_decoders_handlers[] =
 	{
 		#if !defined(FRONTPANEL_LITE)
-		{"CW Decoder", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.CW_Decoder, SYSMENU_HANDL_DECODERS_CW_Decoder},
-		{"CW Decoder Threshold", SYSMENU_UINT8, NULL, (uint32_t *)&TRX.CW_Decoder_Threshold, SYSMENU_HANDL_DECODERS_CW_Decoder_Threshold},
-		{"RDS Decoder", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.RDS_Decoder, SYSMENU_HANDL_DECODERS_RDS_Decoder},
+		{"CW Decoder", SYSMENU_BOOLEAN, NULL, &TRX.CW_Decoder, SYSMENU_HANDL_DECODERS_CW_Decoder},
+		{"CW Decoder Threshold", SYSMENU_UINT8, NULL, &TRX.CW_Decoder_Threshold, SYSMENU_HANDL_DECODERS_CW_Decoder_Threshold},
+		{"RDS Decoder", SYSMENU_BOOLEAN, NULL, &TRX.RDS_Decoder, SYSMENU_HANDL_DECODERS_RDS_Decoder},
 		#endif
-		{"RTTY Speed", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.RTTY_Speed, SYSMENU_HANDL_DECODERS_RTTY_Speed},
-		{"RTTY Shift", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.RTTY_Shift, SYSMENU_HANDL_DECODERS_RTTY_Shift},
-		{"RTTY Freq", SYSMENU_UINT16, NULL, (uint32_t *)&TRX.RTTY_Freq, SYSMENU_HANDL_DECODERS_RTTY_Freq},
-		{"RTTY StopBits", SYSMENU_ENUM, NULL, (uint32_t *)&TRX.RTTY_StopBits, SYSMENU_HANDL_DECODERS_RTTY_StopBits, {"1", "1.5", "2"}},
-		{"RTTY InvertBits", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.RTTY_InvertBits, SYSMENU_HANDL_DECODERS_RTTY_InvertBits},
+		{"RTTY Speed", SYSMENU_UINT16, NULL, &TRX.RTTY_Speed, SYSMENU_HANDL_DECODERS_RTTY_Speed},
+		{"RTTY Shift", SYSMENU_UINT16, NULL, &TRX.RTTY_Shift, SYSMENU_HANDL_DECODERS_RTTY_Shift},
+		{"RTTY Freq", SYSMENU_UINT16, NULL, &TRX.RTTY_Freq, SYSMENU_HANDL_DECODERS_RTTY_Freq},
+		{"RTTY StopBits", SYSMENU_ENUM, NULL, &TRX.RTTY_StopBits, SYSMENU_HANDL_DECODERS_RTTY_StopBits, {"1", "1.5", "2"}},
+		{"RTTY InvertBits", SYSMENU_BOOLEAN, NULL, &TRX.RTTY_InvertBits, SYSMENU_HANDL_DECODERS_RTTY_InvertBits},
 };
 
 const static struct sysmenu_item_handler sysmenu_adc_handlers[] =
 	{
-		{"ADC Driver", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.ADC_Driver, SYSMENU_HANDL_ADC_DRIVER},
+		{"ADC Driver", SYSMENU_BOOLEAN, NULL, &TRX.ADC_Driver, SYSMENU_HANDL_ADC_DRIVER},
 		#if !defined(FRONTPANEL_LITE)
-		{"ADC Preamp", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.ADC_PGA, SYSMENU_HANDL_ADC_PGA},
-		{"ADC Dither", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.ADC_DITH, SYSMENU_HANDL_ADC_DITH},
-		{"ADC Randomizer", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.ADC_RAND, SYSMENU_HANDL_ADC_RAND},
+		{"ADC Preamp", SYSMENU_BOOLEAN, NULL, &TRX.ADC_PGA, SYSMENU_HANDL_ADC_PGA},
+		{"ADC Dither", SYSMENU_BOOLEAN, NULL, &TRX.ADC_DITH, SYSMENU_HANDL_ADC_DITH},
+		{"ADC Randomizer", SYSMENU_BOOLEAN, NULL, &TRX.ADC_RAND, SYSMENU_HANDL_ADC_RAND},
 		#endif
-		{"ADC Shutdown", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.ADC_SHDN, SYSMENU_HANDL_ADC_SHDN},
+		{"ADC Shutdown", SYSMENU_BOOLEAN, NULL, &TRX.ADC_SHDN, SYSMENU_HANDL_ADC_SHDN},
 };
 
 #if HRDW_HAS_WIFI
 const static struct sysmenu_item_handler sysmenu_wifi_handlers[] =
 	{
-		{"WIFI Enabled", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WIFI_Enabled, SYSMENU_HANDL_WIFI_Enabled},
-		{"WIFI Network 1", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WIFI_SelectAP1},
-		{"WIFI Network 1 Pass", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WIFI_SetAP1password},
-		{"WIFI Network 2", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WIFI_SelectAP2},
-		{"WIFI Network 2 Pass", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WIFI_SetAP2password},
-		{"WIFI Network 3", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WIFI_SelectAP3},
-		{"WIFI Network 3 Pass", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WIFI_SetAP3password},
-		{"WIFI Timezone", SYSMENU_INT8, NULL, (uint32_t *)&TRX.WIFI_TIMEZONE, SYSMENU_HANDL_WIFI_Timezone},
-		{"WIFI CAT Server", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WIFI_CAT_SERVER, SYSMENU_HANDL_WIFI_CAT_Server},
-		{"WIFI Update ESP firmware", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WIFI_UpdateFW},
-		{"", SYSMENU_INFOLINE, 0, 0},
-		{"NET:", SYSMENU_INFOLINE, 0, 0},
-		{WIFI_AP, SYSMENU_INFOLINE, 0, 0},
-		{"", SYSMENU_INFOLINE, 0, 0},
-		{"IP:", SYSMENU_INFOLINE, 0, 0},
-		{WIFI_IP, SYSMENU_INFOLINE, 0, 0},
+		{"WIFI Enabled", SYSMENU_BOOLEAN, NULL, &WIFI.Enabled, SYSMENU_HANDL_WIFI_Enabled},
+		{"WIFI Network 1", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WIFI_SelectAP1},
+		{"WIFI Network 1 Pass", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WIFI_SetAP1password},
+		{"WIFI Network 2", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WIFI_SelectAP2},
+		{"WIFI Network 2 Pass", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WIFI_SetAP2password},
+		{"WIFI Network 3", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WIFI_SelectAP3},
+		{"WIFI Network 3 Pass", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WIFI_SetAP3password},
+		{"WIFI Timezone", SYSMENU_INT8, NULL, &WIFI.Timezone, SYSMENU_HANDL_WIFI_Timezone},
+		{"WIFI CAT Server", SYSMENU_BOOLEAN, NULL, &WIFI.CAT_Server, SYSMENU_HANDL_WIFI_CAT_Server},
+		{"WIFI Update ESP firmware", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WIFI_UpdateFW},
+		{"", SYSMENU_INFOLINE, NULL, NULL},
+		{"NET:", SYSMENU_INFOLINE, NULL, NULL},
+		{WIFI_AP, SYSMENU_INFOLINE, NULL, NULL},
+		{"", SYSMENU_INFOLINE, NULL, NULL},
+		{"IP:", SYSMENU_INFOLINE, NULL, NULL},
+		{WIFI_IP, SYSMENU_INFOLINE, NULL, NULL},
 };
 #endif
 
 #if HRDW_HAS_SD
 const static struct sysmenu_item_handler sysmenu_sd_handlers[] =
 	{
-		{"USB SD Card Reader", SYSMENU_BOOLEAN, NULL, (uint32_t *)&SD_USBCardReader, SYSMENU_HANDL_SD_USB},
+		{"File Manager", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_Filemanager},
+		{"USB SD Card Reader", SYSMENU_BOOLEAN, NULL, &SD_USBCardReader, SYSMENU_HANDL_SD_USB},
 		{"Export Settings to SD", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_ExportSettingsDialog},
 		{"Import Settings from SD", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_ImportSettingsDialog},
-		{"Format SD card", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_Format},
+		{"Format SD card", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_FormatDialog},
 };
 
 const static struct sysmenu_item_handler sysmenu_sd_export_handlers[] =
 	{
-		{"Back", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_Back},
-		{"Yes, Export Settings", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_ExportSettings},
+		{"Back", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_Back},
+		{"Yes, Export Settings", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SD_ExportSettings},
 };
 
 const static struct sysmenu_item_handler sysmenu_sd_import_handlers[] =
 	{
-		{"Back", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_Back},
-		{"Yes, Import Settings", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SD_ImportSettings},
+		{"Back", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_Back},
+		{"Yes, Import Settings", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SD_ImportSettings},
+};
+const static struct sysmenu_item_handler sysmenu_sd_format_handlers[] =
+	{
+		{"Back", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_Back},
+		{"Yes, Format SD Card", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SD_Format},
 };
 #endif
 
 const static struct sysmenu_item_handler sysmenu_calibration_handlers[] =
 	{
-		{"Encoder invert", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.ENCODER_INVERT, SYSMENU_HANDL_CALIB_ENCODER_INVERT},
-		{"Encoder2 invert", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.ENCODER2_INVERT, SYSMENU_HANDL_CALIB_ENCODER2_INVERT},
-		{"Encoder debounce", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.ENCODER_DEBOUNCE, SYSMENU_HANDL_CALIB_ENCODER_DEBOUNCE},
-		{"Encoder2 debounce", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.ENCODER2_DEBOUNCE, SYSMENU_HANDL_CALIB_ENCODER2_DEBOUNCE},
-		{"Encoder slow rate", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.ENCODER_SLOW_RATE, SYSMENU_HANDL_CALIB_ENCODER_SLOW_RATE},
-		{"Encoder on falling", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.ENCODER_ON_FALLING, SYSMENU_HANDL_CALIB_ENCODER_ON_FALLING},
-		{"Encoder acceleration", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.ENCODER_ACCELERATION, SYSMENU_HANDL_CALIB_ENCODER_ACCELERATION},
+		{"Encoder invert", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENCODER_INVERT, SYSMENU_HANDL_CALIB_ENCODER_INVERT},
+		{"Encoder2 invert", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENCODER2_INVERT, SYSMENU_HANDL_CALIB_ENCODER2_INVERT},
+		{"Encoder debounce", SYSMENU_UINT8, NULL, &CALIBRATE.ENCODER_DEBOUNCE, SYSMENU_HANDL_CALIB_ENCODER_DEBOUNCE},
+		{"Encoder2 debounce", SYSMENU_UINT8, NULL, &CALIBRATE.ENCODER2_DEBOUNCE, SYSMENU_HANDL_CALIB_ENCODER2_DEBOUNCE},
+		{"Encoder slow rate", SYSMENU_UINT8, NULL, &CALIBRATE.ENCODER_SLOW_RATE, SYSMENU_HANDL_CALIB_ENCODER_SLOW_RATE},
+		{"Encoder on falling", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENCODER_ON_FALLING, SYSMENU_HANDL_CALIB_ENCODER_ON_FALLING},
+		{"Encoder acceleration", SYSMENU_UINT8, NULL, &CALIBRATE.ENCODER_ACCELERATION, SYSMENU_HANDL_CALIB_ENCODER_ACCELERATION},
 #if !defined(FRONTPANEL_LITE)
-		{"RF-Unit Type", SYSMENU_ENUM, NULL, (uint32_t *)&CALIBRATE.RF_unit_type, SYSMENU_HANDL_CALIB_RF_unit_type, {"QRP", "BIG", "SPLIT", "RU4PN", "WF-100D"}},
+		{"RF-Unit Type", SYSMENU_ENUM, NULL, &CALIBRATE.RF_unit_type, SYSMENU_HANDL_CALIB_RF_unit_type, {"NONE", "QRP", "BIG", "SPLIT", "RU4PN", "LZ1HAA","WF-100D"}},
 #endif
 #if defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D)
-		{"Tangent Type", SYSMENU_ENUM, NULL, (uint32_t *)&CALIBRATE.TangentType, SYSMENU_HANDL_CALIB_TangentType, {"MH-36", "MH-48"}},
+		{"Tangent Type", SYSMENU_ENUM, NULL, &CALIBRATE.TangentType, SYSMENU_HANDL_CALIB_TangentType, {"MH-36", "MH-48"}},
 #endif
-		{"CICCOMP 48K Shift", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.CICFIR_GAINER_48K_val, SYSMENU_HANDL_CALIB_CICCOMP_48K_SHIFT},
-		{"CICCOMP 96K Shift", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.CICFIR_GAINER_96K_val, SYSMENU_HANDL_CALIB_CICCOMP_96K_SHIFT},
-		{"CICCOMP 192K Shift", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.CICFIR_GAINER_192K_val, SYSMENU_HANDL_CALIB_CICCOMP_192K_SHIFT},
-		{"CICCOMP 384K Shift", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.CICFIR_GAINER_384K_val, SYSMENU_HANDL_CALIB_CICCOMP_384K_SHIFT},
-		{"TX CICCOMP Shift", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.TXCICFIR_GAINER_val, SYSMENU_HANDL_CALIB_TXCICCOMP_SHIFT},
-		{"DAC Shift", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.DAC_GAINER_val, SYSMENU_HANDL_CALIB_DAC_SHIFT},
-		{"RF GAIN 2200m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_2200m, SYSMENU_HANDL_CALIB_RF_GAIN_2200M},
-		{"RF GAIN 160m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_160m, SYSMENU_HANDL_CALIB_RF_GAIN_160M},
-		{"RF GAIN 80m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_80m, SYSMENU_HANDL_CALIB_RF_GAIN_80M},
-		{"RF GAIN 40m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_40m, SYSMENU_HANDL_CALIB_RF_GAIN_40M},
-		{"RF GAIN 30m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_30m, SYSMENU_HANDL_CALIB_RF_GAIN_30M},
-		{"RF GAIN 20m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_20m, SYSMENU_HANDL_CALIB_RF_GAIN_20M},
-		{"RF GAIN 17m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_17m, SYSMENU_HANDL_CALIB_RF_GAIN_17M},
-		{"RF GAIN 15m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_15m, SYSMENU_HANDL_CALIB_RF_GAIN_15M},
-		{"RF GAIN 12m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_12m, SYSMENU_HANDL_CALIB_RF_GAIN_12M},
-		{"RF GAIN CB", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_cb, SYSMENU_HANDL_CALIB_RF_GAIN_CB},
-		{"RF GAIN 10m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_10m, SYSMENU_HANDL_CALIB_RF_GAIN_10M},
-		{"RF GAIN 6m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_6m, SYSMENU_HANDL_CALIB_RF_GAIN_6M},
+		{"CICCOMP 48K Shift", SYSMENU_UINT8, NULL, &CALIBRATE.CICFIR_GAINER_48K_val, SYSMENU_HANDL_CALIB_CICCOMP_48K_SHIFT},
+		{"CICCOMP 96K Shift", SYSMENU_UINT8, NULL, &CALIBRATE.CICFIR_GAINER_96K_val, SYSMENU_HANDL_CALIB_CICCOMP_96K_SHIFT},
+		{"CICCOMP 192K Shift", SYSMENU_UINT8, NULL, &CALIBRATE.CICFIR_GAINER_192K_val, SYSMENU_HANDL_CALIB_CICCOMP_192K_SHIFT},
+		{"CICCOMP 384K Shift", SYSMENU_UINT8, NULL, &CALIBRATE.CICFIR_GAINER_384K_val, SYSMENU_HANDL_CALIB_CICCOMP_384K_SHIFT},
+		{"TX CICCOMP Shift", SYSMENU_UINT8, NULL, &CALIBRATE.TXCICFIR_GAINER_val, SYSMENU_HANDL_CALIB_TXCICCOMP_SHIFT},
+		{"DAC Shift", SYSMENU_UINT8, NULL, &CALIBRATE.DAC_GAINER_val, SYSMENU_HANDL_CALIB_DAC_SHIFT},
 #if !defined(FRONTPANEL_LITE)
-		{"RF GAIN 2m", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.rf_out_power_2m, SYSMENU_HANDL_CALIB_RF_GAIN_2M},
+		{"DAC Driver Mode", SYSMENU_UINT8, NULL, &CALIBRATE.DAC_driver_mode, SYSMENU_HANDL_CALIB_DAC_driver_mode},
 #endif
-		{"S METER HF", SYSMENU_INT16, NULL, (uint32_t *)&CALIBRATE.smeter_calibration_hf, SYSMENU_HANDL_CALIB_S_METER_HF},
-		{"S METER VHF", SYSMENU_INT16, NULL, (uint32_t *)&CALIBRATE.smeter_calibration_vhf, SYSMENU_HANDL_CALIB_S_METER_VHF},
-		{"ADC OFFSET", SYSMENU_INT16, NULL, (uint32_t *)&CALIBRATE.adc_offset, SYSMENU_HANDL_CALIB_ADC_OFFSET},
+		{"RF GAIN 2200m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_2200m, SYSMENU_HANDL_CALIB_RF_GAIN_2200M},
+		{"RF GAIN 160m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_160m, SYSMENU_HANDL_CALIB_RF_GAIN_160M},
+		{"RF GAIN 80m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_80m, SYSMENU_HANDL_CALIB_RF_GAIN_80M},
+		{"RF GAIN 40m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_40m, SYSMENU_HANDL_CALIB_RF_GAIN_40M},
+		{"RF GAIN 30m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_30m, SYSMENU_HANDL_CALIB_RF_GAIN_30M},
+		{"RF GAIN 20m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_20m, SYSMENU_HANDL_CALIB_RF_GAIN_20M},
+		{"RF GAIN 17m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_17m, SYSMENU_HANDL_CALIB_RF_GAIN_17M},
+		{"RF GAIN 15m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_15m, SYSMENU_HANDL_CALIB_RF_GAIN_15M},
+		{"RF GAIN 12m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_12m, SYSMENU_HANDL_CALIB_RF_GAIN_12M},
+		{"RF GAIN CB", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_cb, SYSMENU_HANDL_CALIB_RF_GAIN_CB},
+		{"RF GAIN 10m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_10m, SYSMENU_HANDL_CALIB_RF_GAIN_10M},
 #if !defined(FRONTPANEL_LITE)
-		{"LPF END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_LPF, (uint32_t *)&CALIBRATE.RFU_LPF_END, SYSMENU_HANDL_CALIB_LPF_END},
-		{"HPF START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_LPF, (uint32_t *)&CALIBRATE.RFU_HPF_START, SYSMENU_HANDL_CALIB_HPF_START},
-		{"BPF 0 START", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_0_START, SYSMENU_HANDL_CALIB_BPF_0_START},
-		{"BPF 0 END", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_0_END, SYSMENU_HANDL_CALIB_BPF_0_END},
-		{"BPF 1 START", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_1_START, SYSMENU_HANDL_CALIB_BPF_1_START},
-		{"BPF 1 END", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_1_END, SYSMENU_HANDL_CALIB_BPF_1_END},
-		{"BPF 2 START", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_2_START, SYSMENU_HANDL_CALIB_BPF_2_START},
-		{"BPF 2 END", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_2_END, SYSMENU_HANDL_CALIB_BPF_2_END},
-		{"BPF 3 START", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_3_START, SYSMENU_HANDL_CALIB_BPF_3_START},
-		{"BPF 3 END", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_3_END, SYSMENU_HANDL_CALIB_BPF_3_END},
-		{"BPF 4 START", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_4_START, SYSMENU_HANDL_CALIB_BPF_4_START},
-		{"BPF 4 END", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_4_END, SYSMENU_HANDL_CALIB_BPF_4_END},
-		{"BPF 5 START", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_5_START, SYSMENU_HANDL_CALIB_BPF_5_START},
-		{"BPF 5 END", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_5_END, SYSMENU_HANDL_CALIB_BPF_5_END},
-		{"BPF 6 START", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_6_START, SYSMENU_HANDL_CALIB_BPF_6_START},
-		{"BPF 6 END", SYSMENU_UINT32, NULL, (uint32_t *)&CALIBRATE.RFU_BPF_6_END, SYSMENU_HANDL_CALIB_BPF_6_END},
-		{"BPF 7 START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_8, (uint32_t *)&CALIBRATE.RFU_BPF_7_START, SYSMENU_HANDL_CALIB_BPF_7_START},
-		{"BPF 7 END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_8, (uint32_t *)&CALIBRATE.RFU_BPF_7_END, SYSMENU_HANDL_CALIB_BPF_7_END},
-		{"BPF 8 START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_9, (uint32_t *)&CALIBRATE.RFU_BPF_8_START, SYSMENU_HANDL_CALIB_BPF_8_START},
-		{"BPF 8 END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_9, (uint32_t *)&CALIBRATE.RFU_BPF_8_END, SYSMENU_HANDL_CALIB_BPF_8_END},
+		{"RF GAIN 6m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_6m, SYSMENU_HANDL_CALIB_RF_GAIN_6M},
+		{"RF GAIN 4m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_4m, SYSMENU_HANDL_CALIB_RF_GAIN_4M},
+		{"RF GAIN 2m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_2m, SYSMENU_HANDL_CALIB_RF_GAIN_2M},
 #endif
-		{"MAX RF Power", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.MAX_RF_POWER, SYSMENU_HANDL_CALIB_MAX_RF_POWER},
-		{"TUNE Max Power", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.TUNE_MAX_POWER, SYSMENU_HANDL_CALIB_TUNE_MAX_POWER},
-		{"SSB Power addition", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.SSB_POWER_ADDITION, SYSMENU_HANDL_CALIB_SSB_POWER_ADDITION},
-		{"SWR FWD RATE HF", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.SWR_FWD_Calibration_HF, SYSMENU_HANDL_CALIB_SWR_FWD_RATE_HF},
-		{"SWR REF RATE HF", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.SWR_REF_Calibration_HF, SYSMENU_HANDL_CALIB_SWR_REF_RATE_HF},
-		{"SWR FWD RATE 6M", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.SWR_FWD_Calibration_6M, SYSMENU_HANDL_CALIB_SWR_FWD_RATE_6M},
-		{"SWR REF RATE 6M", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.SWR_REF_Calibration_6M, SYSMENU_HANDL_CALIB_SWR_REF_RATE_6M},
+		{"S METER HF", SYSMENU_INT16, NULL, &CALIBRATE.smeter_calibration_hf, SYSMENU_HANDL_CALIB_S_METER_HF},
+		{"S METER VHF", SYSMENU_INT16, NULL, &CALIBRATE.smeter_calibration_vhf, SYSMENU_HANDL_CALIB_S_METER_VHF},
+		{"ADC OFFSET", SYSMENU_INT16, NULL, &CALIBRATE.adc_offset, SYSMENU_HANDL_CALIB_ADC_OFFSET},
 #if !defined(FRONTPANEL_LITE)
-		{"SWR FWD RATE VHF", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.SWR_FWD_Calibration_VHF, SYSMENU_HANDL_CALIB_SWR_FWD_RATE_VHF},
-		{"SWR REF RATE VHF", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.SWR_REF_Calibration_VHF, SYSMENU_HANDL_CALIB_SWR_REF_RATE_VHF},
-		{"VCXO Correction", SYSMENU_INT8, NULL, (uint32_t *)&CALIBRATE.VCXO_correction, SYSMENU_HANDL_CALIB_VCXO},
-#else
-		{"VCXO Correction", SYSMENU_INT16, NULL, (uint32_t *)&CALIBRATE.VCXO_correction, SYSMENU_HANDL_CALIB_VCXO},
+		{"LPF END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_LPF, &CALIBRATE.RFU_LPF_END, SYSMENU_HANDL_CALIB_LPF_END},
+		{"HPF START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_HPF, &CALIBRATE.RFU_HPF_START, SYSMENU_HANDL_CALIB_HPF_START},
+		{"BPF 0 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_0_START, SYSMENU_HANDL_CALIB_BPF_0_START},
+		{"BPF 0 END", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_0_END, SYSMENU_HANDL_CALIB_BPF_0_END},
+		{"BPF 1 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_1_START, SYSMENU_HANDL_CALIB_BPF_1_START},
+		{"BPF 1 END", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_1_END, SYSMENU_HANDL_CALIB_BPF_1_END},
+		{"BPF 2 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_2_START, SYSMENU_HANDL_CALIB_BPF_2_START},
+		{"BPF 2 END", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_2_END, SYSMENU_HANDL_CALIB_BPF_2_END},
+		{"BPF 3 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_3_START, SYSMENU_HANDL_CALIB_BPF_3_START},
+		{"BPF 3 END", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_3_END, SYSMENU_HANDL_CALIB_BPF_3_END},
+		{"BPF 4 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_4_START, SYSMENU_HANDL_CALIB_BPF_4_START},
+		{"BPF 4 END", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_4_END, SYSMENU_HANDL_CALIB_BPF_4_END},
+		{"BPF 5 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_5_START, SYSMENU_HANDL_CALIB_BPF_5_START},
+		{"BPF 5 END", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_5_END, SYSMENU_HANDL_CALIB_BPF_5_END},
+		{"BPF 6 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_6_START, SYSMENU_HANDL_CALIB_BPF_6_START},
+		{"BPF 6 END", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_6_END, SYSMENU_HANDL_CALIB_BPF_6_END},
+		{"BPF 7 START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_8, &CALIBRATE.RFU_BPF_7_START, SYSMENU_HANDL_CALIB_BPF_7_START},
+		{"BPF 7 END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_8, &CALIBRATE.RFU_BPF_7_END, SYSMENU_HANDL_CALIB_BPF_7_END},
+		{"BPF 8 START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_9, &CALIBRATE.RFU_BPF_8_START, SYSMENU_HANDL_CALIB_BPF_8_START},
+		{"BPF 8 END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_9, &CALIBRATE.RFU_BPF_8_END, SYSMENU_HANDL_CALIB_BPF_8_END},
+        {"BPF 9 START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_10, &CALIBRATE.RFU_BPF_9_START, SYSMENU_HANDL_CALIB_BPF_9_START},
+        {"BPF 9 END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_BPF_10, &CALIBRATE.RFU_BPF_9_END, SYSMENU_HANDL_CALIB_BPF_9_END},
 #endif
+		{"MAX PWR on Meter", SYSMENU_UINT8, NULL, &CALIBRATE.MAX_RF_POWER_ON_METER, SYSMENU_HANDL_CALIB_MAX_RF_POWER_ON_METER},
+		{"MAX Power in TUNE", SYSMENU_UINT8, NULL, &CALIBRATE.TUNE_MAX_POWER, SYSMENU_HANDL_CALIB_TUNE_MAX_POWER},
+		{"SSB Power addition", SYSMENU_UINT8, NULL, &CALIBRATE.SSB_POWER_ADDITION, SYSMENU_HANDL_CALIB_SSB_POWER_ADDITION},
+		{"SWR FWD RATE HF", SYSMENU_FLOAT32, NULL, &CALIBRATE.SWR_FWD_Calibration_HF, SYSMENU_HANDL_CALIB_SWR_FWD_RATE_HF},
+		{"SWR BWD RATE HF", SYSMENU_FLOAT32, NULL, &CALIBRATE.SWR_BWD_Calibration_HF, SYSMENU_HANDL_CALIB_SWR_REF_RATE_HF},
+#if !defined(FRONTPANEL_LITE)
+		{"SWR FWD RATE 6M", SYSMENU_FLOAT32, NULL, &CALIBRATE.SWR_FWD_Calibration_6M, SYSMENU_HANDL_CALIB_SWR_FWD_RATE_6M},
+		{"SWR BWD RATE 6M", SYSMENU_FLOAT32, NULL, &CALIBRATE.SWR_BWD_Calibration_6M, SYSMENU_HANDL_CALIB_SWR_REF_RATE_6M},
+		{"SWR FWD RATE VHF", SYSMENU_FLOAT32, NULL, &CALIBRATE.SWR_FWD_Calibration_VHF, SYSMENU_HANDL_CALIB_SWR_FWD_RATE_VHF},
+		{"SWR BWD RATE VHF", SYSMENU_FLOAT32, NULL, &CALIBRATE.SWR_BWD_Calibration_VHF, SYSMENU_HANDL_CALIB_SWR_REF_RATE_VHF},
+#endif
+		{"VCXO Correction", SYSMENU_INT16, NULL, &CALIBRATE.VCXO_correction, SYSMENU_HANDL_CALIB_VCXO},
 #ifdef SWR_AD8307_LOG
-		{"FW_AD8307_Slope (mv/dB)", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.FW_AD8307_SLP, SYSMENU_HANDL_CALIB_FW_AD8307_SLP},
-		{"FW_AD8307_Offset (mV)", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.FW_AD8307_OFFS, SYSMENU_HANDL_CALIB_FW_AD8307_OFFS},
-		{"BW_AD8307_Slope (mv/dB)", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.BW_AD8307_SLP, SYSMENU_HANDL_CALIB_BW_AD8307_SLP},
-		{"BW_AD8307_Offset (mV)", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.BW_AD8307_OFFS, SYSMENU_HANDL_CALIB_BW_AD8307_OFFS},
+		{"FW_AD8307_Slope (mv/dB)", SYSMENU_FLOAT32, NULL, &CALIBRATE.FW_AD8307_SLP, SYSMENU_HANDL_CALIB_FW_AD8307_SLP},
+		{"FW_AD8307_Offset (mV)", SYSMENU_FLOAT32, NULL, &CALIBRATE.FW_AD8307_OFFS, SYSMENU_HANDL_CALIB_FW_AD8307_OFFS},
+		{"BW_AD8307_Slope (mv/dB)", SYSMENU_FLOAT32, NULL, &CALIBRATE.BW_AD8307_SLP, SYSMENU_HANDL_CALIB_BW_AD8307_SLP},
+		{"BW_AD8307_Offset (mV)", SYSMENU_FLOAT32, NULL, &CALIBRATE.BW_AD8307_OFFS, SYSMENU_HANDL_CALIB_BW_AD8307_OFFS},
 #endif
 #if !defined(FRONTPANEL_LITE)
-		{"FAN Medium start", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.FAN_MEDIUM_START, SYSMENU_HANDL_CALIB_FAN_MEDIUM_START},
-		{"FAN Medium stop", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.FAN_MEDIUM_STOP, SYSMENU_HANDL_CALIB_FAN_MEDIUM_STOP},
-		{"FAN Full start", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.FAN_FULL_START, SYSMENU_HANDL_CALIB_FAN_FULL_START},
-		{"MAX RF Temp", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.TRX_MAX_RF_TEMP, SYSMENU_HANDL_CALIB_TRX_MAX_RF_TEMP},
+		{"FAN Medium start", SYSMENU_UINT8, NULL, &CALIBRATE.FAN_MEDIUM_START, SYSMENU_HANDL_CALIB_FAN_MEDIUM_START},
+		{"FAN Medium stop", SYSMENU_UINT8, NULL, &CALIBRATE.FAN_MEDIUM_STOP, SYSMENU_HANDL_CALIB_FAN_MEDIUM_STOP},
+		{"FAN Full start", SYSMENU_UINT8, NULL, &CALIBRATE.FAN_FULL_START, SYSMENU_HANDL_CALIB_FAN_FULL_START},
+		{"MAX RF Temp", SYSMENU_UINT8, NULL, &CALIBRATE.TRX_MAX_RF_TEMP, SYSMENU_HANDL_CALIB_TRX_MAX_RF_TEMP},
 #endif
-		{"MAX SWR", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.TRX_MAX_SWR, SYSMENU_HANDL_CALIB_TRX_MAX_SWR},
-		{"FM Deviation Scale", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.FM_DEVIATION_SCALE, SYSMENU_HANDL_CALIB_FM_DEVIATION_SCALE},
-		{"AM Modulation Index", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.AM_MODULATION_INDEX, SYSMENU_HANDL_CALIB_AM_MODULATION_INDEX},
-		{"RTC COARSE CALIBR", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.RTC_Coarse_Calibration, SYSMENU_HANDL_CALIB_RTC_COARSE_CALIBRATION},
-		{"RTC FINE CALIBR", SYSMENU_INT16, NULL, (uint32_t *)&CALIBRATE.RTC_Calibration, SYSMENU_HANDL_CALIB_RTC_CALIBRATION},
+		{"MAX SWR", SYSMENU_UINT8, NULL, &CALIBRATE.TRX_MAX_SWR, SYSMENU_HANDL_CALIB_TRX_MAX_SWR},
+		{"FM Deviation Scale", SYSMENU_UINT8, NULL, &CALIBRATE.FM_DEVIATION_SCALE, SYSMENU_HANDL_CALIB_FM_DEVIATION_SCALE},
+		{"AM Modulation Index", SYSMENU_UINT8, NULL, &CALIBRATE.AM_MODULATION_INDEX, SYSMENU_HANDL_CALIB_AM_MODULATION_INDEX},
+		{"RTC COARSE CALIBR", SYSMENU_UINT8, NULL, &CALIBRATE.RTC_Coarse_Calibration, SYSMENU_HANDL_CALIB_RTC_COARSE_CALIBRATION},
+		{"RTC FINE CALIBR", SYSMENU_INT16, NULL, &CALIBRATE.RTC_Calibration, SYSMENU_HANDL_CALIB_RTC_CALIBRATION},
 #if !defined(FRONTPANEL_LITE)
-		{"EXT 2200m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_2200m, SYSMENU_HANDL_CALIB_EXT_2200m},
-		{"EXT 160m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_160m, SYSMENU_HANDL_CALIB_EXT_160m},
-		{"EXT 80m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_80m, SYSMENU_HANDL_CALIB_EXT_80m},
-		{"EXT 60m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_60m, SYSMENU_HANDL_CALIB_EXT_60m},
-		{"EXT 40m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_40m, SYSMENU_HANDL_CALIB_EXT_40m},
-		{"EXT 30m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_30m, SYSMENU_HANDL_CALIB_EXT_30m},
-		{"EXT 20m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_20m, SYSMENU_HANDL_CALIB_EXT_20m},
-		{"EXT 17m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_17m, SYSMENU_HANDL_CALIB_EXT_17m},
-		{"EXT 15m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_15m, SYSMENU_HANDL_CALIB_EXT_15m},
-		{"EXT 12m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_12m, SYSMENU_HANDL_CALIB_EXT_12m},
-		{"EXT CB", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_CB, SYSMENU_HANDL_CALIB_EXT_CB},
-		{"EXT 10m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_10m, SYSMENU_HANDL_CALIB_EXT_10m},
-		{"EXT 6m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_6m, SYSMENU_HANDL_CALIB_EXT_6m},
-		{"EXT FM", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_FM, SYSMENU_HANDL_CALIB_EXT_FM},
-		{"EXT 2m", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_2m, SYSMENU_HANDL_CALIB_EXT_2m},
-		{"EXT 70cm", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_70cm, SYSMENU_HANDL_CALIB_EXT_70cm},
-		{"EXT Transv 70cm", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_TRANSV_70cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_70cm},
-		{"EXT Transv 23cm", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_TRANSV_23cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_23cm},
-		{"EXT Transv 13cm", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_TRANSV_13cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_13cm},
-		{"EXT Transv 6cm", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_TRANSV_6cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_6cm},
-		{"EXT Transv 3cm", SYSMENU_B4, NULL, (uint32_t *)&CALIBRATE.EXT_TRANSV_3cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_3cm},
+		{"EXT 2200m", SYSMENU_B4, NULL, &CALIBRATE.EXT_2200m, SYSMENU_HANDL_CALIB_EXT_2200m},
+		{"EXT 160m", SYSMENU_B4, NULL, &CALIBRATE.EXT_160m, SYSMENU_HANDL_CALIB_EXT_160m},
+		{"EXT 80m", SYSMENU_B4, NULL, &CALIBRATE.EXT_80m, SYSMENU_HANDL_CALIB_EXT_80m},
+		{"EXT 60m", SYSMENU_B4, NULL, &CALIBRATE.EXT_60m, SYSMENU_HANDL_CALIB_EXT_60m},
+		{"EXT 40m", SYSMENU_B4, NULL, &CALIBRATE.EXT_40m, SYSMENU_HANDL_CALIB_EXT_40m},
+		{"EXT 30m", SYSMENU_B4, NULL, &CALIBRATE.EXT_30m, SYSMENU_HANDL_CALIB_EXT_30m},
+		{"EXT 20m", SYSMENU_B4, NULL, &CALIBRATE.EXT_20m, SYSMENU_HANDL_CALIB_EXT_20m},
+		{"EXT 17m", SYSMENU_B4, NULL, &CALIBRATE.EXT_17m, SYSMENU_HANDL_CALIB_EXT_17m},
+		{"EXT 15m", SYSMENU_B4, NULL, &CALIBRATE.EXT_15m, SYSMENU_HANDL_CALIB_EXT_15m},
+		{"EXT 12m", SYSMENU_B4, NULL, &CALIBRATE.EXT_12m, SYSMENU_HANDL_CALIB_EXT_12m},
+		{"EXT CB", SYSMENU_B4, NULL, &CALIBRATE.EXT_CB, SYSMENU_HANDL_CALIB_EXT_CB},
+		{"EXT 10m", SYSMENU_B4, NULL, &CALIBRATE.EXT_10m, SYSMENU_HANDL_CALIB_EXT_10m},
+		{"EXT 6m", SYSMENU_B4, NULL, &CALIBRATE.EXT_6m, SYSMENU_HANDL_CALIB_EXT_6m},
+		{"EXT 4m", SYSMENU_B4, NULL, &CALIBRATE.EXT_4m, SYSMENU_HANDL_CALIB_EXT_4m},
+		{"EXT FM", SYSMENU_B4, NULL, &CALIBRATE.EXT_FM, SYSMENU_HANDL_CALIB_EXT_FM},
+		{"EXT 2m", SYSMENU_B4, NULL, &CALIBRATE.EXT_2m, SYSMENU_HANDL_CALIB_EXT_2m},
+		{"EXT 70cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_70cm, SYSMENU_HANDL_CALIB_EXT_70cm},
+		{"EXT Transv 70cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_70cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_70cm},
+		{"EXT Transv 23cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_23cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_23cm},
+		{"EXT Transv 13cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_13cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_13cm},
+		{"EXT Transv 6cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_6cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_6cm},
+		{"EXT Transv 3cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_3cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_3cm},
 #endif
-		{"NOTX NOT HAM", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_NOTHAM, SYSMENU_HANDL_CALIB_NOTX_NOTHAM},
-		{"NOTX 2200m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_2200m, SYSMENU_HANDL_CALIB_NOTX_2200m},
-		{"NOTX 160m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_160m, SYSMENU_HANDL_CALIB_NOTX_160m},
-		{"NOTX 80m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_80m, SYSMENU_HANDL_CALIB_NOTX_80m},
-		{"NOTX 60m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_60m, SYSMENU_HANDL_CALIB_NOTX_60m},
-		{"NOTX 40m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_40m, SYSMENU_HANDL_CALIB_NOTX_40m},
-		{"NOTX 30m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_30m, SYSMENU_HANDL_CALIB_NOTX_30m},
-		{"NOTX 20m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_20m, SYSMENU_HANDL_CALIB_NOTX_20m},
-		{"NOTX 17m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_17m, SYSMENU_HANDL_CALIB_NOTX_17m},
-		{"NOTX 15m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_15m, SYSMENU_HANDL_CALIB_NOTX_15m},
-		{"NOTX 12m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_12m, SYSMENU_HANDL_CALIB_NOTX_12m},
-		{"NOTX CB", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_CB, SYSMENU_HANDL_CALIB_NOTX_CB},
-		{"NOTX 10m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_10m, SYSMENU_HANDL_CALIB_NOTX_10m},
-		{"NOTX 6m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_6m, SYSMENU_HANDL_CALIB_NOTX_6m},
+		{"NOTX NOT HAM", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_NOTHAM, SYSMENU_HANDL_CALIB_NOTX_NOTHAM},
+		{"NOTX 2200m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_2200m, SYSMENU_HANDL_CALIB_NOTX_2200m},
+		{"NOTX 160m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_160m, SYSMENU_HANDL_CALIB_NOTX_160m},
+		{"NOTX 80m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_80m, SYSMENU_HANDL_CALIB_NOTX_80m},
+		{"NOTX 60m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_60m, SYSMENU_HANDL_CALIB_NOTX_60m},
+		{"NOTX 40m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_40m, SYSMENU_HANDL_CALIB_NOTX_40m},
+		{"NOTX 30m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_30m, SYSMENU_HANDL_CALIB_NOTX_30m},
+		{"NOTX 20m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_20m, SYSMENU_HANDL_CALIB_NOTX_20m},
+		{"NOTX 17m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_17m, SYSMENU_HANDL_CALIB_NOTX_17m},
+		{"NOTX 15m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_15m, SYSMENU_HANDL_CALIB_NOTX_15m},
+		{"NOTX 12m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_12m, SYSMENU_HANDL_CALIB_NOTX_12m},
+		{"NOTX CB", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_CB, SYSMENU_HANDL_CALIB_NOTX_CB},
+		{"NOTX 10m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_10m, SYSMENU_HANDL_CALIB_NOTX_10m},
 #if !defined(FRONTPANEL_LITE)
-		{"NOTX 2m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_2m, SYSMENU_HANDL_CALIB_NOTX_2m},
-		{"NOTX 70cm", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.NOTX_70cm, SYSMENU_HANDL_CALIB_NOTX_70cm},
+		{"NOTX 6m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_6m, SYSMENU_HANDL_CALIB_NOTX_6m},
+		{"NOTX 4m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_4m, SYSMENU_HANDL_CALIB_NOTX_4m},
+		{"NOTX 2m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_2m, SYSMENU_HANDL_CALIB_NOTX_2m},
+		{"NOTX 70cm", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_70cm, SYSMENU_HANDL_CALIB_NOTX_70cm},
 #endif
-		{"ENABLE 60M Band", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.ENABLE_60m_band, SYSMENU_HANDL_CALIB_ENABLE_60m_band},
-		{"ENABLE 4M Band", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.ENABLE_4m_band, SYSMENU_HANDL_CALIB_ENABLE_4m_band},
+		{"ENABLE 60M Band", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENABLE_60m_band, SYSMENU_HANDL_CALIB_ENABLE_60m_band},
 #if !defined(FRONTPANEL_LITE)
-		{"ENABLE Air Band", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.ENABLE_AIR_band, SYSMENU_HANDL_CALIB_ENABLE_AIR_band},
-		{"ENABLE Marine Band", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.ENABLE_marine_band, SYSMENU_HANDL_CALIB_ENABLE_marine_band},
+		{"ENABLE 4M Band", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENABLE_4m_band, SYSMENU_HANDL_CALIB_ENABLE_4m_band},
+		{"ENABLE Air Band", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENABLE_AIR_band, SYSMENU_HANDL_CALIB_ENABLE_AIR_band},
+		{"ENABLE Marine Band", SYSMENU_BOOLEAN, NULL, &CALIBRATE.ENABLE_marine_band, SYSMENU_HANDL_CALIB_ENABLE_marine_band},
 #endif
 #if HRDW_HAS_WIFI
-		{"OTA Update", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.OTA_update, SYSMENU_HANDL_CALIB_OTA_update},
+		{"OTA Update", SYSMENU_BOOLEAN, NULL, &CALIBRATE.OTA_update, SYSMENU_HANDL_CALIB_OTA_update},
 #endif
-		{"TX Start Delay", SYSMENU_UINT16, NULL, (uint32_t *)&CALIBRATE.TX_StartDelay, SYSMENU_HANDL_CALIB_TX_StartDelay},
-		{"LCD Rotate", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.LCD_Rotate, SYSMENU_HANDL_CALIB_LCD_Rotate},
-#if defined(FRONTPANEL_BIG_V1)
-		{"INA226_PWR_MON", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.INA226_EN, SYSMENU_HANDL_INA226_PWR_MON},				  // Tisho
-		{"INA226_Cur_Calc(mA/Bit)", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.INA226_CurCalc, SYSMENU_HANDL_INA226_CUR_CALL}, // Tisho
+		{"TX Start Delay", SYSMENU_UINT16, NULL, &CALIBRATE.TX_StartDelay, SYSMENU_HANDL_CALIB_TX_StartDelay},
+		{"LCD Rotate", SYSMENU_BOOLEAN, NULL, &CALIBRATE.LCD_Rotate, SYSMENU_HANDL_CALIB_LCD_Rotate},
+#if defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D)
+		{"INA226_PWR_MON", SYSMENU_BOOLEAN, NULL, &CALIBRATE.INA226_EN, SYSMENU_HANDL_INA226_PWR_MON},				  // Tisho
+		{"INA226_Cur_Calc(mA/Bit)", SYSMENU_FLOAT32, NULL, &CALIBRATE.INA226_CurCalc, SYSMENU_HANDL_INA226_CUR_CALL}, // Tisho
 #endif
 #if defined(FRONTPANEL_X1) || defined(FRONTPANEL_LITE)
-		{"PWR VLT Calibr", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.PWR_VLT_Calibration, SYSMENU_HANDL_CALIB_PWR_VLT_Calibration},
+		{"PWR VLT Calibr", SYSMENU_FLOAT32, NULL, &CALIBRATE.PWR_VLT_Calibration, SYSMENU_HANDL_CALIB_PWR_VLT_Calibration},
 #endif
 		#if defined(FRONTPANEL_X1)
-		{"PWR CUR Calibr", SYSMENU_FLOAT32, NULL, (uint32_t *)&CALIBRATE.PWR_CUR_Calibration, SYSMENU_HANDL_CALIB_PWR_CUR_Calibration},
+		{"PWR CUR Calibr", SYSMENU_FLOAT32, NULL, &CALIBRATE.PWR_CUR_Calibration, SYSMENU_HANDL_CALIB_PWR_CUR_Calibration},
 #endif
-		{"ATU Averaging", SYSMENU_UINT8, SYSMENU_HANDL_CHECK_HAS_ATU, (uint32_t *)&CALIBRATE.ATU_AVERAGING, SYSMENU_HANDL_CALIB_ATU_AVERAGING},
-		{"CAT Type", SYSMENU_ENUM, NULL, (uint32_t *)&CALIBRATE.CAT_Type, SYSMENU_HANDL_CALIB_CAT_Type, {"FT-450", "TS2000"}},
+		{"ATU Averaging", SYSMENU_UINT8, SYSMENU_HANDL_CHECK_HAS_ATU, &CALIBRATE.ATU_AVERAGING, SYSMENU_HANDL_CALIB_ATU_AVERAGING},
+		{"CAT Type", SYSMENU_ENUM, NULL, &CALIBRATE.CAT_Type, SYSMENU_HANDL_CALIB_CAT_Type, {"FT-450", "TS2000"}},
 #if !defined(FRONTPANEL_LITE)
-		{"LNA Compensation", SYSMENU_INT8, NULL, (uint32_t *)&CALIBRATE.LNA_compensation, SYSMENU_HANDL_CALIB_LNA_compensation},
+		{"LNA Compensation", SYSMENU_INT8, NULL, &CALIBRATE.LNA_compensation, SYSMENU_HANDL_CALIB_LNA_compensation},
 #endif
-		{"TSignal Balance", SYSMENU_UINT8, NULL, (uint32_t *)&CALIBRATE.TwoSignalTune_Balance, SYSMENU_HANDL_CALIB_TwoSignalTune_Balance},
-		{"Linear Pwr Control", SYSMENU_BOOLEAN, NULL, (uint32_t *)&CALIBRATE.LinearPowerControl, SYSMENU_HANDL_CALIB_LinearPowerControl},
+		{"TSignal Balance", SYSMENU_UINT8, NULL, &CALIBRATE.TwoSignalTune_Balance, SYSMENU_HANDL_CALIB_TwoSignalTune_Balance},
+		{"Linear Pwr Control", SYSMENU_BOOLEAN, NULL, &CALIBRATE.LinearPowerControl, SYSMENU_HANDL_CALIB_LinearPowerControl},
+#ifdef TOUCHPAD_GT911
+		{"Flash GT911", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALIB_FlashGT911},
+#endif
+		{"IF Gain MIN", SYSMENU_UINT8, NULL, &CALIBRATE.IF_GAIN_MIN, SYSMENU_HANDL_CALIB_IF_GAIN_MIN},
+		{"IF Gain MAX", SYSMENU_UINT8, NULL, &CALIBRATE.IF_GAIN_MAX, SYSMENU_HANDL_CALIB_IF_GAIN_MAX},
+		{"Settings reset", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALIB_SETTINGS_RESET},
+		{"Calibrate reset", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALIB_CALIBRATION_RESET},
+		{"WiFi settings reset", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALIB_WIFI_RESET},
 };
 
 const static struct sysmenu_item_handler sysmenu_swr_analyser_handlers[] =
 	{
-		{"Band SWR", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SWR_BAND_START},
-		{"HF SWR", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SWR_HF_START},
-		{"Custom SWR", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SWR_CUSTOM_Start},
-		{"Custom Begin, kHz", SYSMENU_UINT32, NULL, (uint32_t *)&TRX.SWR_CUSTOM_Begin, SYSMENU_HANDL_SWR_CUSTOM_Begin},
-		{"Custom End, kHz", SYSMENU_UINT32, NULL, (uint32_t *)&TRX.SWR_CUSTOM_End, SYSMENU_HANDL_SWR_CUSTOM_End},
+		{"Band SWR", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SWR_BAND_START},
+		{"HF SWR", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SWR_HF_START},
+		{"Custom SWR", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SWR_CUSTOM_Start},
+		{"Custom Begin, kHz", SYSMENU_UINT32, NULL, &TRX.SWR_CUSTOM_Begin, SYSMENU_HANDL_SWR_CUSTOM_Begin},
+		{"Custom End, kHz", SYSMENU_UINT32, NULL, &TRX.SWR_CUSTOM_End, SYSMENU_HANDL_SWR_CUSTOM_End},
 };
 
 const static struct sysmenu_item_handler sysmenu_spectrum_handlers[] =
 	{
-		{"Spectrum START", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SPECTRUM_Start},
-		{"Begin, kHz", SYSMENU_UINT32, NULL, (uint32_t *)&TRX.SPEC_Begin, SYSMENU_HANDL_SPECTRUM_Begin},
-		{"End, kHz", SYSMENU_UINT32, NULL, (uint32_t *)&TRX.SPEC_End, SYSMENU_HANDL_SPECTRUM_End},
-		{"Top, dBm", SYSMENU_INT16, NULL, (uint32_t *)&TRX.SPEC_TopDBM, SYSMENU_HANDL_SPECTRUM_TopDBM},
-		{"Bottom, dBm", SYSMENU_INT16, NULL, (uint32_t *)&TRX.SPEC_BottomDBM, SYSMENU_HANDL_SPECTRUM_BottomDBM},
+		{"Spectrum START", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SPECTRUM_Start},
+		{"Begin, mHz", SYSMENU_UINT32, NULL, &TRX.SPEC_Begin, SYSMENU_HANDL_SPECTRUM_Begin},
+		{"End, mHz", SYSMENU_UINT32, NULL, &TRX.SPEC_End, SYSMENU_HANDL_SPECTRUM_End},
+		{"Top, dBm", SYSMENU_INT16, NULL, &TRX.SPEC_TopDBM, SYSMENU_HANDL_SPECTRUM_TopDBM},
+		{"Bottom, dBm", SYSMENU_INT16, NULL, &TRX.SPEC_BottomDBM, SYSMENU_HANDL_SPECTRUM_BottomDBM},
 };
 
 const static struct sysmenu_item_handler sysmenu_wspr_handlers[] =
 	{
-		{"WSPR Beacon START", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_WSPR_Start},
-		{"Freq offset", SYSMENU_INT16, NULL, (uint32_t *)&TRX.WSPR_FREQ_OFFSET, SYSMENU_HANDL_WSPR_FREQ_OFFSET},
-		{"BAND 160m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_160, SYSMENU_HANDL_WSPR_BAND160},
-		{"BAND 80m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_80, SYSMENU_HANDL_WSPR_BAND80},
-		{"BAND 40m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_40, SYSMENU_HANDL_WSPR_BAND40},
-		{"BAND 30m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_30, SYSMENU_HANDL_WSPR_BAND30},
-		{"BAND 20m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_20, SYSMENU_HANDL_WSPR_BAND20},
-		{"BAND 17m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_17, SYSMENU_HANDL_WSPR_BAND17},
-		{"BAND 15m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_15, SYSMENU_HANDL_WSPR_BAND15},
-		{"BAND 12m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_12, SYSMENU_HANDL_WSPR_BAND12},
-		{"BAND 10m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_10, SYSMENU_HANDL_WSPR_BAND10},
-		{"BAND 6m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_6, SYSMENU_HANDL_WSPR_BAND6},
-		{"BAND 2m", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.WSPR_BANDS_2, SYSMENU_HANDL_WSPR_BAND2},
-		{"", SYSMENU_INFOLINE, 0, 0},
+		{"WSPR Beacon START", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_WSPR_Start},
+		{"Freq offset", SYSMENU_INT16, NULL, &TRX.WSPR_FREQ_OFFSET, SYSMENU_HANDL_WSPR_FREQ_OFFSET},
+		{"BAND 160m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_160, SYSMENU_HANDL_WSPR_BAND160},
+		{"BAND 80m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_80, SYSMENU_HANDL_WSPR_BAND80},
+		{"BAND 40m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_40, SYSMENU_HANDL_WSPR_BAND40},
+		{"BAND 30m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_30, SYSMENU_HANDL_WSPR_BAND30},
+		{"BAND 20m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_20, SYSMENU_HANDL_WSPR_BAND20},
+		{"BAND 17m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_17, SYSMENU_HANDL_WSPR_BAND17},
+		{"BAND 15m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_15, SYSMENU_HANDL_WSPR_BAND15},
+		{"BAND 12m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_12, SYSMENU_HANDL_WSPR_BAND12},
+		{"BAND 10m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_10, SYSMENU_HANDL_WSPR_BAND10},
+		{"BAND 6m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_6, SYSMENU_HANDL_WSPR_BAND6},
+		{"BAND 2m", SYSMENU_BOOLEAN, NULL, &TRX.WSPR_BANDS_2, SYSMENU_HANDL_WSPR_BAND2},
+		{"", SYSMENU_INFOLINE, NULL, NULL},
+};
+
+const static struct sysmenu_item_handler sysmenu_auto_calibration_handlers[] =
+	{
+		{"Calibrate SWR", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_AUTO_CALIBRATION_SWR},
+		{"Calibrate Power", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_AUTO_CALIBRATION_POWER},
 };
 
 const static struct sysmenu_item_handler sysmenu_services_handlers[] =
 	{
 #if HRDW_HAS_WIFI && !defined(FRONTPANEL_X1)
-		{"DX Cluster", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_DX_CLUSTER},
-		{"Propagination", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_PROPAGINATION},
+		{"DX Cluster", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_DX_CLUSTER},
+		{"Propagination", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_PROPAGINATION},
 		#if LCD_WIDTH >= 800
-		{"DayNight Map", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_DAYNIGHT_MAP},
-		#endif
-		{"RDA Statistics", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_RDA_STATS},
+		{"DayNight Map", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_DAYNIGHT_MAP},
+        {"Ionogram", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_IONOGRAM},
+        #endif
+		{"RDA Statistics", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_RDA_STATS},
 #endif
-		{"SWR Analyzer", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_SWR_ANALYSER_MENU},
-		{"Spectrum Analyzer", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_SPECTRUMMENU},
+		{"SWR Analyzer", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_SWR_ANALYSER_MENU},
+		{"Spectrum Analyzer", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_SPECTRUMMENU},
 #ifndef STM32F407xx
-		{"WSPR Beacon", SYSMENU_MENU, NULL, 0, SYSMENU_HANDL_WSPRMENU},
+		{"WSPR Beacon", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_WSPRMENU},
 #endif
 #if HRDW_HAS_SD
-		{"File Manager", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_FILEMANAGER},
-		{"Record CQ message", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_RECORD_CQ_WAV},
+		{"Record CQ message", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_RECORD_CQ_WAV},
 #endif
 #if FT8_SUPPORT
-		{"FT-8 Decoder", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_FT8_Decoder}, // Tisho
+		{"FT-8", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_FT8_Decoder}, // Tisho
 #endif
 #ifdef SWR_AD8307_LOG
-		{"SWR Tandem Match Contr.", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SWR_Tandem_Ctrl}, // Tisho
+		{"SWR Tandem Match Contr.", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SWR_Tandem_Ctrl}, // Tisho
 #endif
 #ifdef LAY_800x480
-		{"Locator info", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_LOCATOR_INFO},
-		{"Callsign info", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_CALLSIGN_INFO},
+		{"Locator info", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_LOCATOR_INFO},
+		{"Callsign info", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALLSIGN_INFO},
 #endif
-		{"Self Test", SYSMENU_RUN, NULL, 0, SYSMENU_HANDL_SELF_TEST},
+		{"Self Test", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_SELF_TEST},
+		{"Auto Calibration", SYSMENU_MENU, NULL, NULL, SYSMENU_HANDL_AUTO_CALIBRATION},
 };
 
 static struct sysmenu_menu_wrapper sysmenu_wrappers[] = {
@@ -988,12 +1073,14 @@ static struct sysmenu_menu_wrapper sysmenu_wrappers[] = {
 	{.menu_handler = sysmenu_sd_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_sd_export_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_sd_import_handlers, .currentIndex = 0},
+	{.menu_handler = sysmenu_sd_format_handlers, .currentIndex = 0},
 	#endif
 	{.menu_handler = sysmenu_calibration_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_swr_analyser_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_spectrum_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_wspr_handlers, .currentIndex = 0},
 	{.menu_handler = sysmenu_services_handlers, .currentIndex = 0},
+	{.menu_handler = sysmenu_auto_calibration_handlers, .currentIndex = 0},
 };
 
 // COMMON MENU
@@ -1016,6 +1103,8 @@ static void SYSMENU_TRX_DrawCallsignMenu(bool full_redraw);
 static void SYSMENU_TRX_RotateCallsignChar(int8_t dir);
 static void SYSMENU_TRX_DrawLocatorMenu(bool full_redraw);
 static void SYSMENU_TRX_RotateLocatorChar(int8_t dir);
+static void SYSMENU_TRX_DrawURSICodeMenu(bool full_redraw);
+static void SYSMENU_TRX_RotateURSICodeChar(int8_t dir);
 static uint8_t SYSTMENU_getVisibleIdFromReal(uint8_t realIndex);
 static uint8_t SYSTMENU_getPageFromRealIndex(uint8_t realIndex);
 static void setCurrentMenuIndex(uint8_t index);
@@ -1039,18 +1128,20 @@ bool SYSMENU_FT8_DECODER_opened = false;
 
 // WIFI
 static bool sysmenu_wifi_needupdate_ap = true;
-static bool sysmenu_wifi_selectap1_menu_opened = false;
-static bool sysmenu_wifi_selectap2_menu_opened = false;
-static bool sysmenu_wifi_selectap3_menu_opened = false;
+bool sysmenu_wifi_selectap1_menu_opened = false;
+bool sysmenu_wifi_selectap2_menu_opened = false;
+bool sysmenu_wifi_selectap3_menu_opened = false;
 static bool sysmenu_wifi_setAP1password_menu_opened = false;
 static bool sysmenu_wifi_setAP2password_menu_opened = false;
 static bool sysmenu_wifi_setAP3password_menu_opened = false;
 static bool sysmenu_trx_setCallsign_menu_opened = false;
 static bool sysmenu_trx_setLocator_menu_opened = false;
+static bool sysmenu_trx_setURSICode_menu_opened = false;
 static uint8_t sysmenu_wifi_selected_ap_index = 0;
 static uint8_t sysmenu_wifi_selected_ap_password_char_index = 0;
 static uint8_t sysmenu_trx_selected_callsign_char_index = 0;
 static uint8_t sysmenu_trx_selected_locator_char_index = 0;
+static uint8_t sysmenu_trx_selected_ursi_code_char_index = 0;
 
 // Time menu
 static bool sysmenu_timeMenuOpened = false;
@@ -1060,7 +1151,8 @@ static uint8_t TimeMenuSelection = 0;
 
 static void SYSMENU_HANDL_TRXMENU(int8_t direction)
 {
-#pragma unused(direction)
+    (void) direction;
+
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_trx_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_trx_handlers) / sizeof(sysmenu_trx_handlers[0]);
 	sysmenu_onroot = false;
@@ -1154,13 +1246,21 @@ static void SYSMENU_HANDL_TRX_Auto_Input_Switch(int8_t direction)
 		TRX.Auto_Input_Switch = false;
 }
 
+static void SYSMENU_HANDL_TRX_Auto_Snap(int8_t direction)
+{
+	if (direction > 0)
+		TRX.Auto_Snap = true;
+	if (direction < 0)
+		TRX.Auto_Snap = false;
+}
+
 static void SYSMENU_HANDL_TRX_INPUT_TYPE_MAIN(int8_t direction)
 {
 	if (direction > 0 || TRX.InputType_MAIN > 0)
 		TRX.InputType_MAIN += direction;
 	if (TRX.InputType_MAIN > 2)
 		TRX.InputType_MAIN = 2;
-	WM8731_TXRX_mode();
+	CODEC_TXRX_mode();
 }
 
 static void SYSMENU_HANDL_TRX_INPUT_TYPE_DIGI(int8_t direction)
@@ -1169,7 +1269,7 @@ static void SYSMENU_HANDL_TRX_INPUT_TYPE_DIGI(int8_t direction)
 		TRX.InputType_DIGI += direction;
 	if (TRX.InputType_DIGI > 2)
 		TRX.InputType_DIGI = 2;
-	WM8731_TXRX_mode();
+	CODEC_TXRX_mode();
 }
 
 static void SYSMENU_HANDL_TRX_DEBUG_TYPE(int8_t direction)
@@ -1187,6 +1287,11 @@ static void SYSMENU_HANDL_TRX_SAMPLERATE_MAIN(int8_t direction)
 	if (TRX.SAMPLERATE_MAIN > 3)
 		TRX.SAMPLERATE_MAIN = 3;
 
+	#ifdef STM32F407xx
+	if (TRX.SAMPLERATE_MAIN > 1)
+		TRX.SAMPLERATE_MAIN = 1;
+	#endif
+
 	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
 	TRX.BANDS_SAVED_SETTINGS[band].SAMPLERATE = TRX.SAMPLERATE_MAIN;
 
@@ -1200,6 +1305,11 @@ static void SYSMENU_HANDL_TRX_SAMPLERATE_FM(int8_t direction)
 		TRX.SAMPLERATE_FM += direction;
 	if (TRX.SAMPLERATE_FM > 3)
 		TRX.SAMPLERATE_FM = 3;
+
+	#ifdef STM32F407xx
+	if (TRX.SAMPLERATE_FM > 1)
+		TRX.SAMPLERATE_FM = 1;
+	#endif
 
 	FFT_Init();
 	NeedReinitAudioFilters = true;
@@ -1226,7 +1336,7 @@ static void SYSMENU_HANDL_TRX_XIT_INTERVAL(int8_t direction)
 static const uint32_t freq_steps[] = {1, 10, 25, 50, 100, 500, 1000, 2500, 5000, 25000, 50000, 100000, 250000, 500000};
 static void SYSMENU_HANDL_TRX_FRQ_STEP(int8_t direction)
 {
-	for (uint8_t i = 0; i < ARRLENTH(freq_steps); i++)
+	for (int i = 0; i < ARRLENTH(freq_steps); i++)
 		if (TRX.FRQ_STEP == freq_steps[i])
 		{
 			if (direction < 0)
@@ -1251,7 +1361,7 @@ static void SYSMENU_HANDL_TRX_FRQ_STEP(int8_t direction)
 
 static void SYSMENU_HANDL_TRX_FRQ_FAST_STEP(int8_t direction)
 {
-	for (uint8_t i = 0; i < ARRLENTH(freq_steps); i++)
+	for (int i = 0; i < ARRLENTH(freq_steps); i++)
 		if (TRX.FRQ_FAST_STEP == freq_steps[i])
 		{
 			if (direction < 0)
@@ -1276,7 +1386,7 @@ static void SYSMENU_HANDL_TRX_FRQ_FAST_STEP(int8_t direction)
 
 static void SYSMENU_HANDL_TRX_FRQ_ENC_STEP(int8_t direction)
 {
-	for (uint8_t i = 0; i < ARRLENTH(freq_steps); i++)
+	for (int i = 0; i < ARRLENTH(freq_steps); i++)
 		if (TRX.FRQ_ENC_STEP == freq_steps[i])
 		{
 			if (direction < 0)
@@ -1301,7 +1411,7 @@ static void SYSMENU_HANDL_TRX_FRQ_ENC_STEP(int8_t direction)
 
 static void SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP(int8_t direction)
 {
-	for (uint8_t i = 0; i < ARRLENTH(freq_steps); i++)
+	for (int i = 0; i < ARRLENTH(freq_steps); i++)
 		if (TRX.FRQ_ENC_FAST_STEP == freq_steps[i])
 		{
 			if (direction < 0)
@@ -1322,6 +1432,33 @@ static void SYSMENU_HANDL_TRX_FRQ_ENC_FAST_STEP(int8_t direction)
 			}
 		}
 	TRX.FRQ_ENC_FAST_STEP = freq_steps[0];
+}
+
+static void SYSMENU_HANDL_TRX_FRQ_ENC_WFM_STEP_KHZ(int8_t direction)
+{
+	const uint32_t wfm_freq_steps[] = {1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000};
+	
+	for (uint8_t i = 0; i < ARRLENTH(wfm_freq_steps); i++)
+		if (TRX.FRQ_ENC_WFM_STEP_KHZ == wfm_freq_steps[i])
+		{
+			if (direction < 0)
+			{
+				if (i > 0)
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[i - 1];
+				else
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[0];
+				return;
+			}
+			else
+			{
+				if (i < (ARRLENTH(wfm_freq_steps) - 1))
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[i + 1];
+				else
+					TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[ARRLENTH(wfm_freq_steps) - 1];
+				return;
+			}
+		}
+	TRX.FRQ_ENC_WFM_STEP_KHZ = wfm_freq_steps[0];
 }
 
 static void SYSMENU_HANDL_TRX_FRQ_CW_STEP_DIVIDER(int8_t direction)
@@ -1349,6 +1486,26 @@ static void SYSMENU_HANDL_TRX_ATT_STEP(int8_t direction)
 	if (TRX.ATT_STEP > 15)
 		TRX.ATT_STEP = 15;
 }
+
+static void SYSMENU_HANDL_TRX_ATT_DB(int8_t direction)
+{
+	TRX.ATT_DB += (float32_t)direction * 0.5f;
+	if (TRX.ATT_DB < 0.5f)
+		TRX.ATT_DB = 0.5f;
+	if (TRX.ATT_DB > 31.5f)
+		TRX.ATT_DB = 31.5f;
+}
+
+#if HRDW_HAS_VGA
+static void SYSMENU_HANDL_TRX_VGA_GAIN(int8_t direction)
+{
+	TRX.VGA_GAIN += (float32_t)direction * 1.5f;
+	if (TRX.VGA_GAIN < 10.5f)
+		TRX.VGA_GAIN = 10.5f;
+	if (TRX.VGA_GAIN > 33.0f)
+		TRX.VGA_GAIN = 33.0f;
+}
+#endif
 
 static void SYSMENU_TRX_Callsign_keyboardHandler(uint32_t parameter)
 {
@@ -1418,6 +1575,40 @@ static void SYSMENU_TRX_DrawLocatorMenu(bool full_redraw)
 	#endif
 }
 
+static void SYSMENU_TRX_URSICode_keyboardHandler(uint32_t parameter)
+{
+	if(parameter == '<') //backspace
+	{
+		TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] = 0;
+
+		if (sysmenu_trx_selected_ursi_code_char_index > 0)
+			sysmenu_trx_selected_ursi_code_char_index--;
+	} else {
+		TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] = parameter;
+
+		if (sysmenu_trx_selected_ursi_code_char_index < (MAX_CALLSIGN_LENGTH - 1))
+			sysmenu_trx_selected_ursi_code_char_index++;
+	}
+
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+}
+
+static void SYSMENU_TRX_DrawURSICodeMenu(bool full_redraw)
+{
+	if (full_redraw)
+	{
+		LCDDriver_Fill(BG_COLOR);
+		LCDDriver_printText("URSI Code:", 5, 5, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+	}
+
+	LCDDriver_printText(TRX.URSI_CODE, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+	LCDDriver_drawFastHLine(8 + sysmenu_trx_selected_ursi_code_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
+
+	#if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
+	LCD_printKeyboard(SYSMENU_TRX_URSICode_keyboardHandler, false);
+	#endif
+}
+
 static void SYSMENU_TRX_RotateCallsignChar(int8_t dir)
 {
 	bool full_redraw = false;
@@ -1464,19 +1655,53 @@ static void SYSMENU_TRX_RotateLocatorChar(int8_t dir)
 		LCD_UpdateQuery.SystemMenu = true;
 }
 
+static void SYSMENU_TRX_RotateURSICodeChar(int8_t dir)
+{
+	bool full_redraw = false;
+	if (TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] == 0)
+		full_redraw = true;
+	TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] += dir;
+
+	// do not show special characters
+	if (TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] >= 1 && TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] <= 32 && dir > 0)
+		TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] = 33;
+	if (TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] >= 1 && TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] <= 32 && dir < 0)
+		TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] = 0;
+	if (TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] >= 127)
+		TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] = 0;
+	if (TRX.URSI_CODE[sysmenu_trx_selected_ursi_code_char_index] == 0)
+		full_redraw = true;
+
+	if (full_redraw)
+		LCD_UpdateQuery.SystemMenuRedraw = true;
+	else
+		LCD_UpdateQuery.SystemMenu = true;
+}
+
 static void SYSMENU_HANDL_TRX_SetCallsign(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_trx_setCallsign_menu_opened = true;
+    (void) direction;
+
+    sysmenu_trx_setCallsign_menu_opened = true;
 	SYSMENU_TRX_DrawCallsignMenu(true);
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
 static void SYSMENU_HANDL_TRX_SetLocator(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_trx_setLocator_menu_opened = true;
+    (void) direction;
+
+    sysmenu_trx_setLocator_menu_opened = true;
 	SYSMENU_TRX_DrawLocatorMenu(true);
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+}
+
+static void SYSMENU_HANDL_TRX_SetURSICode(int8_t direction)
+{
+    (void) direction;
+
+	sysmenu_trx_setURSICode_menu_opened = true;
+	SYSMENU_TRX_DrawURSICodeMenu(true);
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
@@ -1613,8 +1838,9 @@ static void SYSMENU_HANDL_TRX_TUNER_Enabled(int8_t direction)
 
 static void SYSMENU_HANDL_AUDIOMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_audio_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_audio_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_audio_handlers) / sizeof(sysmenu_audio_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -1692,12 +1918,58 @@ void SYSMENU_AUDIO_AGC_HOTKEY(void)
 	LCD_redraw(false);
 }
 
+void SYSMEUN_CALLSIGN_INFO_HOTKEY(void)
+{
+	SYSMENU_HANDL_CALLSIGN_INFO(0);
+	LCD_redraw(false);
+}
+
+void SYSMEUN_CALLSIGN_HOTKEY(void)
+{
+	SYSMENU_HANDL_TRX_SetCallsign(0);
+	LCD_redraw(false);
+}
+
+void SYSMEUN_TIME_HOTKEY(void)
+{
+	SYSMENU_HANDL_SETTIME(0);
+	LCD_redraw(false);
+}
+
+void SYSMEUN_WIFI_HOTKEY(void)
+{
+	#if HRDW_HAS_WIFI
+	SYSMENU_HANDL_WIFIMENU(0);
+	uint16_t index = getIndexByName(sysmenu_handlers_selected, sysmenu_item_count, "WIFI Enabled");
+	setCurrentMenuIndex(index);
+	LCD_redraw(false);
+	#endif
+}
+
+void SYSMEUN_SD_HOTKEY(void)
+{
+	#if HRDW_HAS_SD
+	SYSMENU_HANDL_SDMENU(0);
+	uint16_t index = getIndexByName(sysmenu_handlers_selected, sysmenu_item_count, "File Manager");
+	setCurrentMenuIndex(index);
+	LCD_redraw(false);
+	#endif
+}
+
 static void SYSMENU_HANDL_AUDIO_Volume(int8_t direction)
 {
 	if (direction > 0 || TRX.Volume > 0)
 		TRX.Volume += direction;
 	if (TRX.Volume > 100)
 		TRX.Volume = 100;
+}
+
+static void SYSMENU_HANDL_AUDIO_Volume_Step(int8_t direction)
+{
+	if (direction > 0 || TRX.Volume_Step > 1)
+		TRX.Volume_Step += direction;
+	if (TRX.Volume_Step > 25)
+		TRX.Volume_Step = 25;
 }
 
 static void SYSMENU_HANDL_AUDIO_DNR(int8_t direction)
@@ -1741,10 +2013,14 @@ static void SYSMENU_HANDL_AUDIO_NOISE_BLANKER(int8_t direction)
 static void SYSMENU_HANDL_AUDIO_IFGain(int8_t direction)
 {
 	TRX.IF_Gain += direction;
-	if (TRX.IF_Gain < 1)
-		TRX.IF_Gain = 1;
-	if (TRX.IF_Gain > 80)
-		TRX.IF_Gain = 80;
+	if (TRX.IF_Gain < CALIBRATE.IF_GAIN_MIN)
+		TRX.IF_Gain = CALIBRATE.IF_GAIN_MIN;
+	if (TRX.IF_Gain > CALIBRATE.IF_GAIN_MAX)
+		TRX.IF_Gain = CALIBRATE.IF_GAIN_MAX;
+	
+	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+	if (band > 0)
+		TRX.BANDS_SAVED_SETTINGS[band].IF_Gain = TRX.IF_Gain;
 }
 
 static void SYSMENU_HANDL_AUDIO_AGC_GAIN_TARGET(int8_t direction)
@@ -1758,11 +2034,11 @@ static void SYSMENU_HANDL_AUDIO_AGC_GAIN_TARGET(int8_t direction)
 
 static void SYSMENU_HANDL_AUDIO_MIC_Gain(int8_t direction)
 {
-	TRX.MIC_GAIN += direction;
-	if (TRX.MIC_GAIN < 1)
-		TRX.MIC_GAIN = 1;
-	if (TRX.MIC_GAIN > 20)
-		TRX.MIC_GAIN = 20;
+	TRX.MIC_GAIN_DB += direction * 0.1f;
+	if (TRX.MIC_GAIN_DB < 1.0f)
+		TRX.MIC_GAIN_DB = 1.0f;
+	if (TRX.MIC_GAIN_DB > 20.0f)
+		TRX.MIC_GAIN_DB = 20.0f;
 }
 
 static void SYSMENU_HANDL_AUDIO_MIC_Boost(int8_t direction)
@@ -1773,7 +2049,7 @@ static void SYSMENU_HANDL_AUDIO_MIC_Boost(int8_t direction)
 		TRX.MIC_Boost = true;
 
 	// reinit codec
-	WM8731_TXRX_mode();
+	CODEC_TXRX_mode();
 }
 
 static void SYSMENU_HANDL_AUDIO_DNR1_THRES(int8_t direction)
@@ -1812,63 +2088,103 @@ static void SYSMENU_HANDL_AUDIO_DNR_MINMAL(int8_t direction)
 		TRX.DNR_MINIMAL = 100;
 }
 
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_LOW_SSB(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P1_SSB(int8_t direction)
 {
-	TRX.MIC_EQ_LOW_SSB += direction;
-	if (TRX.MIC_EQ_LOW_SSB < -10)
-		TRX.MIC_EQ_LOW_SSB = -10;
-	if (TRX.MIC_EQ_LOW_SSB > 10)
-		TRX.MIC_EQ_LOW_SSB = 10;
+	TRX.MIC_EQ_P1_SSB += direction;
+	if (TRX.MIC_EQ_P1_SSB < -50)
+		TRX.MIC_EQ_P1_SSB = -50;
+	if (TRX.MIC_EQ_P1_SSB > 50)
+		TRX.MIC_EQ_P1_SSB = 50;
 	NeedReinitAudioFilters = true;
 }
 
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_LOW_AMFM(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P1_AMFM(int8_t direction)
 {
-	TRX.MIC_EQ_LOW_AMFM += direction;
-	if (TRX.MIC_EQ_LOW_AMFM < -10)
-		TRX.MIC_EQ_LOW_AMFM = -10;
-	if (TRX.MIC_EQ_LOW_AMFM > 10)
-		TRX.MIC_EQ_LOW_AMFM = 10;
+	TRX.MIC_EQ_P1_AMFM += direction;
+	if (TRX.MIC_EQ_P1_AMFM < -50)
+		TRX.MIC_EQ_P1_AMFM = -50;
+	if (TRX.MIC_EQ_P1_AMFM > 50)
+		TRX.MIC_EQ_P1_AMFM = 50;
 	NeedReinitAudioFilters = true;
 }
 
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_MID_SSB(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P2_SSB(int8_t direction)
 {
-	TRX.MIC_EQ_MID_SSB += direction;
-	if (TRX.MIC_EQ_MID_SSB < -10)
-		TRX.MIC_EQ_MID_SSB = -10;
-	if (TRX.MIC_EQ_MID_SSB > 10)
-		TRX.MIC_EQ_MID_SSB = 10;
+	TRX.MIC_EQ_P2_SSB += direction;
+	if (TRX.MIC_EQ_P2_SSB < -50)
+		TRX.MIC_EQ_P2_SSB = -50;
+	if (TRX.MIC_EQ_P2_SSB > 50)
+		TRX.MIC_EQ_P2_SSB = 50;
 	NeedReinitAudioFilters = true;
 }
 
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_MID_AMFM(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P2_AMFM(int8_t direction)
 {
-	TRX.MIC_EQ_MID_AMFM += direction;
-	if (TRX.MIC_EQ_MID_AMFM < -10)
-		TRX.MIC_EQ_MID_AMFM = -10;
-	if (TRX.MIC_EQ_MID_AMFM > 10)
-		TRX.MIC_EQ_MID_AMFM = 10;
+	TRX.MIC_EQ_P2_AMFM += direction;
+	if (TRX.MIC_EQ_P2_AMFM < -50)
+		TRX.MIC_EQ_P2_AMFM = -50;
+	if (TRX.MIC_EQ_P2_AMFM > 50)
+		TRX.MIC_EQ_P2_AMFM = 50;
 	NeedReinitAudioFilters = true;
 }
 
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_HIG_SSB(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P3_SSB(int8_t direction)
 {
-	TRX.MIC_EQ_HIG_SSB += direction;
-	if (TRX.MIC_EQ_HIG_SSB < -10)
-		TRX.MIC_EQ_HIG_SSB = -10;
-	if (TRX.MIC_EQ_HIG_SSB > 10)
-		TRX.MIC_EQ_HIG_SSB = 10;
+	TRX.MIC_EQ_P3_SSB += direction;
+	if (TRX.MIC_EQ_P3_SSB < -50)
+		TRX.MIC_EQ_P3_SSB = -50;
+	if (TRX.MIC_EQ_P3_SSB > 50)
+		TRX.MIC_EQ_P3_SSB = 50;
 	NeedReinitAudioFilters = true;
 }
 
-static void SYSMENU_HANDL_AUDIO_MIC_EQ_HIG_AMFM(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P3_AMFM(int8_t direction)
 {
-	TRX.MIC_EQ_HIG_AMFM += direction;
-	if (TRX.MIC_EQ_HIG_AMFM < -10)
-		TRX.MIC_EQ_HIG_AMFM = -10;
-	if (TRX.MIC_EQ_HIG_AMFM > 10)
-		TRX.MIC_EQ_HIG_AMFM = 10;
+	TRX.MIC_EQ_P3_AMFM += direction;
+	if (TRX.MIC_EQ_P3_AMFM < -50)
+		TRX.MIC_EQ_P3_AMFM = -50;
+	if (TRX.MIC_EQ_P3_AMFM > 50)
+		TRX.MIC_EQ_P3_AMFM = 50;
+	NeedReinitAudioFilters = true;
+}
+
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P4_SSB(int8_t direction)
+{
+	TRX.MIC_EQ_P4_SSB += direction;
+	if (TRX.MIC_EQ_P4_SSB < -50)
+		TRX.MIC_EQ_P4_SSB = -50;
+	if (TRX.MIC_EQ_P4_SSB > 50)
+		TRX.MIC_EQ_P4_SSB = 50;
+	NeedReinitAudioFilters = true;
+}
+
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P4_AMFM(int8_t direction)
+{
+	TRX.MIC_EQ_P4_AMFM += direction;
+	if (TRX.MIC_EQ_P4_AMFM < -50)
+		TRX.MIC_EQ_P4_AMFM = -50;
+	if (TRX.MIC_EQ_P4_AMFM > 50)
+		TRX.MIC_EQ_P4_AMFM = 50;
+	NeedReinitAudioFilters = true;
+}
+
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P5_SSB(int8_t direction)
+{
+	TRX.MIC_EQ_P5_SSB += direction;
+	if (TRX.MIC_EQ_P5_SSB < -50)
+		TRX.MIC_EQ_P5_SSB = -50;
+	if (TRX.MIC_EQ_P5_SSB > 50)
+		TRX.MIC_EQ_P5_SSB = 50;
+	NeedReinitAudioFilters = true;
+}
+
+static void SYSMENU_HANDL_AUDIO_MIC_EQ_P5_AMFM(int8_t direction)
+{
+	TRX.MIC_EQ_P5_AMFM += direction;
+	if (TRX.MIC_EQ_P5_AMFM < -50)
+		TRX.MIC_EQ_P5_AMFM = -50;
+	if (TRX.MIC_EQ_P5_AMFM > 50)
+		TRX.MIC_EQ_P5_AMFM = 50;
 	NeedReinitAudioFilters = true;
 }
 
@@ -1890,33 +2206,53 @@ static void SYSMENU_HANDL_AUDIO_MIC_NOISE_GATE(int8_t direction)
 		TRX.MIC_NOISE_GATE = 0;
 }
 
-static void SYSMENU_HANDL_AUDIO_RX_EQ_LOW(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P1(int8_t direction)
 {
-	TRX.RX_EQ_LOW += direction;
-	if (TRX.RX_EQ_LOW < -10)
-		TRX.RX_EQ_LOW = -10;
-	if (TRX.RX_EQ_LOW > 10)
-		TRX.RX_EQ_LOW = 10;
+	TRX.RX_EQ_P1 += direction;
+	if (TRX.RX_EQ_P1 < -50)
+		TRX.RX_EQ_P1 = -50;
+	if (TRX.RX_EQ_P1 > 50)
+		TRX.RX_EQ_P1 = 50;
 	NeedReinitAudioFilters = true;
 }
 
-static void SYSMENU_HANDL_AUDIO_RX_EQ_MID(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P2(int8_t direction)
 {
-	TRX.RX_EQ_MID += direction;
-	if (TRX.RX_EQ_MID < -10)
-		TRX.RX_EQ_MID = -10;
-	if (TRX.RX_EQ_MID > 10)
-		TRX.RX_EQ_MID = 10;
+	TRX.RX_EQ_P2 += direction;
+	if (TRX.RX_EQ_P2 < -50)
+		TRX.RX_EQ_P2 = -50;
+	if (TRX.RX_EQ_P2 > 50)
+		TRX.RX_EQ_P2 = 50;
 	NeedReinitAudioFilters = true;
 }
 
-static void SYSMENU_HANDL_AUDIO_RX_EQ_HIG(int8_t direction)
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P3(int8_t direction)
 {
-	TRX.RX_EQ_HIG += direction;
-	if (TRX.RX_EQ_HIG < -10)
-		TRX.RX_EQ_HIG = -10;
-	if (TRX.RX_EQ_HIG > 10)
-		TRX.RX_EQ_HIG = 10;
+	TRX.RX_EQ_P3 += direction;
+	if (TRX.RX_EQ_P3 < -50)
+		TRX.RX_EQ_P3 = -50;
+	if (TRX.RX_EQ_P3 > 50)
+		TRX.RX_EQ_P3 = 50;
+	NeedReinitAudioFilters = true;
+}
+
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P4(int8_t direction)
+{
+	TRX.RX_EQ_P4 += direction;
+	if (TRX.RX_EQ_P4 < -50)
+		TRX.RX_EQ_P4 = -50;
+	if (TRX.RX_EQ_P4 > 50)
+		TRX.RX_EQ_P4 = 50;
+	NeedReinitAudioFilters = true;
+}
+
+static void SYSMENU_HANDL_AUDIO_RX_EQ_P5(int8_t direction)
+{
+	TRX.RX_EQ_P5 += direction;
+	if (TRX.RX_EQ_P5 < -50)
+		TRX.RX_EQ_P5 = -50;
+	if (TRX.RX_EQ_P5 > 50)
+		TRX.RX_EQ_P5 = 50;
 	NeedReinitAudioFilters = true;
 }
 
@@ -2021,6 +2357,9 @@ void SYSMENU_HANDL_AUDIO_SSB_HPF_RX_pass(int8_t direction)
 	if (TRX.SSB_HPF_RX_Filter > MAX_HPF_WIDTH)
 		TRX.SSB_HPF_RX_Filter = MAX_HPF_WIDTH;
 
+	if (TRX.SSB_HPF_RX_Filter > TRX.SSB_LPF_RX_Filter)
+		TRX.SSB_HPF_RX_Filter = TRX.SSB_LPF_RX_Filter;
+
 	TRX_setMode(SecondaryVFO->Mode, SecondaryVFO);
 	TRX_setMode(CurrentVFO->Mode, CurrentVFO);
 }
@@ -2031,6 +2370,9 @@ void SYSMENU_HANDL_AUDIO_SSB_HPF_TX_pass(int8_t direction)
 		TRX.SSB_HPF_TX_Filter += direction * 50;
 	if (TRX.SSB_HPF_TX_Filter > MAX_HPF_WIDTH)
 		TRX.SSB_HPF_TX_Filter = MAX_HPF_WIDTH;
+
+	if (TRX.SSB_HPF_TX_Filter > TRX.SSB_LPF_TX_Filter)
+		TRX.SSB_HPF_TX_Filter = TRX.SSB_LPF_TX_Filter;
 
 	TRX_setMode(SecondaryVFO->Mode, SecondaryVFO);
 	TRX_setMode(CurrentVFO->Mode, CurrentVFO);
@@ -2172,6 +2514,23 @@ static void SYSMENU_HANDL_AUDIO_AGC_Spectral(int8_t direction)
 		TRX.AGC_Spectral = false;
 }
 
+static void SYSMENU_HANDL_AUDIO_TX_CESSB(int8_t direction)
+{
+	if (direction > 0)
+		TRX.TX_CESSB = true;
+	if (direction < 0)
+		TRX.TX_CESSB = false;
+}
+
+static void SYSMENU_HANDL_AUDIO_TX_CESSB_COMPRESS_DB(int8_t direction)
+{
+	TRX.TX_CESSB_COMPRESS_DB += direction * 0.1f;
+	if (TRX.TX_CESSB_COMPRESS_DB < 1.0f)
+		TRX.TX_CESSB_COMPRESS_DB = 1.0f;
+	if (TRX.TX_CESSB_COMPRESS_DB > 20.0f)
+		TRX.TX_CESSB_COMPRESS_DB = 20.0f;
+}
+
 static void SYSMENU_HANDL_AUDIO_VAD_THRESHOLD(int8_t direction)
 {
 	TRX.VAD_THRESHOLD += direction;
@@ -2209,8 +2568,9 @@ static void SYSMENU_HANDL_AUDIO_VOX_THRESHOLD(int8_t direction)
 
 static void SYSMENU_HANDL_CWMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_cw_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_cw_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_cw_handlers) / sizeof(sysmenu_cw_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_redraw(false);
@@ -2313,8 +2673,8 @@ static void SYSMENU_HANDL_CW_PTT_Type(int8_t direction)
 {
 	if (direction > 0 || TRX.CW_PTT_Type > 0)
 		TRX.CW_PTT_Type += direction;
-	if (TRX.CW_PTT_Type > 1)
-		TRX.CW_PTT_Type = 1;
+	if (TRX.CW_PTT_Type > 2)
+		TRX.CW_PTT_Type = 2;
 
 	KEYER_symbol_status = 0;
 }
@@ -2323,8 +2683,9 @@ static void SYSMENU_HANDL_CW_PTT_Type(int8_t direction)
 
 static void SYSMENU_HANDL_LCDMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_screen_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_screen_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_screen_handlers) / sizeof(sysmenu_screen_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -2482,8 +2843,8 @@ static void SYSMENU_HANDL_SCREEN_FFT_Color(int8_t direction)
 	TRX.FFT_Color += direction;
 	if (TRX.FFT_Color < 1)
 		TRX.FFT_Color = 1;
-	if (TRX.FFT_Color > 8)
-		TRX.FFT_Color = 8;
+	if (TRX.FFT_Color > 9)
+		TRX.FFT_Color = 9;
 
 	FFT_Init();
 }
@@ -2493,8 +2854,8 @@ static void SYSMENU_HANDL_SCREEN_WTF_Color(int8_t direction)
 	TRX.WTF_Color += direction;
 	if (TRX.WTF_Color < 1)
 		TRX.WTF_Color = 1;
-	if (TRX.WTF_Color > 8)
-		TRX.WTF_Color = 8;
+	if (TRX.WTF_Color > 9)
+		TRX.WTF_Color = 9;
 
 	FFT_Init();
 }
@@ -2646,8 +3007,8 @@ static void SYSMENU_HANDL_SCREEN_FFT_Speed(int8_t direction)
 static void SYSMENU_HANDL_SCREEN_FFT_Sensitivity(int8_t direction)
 {
 	TRX.FFT_Sensitivity += direction;
-	if (TRX.FFT_Sensitivity < FFT_MIN + 1)
-		TRX.FFT_Sensitivity = FFT_MIN + 1;
+	if (TRX.FFT_Sensitivity < 1)
+		TRX.FFT_Sensitivity = 1;
 	if (TRX.FFT_Sensitivity > FFT_MAX_TOP_SCALE)
 		TRX.FFT_Sensitivity = FFT_MAX_TOP_SCALE;
 }
@@ -2662,10 +3023,10 @@ static void SYSMENU_HANDL_SCREEN_Show_Sec_VFO(int8_t direction)
 
 static void SYSMENU_HANDL_SCREEN_FFT_Scale_Type(int8_t direction)
 {
-	if (direction > 0)
-		TRX.FFT_Scale_Type = 1;
-	if (direction < 0)
-		TRX.FFT_Scale_Type = 0;
+	if (TRX.FFT_Scale_Type > 0 || direction > 0)
+		TRX.FFT_Scale_Type += direction;
+	if (TRX.FFT_Scale_Type > 2)
+		TRX.FFT_Scale_Type = 2;
 }
 
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON1(int8_t direction)
@@ -2913,6 +3274,7 @@ static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON30(int8_t direction)
 		TRX.FuncButtons[29] = FUNCBUTTONS_COUNT - 1;
 }
 
+#if (FUNCBUTTONS_ON_PAGE * FUNCBUTTONS_PAGES) > 30
 static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON31(int8_t direction)
 {
 	if (TRX.FuncButtons[30] > 0 || direction > 0)
@@ -2931,13 +3293,15 @@ static void SYSMENU_HANDL_SCREEN_FUNC_BUTTON32(int8_t direction)
 #endif
 #endif
 #endif
+#endif
 
 // DECODERS MENU
 
 static void SYSMENU_HANDL_DECODERSMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_decoders_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_decoders_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_decoders_handlers) / sizeof(sysmenu_decoders_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_redraw(false);
@@ -3079,8 +3443,9 @@ static void SYSMENU_HANDL_DECODERS_RTTY_StopBits(int8_t direction)
 
 static void SYSMENU_HANDL_ADCMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_adc_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_adc_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_adc_handlers) / sizeof(sysmenu_adc_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3141,8 +3506,9 @@ static void SYSMENU_HANDL_ADC_DITH(int8_t direction)
 #if HRDW_HAS_WIFI
 static void SYSMENU_HANDL_WIFIMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_wifi_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_wifi_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_wifi_handlers) / sizeof(sysmenu_wifi_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3243,8 +3609,9 @@ static void SYSMENU_WIFI_SelectAP1MenuMove(int8_t dir)
 		}
 		else
 		{
-			strcpy(TRX.WIFI_AP1, (char *)&WIFI_FoundedAP[sysmenu_wifi_selected_ap_index - 1]);
+			strcpy(WIFI.AP_1, (char *)&WIFI_FoundedAP[sysmenu_wifi_selected_ap_index - 1]);
 			WIFI_State = WIFI_CONFIGURED;
+			NeedSaveWiFi = true;
 			sysmenu_wifi_selectap1_menu_opened = false;
 			LCD_UpdateQuery.SystemMenuRedraw = true;
 		}
@@ -3268,8 +3635,9 @@ static void SYSMENU_WIFI_SelectAP2MenuMove(int8_t dir)
 		}
 		else
 		{
-			strcpy(TRX.WIFI_AP2, (char *)&WIFI_FoundedAP[sysmenu_wifi_selected_ap_index - 1]);
+			strcpy(WIFI.AP_2, (char *)&WIFI_FoundedAP[sysmenu_wifi_selected_ap_index - 1]);
 			WIFI_State = WIFI_CONFIGURED;
+			NeedSaveWiFi = true;
 			sysmenu_wifi_selectap2_menu_opened = false;
 			LCD_UpdateQuery.SystemMenuRedraw = true;
 		}
@@ -3293,8 +3661,9 @@ static void SYSMENU_WIFI_SelectAP3MenuMove(int8_t dir)
 		}
 		else
 		{
-			strcpy(TRX.WIFI_AP3, (char *)&WIFI_FoundedAP[sysmenu_wifi_selected_ap_index - 1]);
+			strcpy(WIFI.AP_3, (char *)&WIFI_FoundedAP[sysmenu_wifi_selected_ap_index - 1]);
 			WIFI_State = WIFI_CONFIGURED;
+			NeedSaveWiFi = true;
 			sysmenu_wifi_selectap3_menu_opened = false;
 			LCD_UpdateQuery.SystemMenuRedraw = true;
 		}
@@ -3305,12 +3674,12 @@ static void SYSMENU_WIFI_AP1_Password_keyboardHandler(uint32_t parameter)
 {
 	if(parameter == '<') //backspace
 	{
-		TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] = 0;
+		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = 0;
 		
 		if (sysmenu_wifi_selected_ap_password_char_index > 0)
 			sysmenu_wifi_selected_ap_password_char_index--;
 	} else {
-		TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] = parameter;
+		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = parameter;
 		
 		if (sysmenu_wifi_selected_ap_password_char_index < (MAX_WIFIPASS_LENGTH - 1))
 			sysmenu_wifi_selected_ap_password_char_index++;
@@ -3327,7 +3696,7 @@ static void SYSMENU_WIFI_DrawAP1passwordMenu(bool full_redraw)
 		LCDDriver_printText("NET1 Password:", 5, 5, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 	}
 
-	LCDDriver_printText(TRX.WIFI_PASSWORD1, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+	LCDDriver_printText(WIFI.Password_1, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
 
 	#if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
@@ -3339,12 +3708,12 @@ static void SYSMENU_WIFI_AP2_Password_keyboardHandler(uint32_t parameter)
 {
 	if(parameter == '<') //backspace
 	{
-		TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] = 0;
+		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = 0;
 		
 		if (sysmenu_wifi_selected_ap_password_char_index > 0)
 			sysmenu_wifi_selected_ap_password_char_index--;
 	} else {
-		TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] = parameter;
+		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = parameter;
 		
 		if (sysmenu_wifi_selected_ap_password_char_index < (MAX_WIFIPASS_LENGTH - 1))
 			sysmenu_wifi_selected_ap_password_char_index++;
@@ -3361,7 +3730,7 @@ static void SYSMENU_WIFI_DrawAP2passwordMenu(bool full_redraw)
 		LCDDriver_printText("NET2 Password:", 5, 5, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 	}
 
-	LCDDriver_printText(TRX.WIFI_PASSWORD2, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+	LCDDriver_printText(WIFI.Password_2, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
 
 	#if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
@@ -3373,12 +3742,12 @@ static void SYSMENU_WIFI_AP3_Password_keyboardHandler(uint32_t parameter)
 {
 	if(parameter == '<') //backspace
 	{
-		TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] = 0;
+		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = 0;
 		
 		if (sysmenu_wifi_selected_ap_password_char_index > 0)
 			sysmenu_wifi_selected_ap_password_char_index--;
 	} else {
-		TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] = parameter;
+		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = parameter;
 		
 		if (sysmenu_wifi_selected_ap_password_char_index < (MAX_WIFIPASS_LENGTH - 1))
 			sysmenu_wifi_selected_ap_password_char_index++;
@@ -3395,7 +3764,7 @@ static void SYSMENU_WIFI_DrawAP3passwordMenu(bool full_redraw)
 		LCDDriver_printText("NET3 Password:", 5, 5, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 	}
 
-	LCDDriver_printText(TRX.WIFI_PASSWORD3, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+	LCDDriver_printText(WIFI.Password_3, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
 
 	#if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
@@ -3406,18 +3775,18 @@ static void SYSMENU_WIFI_DrawAP3passwordMenu(bool full_redraw)
 static void SYSMENU_WIFI_RotatePasswordChar1(int8_t dir)
 {
 	bool full_redraw = false;
-	if (TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] == 0)
+	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] == 0)
 		full_redraw = true;
-	TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] += dir;
+	WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] += dir;
 
 	// do not show special characters
-	if (TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] >= 1 && TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
-		TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] = 33;
-	if (TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] >= 1 && TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
-		TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] = 0;
-	if (TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] >= 127)
-		TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] = 0;
-	if (TRX.WIFI_PASSWORD1[sysmenu_wifi_selected_ap_password_char_index] == 0)
+	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
+		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = 33;
+	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
+		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = 0;
+	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 127)
+		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = 0;
+	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] == 0)
 		full_redraw = true;
 
 	if (full_redraw)
@@ -3429,18 +3798,18 @@ static void SYSMENU_WIFI_RotatePasswordChar1(int8_t dir)
 static void SYSMENU_WIFI_RotatePasswordChar2(int8_t dir)
 {
 	bool full_redraw = false;
-	if (TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] == 0)
+	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] == 0)
 		full_redraw = true;
-	TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] += dir;
+	WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] += dir;
 
 	// do not show special characters
-	if (TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] >= 1 && TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
-		TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] = 33;
-	if (TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] >= 1 && TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
-		TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] = 0;
-	if (TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] >= 127)
-		TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] = 0;
-	if (TRX.WIFI_PASSWORD2[sysmenu_wifi_selected_ap_password_char_index] == 0)
+	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
+		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = 33;
+	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
+		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = 0;
+	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 127)
+		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = 0;
+	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] == 0)
 		full_redraw = true;
 
 	if (full_redraw)
@@ -3452,18 +3821,18 @@ static void SYSMENU_WIFI_RotatePasswordChar2(int8_t dir)
 static void SYSMENU_WIFI_RotatePasswordChar3(int8_t dir)
 {
 	bool full_redraw = false;
-	if (TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] == 0)
+	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] == 0)
 		full_redraw = true;
-	TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] += dir;
+	WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] += dir;
 
 	// do not show special characters
-	if (TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] >= 1 && TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
-		TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] = 33;
-	if (TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] >= 1 && TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
-		TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] = 0;
-	if (TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] >= 127)
-		TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] = 0;
-	if (TRX.WIFI_PASSWORD3[sysmenu_wifi_selected_ap_password_char_index] == 0)
+	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
+		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = 33;
+	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
+		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = 0;
+	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 127)
+		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = 0;
+	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] == 0)
 		full_redraw = true;
 
 	if (full_redraw)
@@ -3475,15 +3844,18 @@ static void SYSMENU_WIFI_RotatePasswordChar3(int8_t dir)
 static void SYSMENU_HANDL_WIFI_Enabled(int8_t direction)
 {
 	if (direction > 0)
-		TRX.WIFI_Enabled = true;
+		WIFI.Enabled = true;
 	if (direction < 0)
-		TRX.WIFI_Enabled = false;
+		WIFI.Enabled = false;
+
+	NeedSaveWiFi = true;
 }
 
 static void SYSMENU_HANDL_WIFI_SelectAP1(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_needupdate_ap = true;
+    (void) direction;
+
+    sysmenu_wifi_needupdate_ap = true;
 	sysmenu_wifi_selected_ap_index = 0;
 	sysmenu_wifi_selectap1_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3491,8 +3863,9 @@ static void SYSMENU_HANDL_WIFI_SelectAP1(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_SelectAP2(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_needupdate_ap = true;
+    (void) direction;
+
+    sysmenu_wifi_needupdate_ap = true;
 	sysmenu_wifi_selected_ap_index = 0;
 	sysmenu_wifi_selectap2_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3500,8 +3873,9 @@ static void SYSMENU_HANDL_WIFI_SelectAP2(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_SelectAP3(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_needupdate_ap = true;
+    (void) direction;
+
+    sysmenu_wifi_needupdate_ap = true;
 	sysmenu_wifi_selected_ap_index = 0;
 	sysmenu_wifi_selectap3_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3509,50 +3883,58 @@ static void SYSMENU_HANDL_WIFI_SelectAP3(int8_t direction)
 
 static void SYSMENU_HANDL_WIFI_SetAP1password(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_selected_ap_password_char_index = 0;
+    (void) direction;
+
+    sysmenu_wifi_selected_ap_password_char_index = 0;
 	sysmenu_wifi_setAP1password_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
 static void SYSMENU_HANDL_WIFI_SetAP2password(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_selected_ap_password_char_index = 0;
+    (void) direction;
+
+    sysmenu_wifi_selected_ap_password_char_index = 0;
 	sysmenu_wifi_setAP2password_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
 static void SYSMENU_HANDL_WIFI_SetAP3password(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_wifi_selected_ap_password_char_index = 0;
+    (void) direction;
+
+    sysmenu_wifi_selected_ap_password_char_index = 0;
 	sysmenu_wifi_setAP3password_menu_opened = true;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
 static void SYSMENU_HANDL_WIFI_Timezone(int8_t direction)
 {
-	TRX.WIFI_TIMEZONE += direction;
-	if (TRX.WIFI_TIMEZONE < -12)
-		TRX.WIFI_TIMEZONE = -12;
-	if (TRX.WIFI_TIMEZONE > 12)
-		TRX.WIFI_TIMEZONE = 12;
+	WIFI.Timezone += direction;
+	if (WIFI.Timezone < -12)
+		WIFI.Timezone = -12;
+	if (WIFI.Timezone > 12)
+		WIFI.Timezone = 12;
 	WIFI_State = WIFI_INITED;
+
+	NeedSaveWiFi = true;
 }
 
 static void SYSMENU_HANDL_WIFI_CAT_Server(int8_t direction)
 {
 	if (direction > 0)
-		TRX.WIFI_CAT_SERVER = true;
+		WIFI.CAT_Server = true;
 	if (direction < 0)
-		TRX.WIFI_CAT_SERVER = false;
+		WIFI.CAT_Server = false;
+
+	NeedSaveWiFi = true;
 }
 
 static void SYSMENU_HANDL_WIFI_UpdateFW(int8_t direction)
 {
-#pragma unused(direction)
-	LCD_systemMenuOpened = false;
+    (void) direction;
+
+    LCD_systemMenuOpened = false;
 	LCD_redraw(false);
 	LCD_doEvents();
 	WIFI_UpdateFW(NULL);
@@ -3564,17 +3946,34 @@ static void SYSMENU_HANDL_WIFI_UpdateFW(int8_t direction)
 #if HRDW_HAS_SD
 static void SYSMENU_HANDL_SDMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_sd_handlers) / sizeof(sysmenu_sd_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
+void SYSMENU_SD_FILEMANAGER_HOTKEY(void)
+{
+	SYSMENU_HANDL_SDMENU(0);
+	uint16_t index = getIndexByName(sysmenu_handlers_selected, sysmenu_item_count, "File Manager");
+	setCurrentMenuIndex(index);
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+	SYSMENU_HANDL_SD_Filemanager(0);
+}
+
+static void SYSMENU_HANDL_SD_Filemanager(int8_t direction)
+{
+	sysmenu_filemanager_opened = true;
+	SYSMENU_drawSystemMenu(true, false);
+}
+
 static void SYSMENU_HANDL_SD_ExportSettingsDialog(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_export_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_export_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_sd_export_handlers) / sizeof(sysmenu_sd_export_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -3582,9 +3981,19 @@ static void SYSMENU_HANDL_SD_ExportSettingsDialog(int8_t direction)
 
 static void SYSMENU_HANDL_SD_ImportSettingsDialog(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_import_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_import_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_sd_import_handlers) / sizeof(sysmenu_sd_import_handlers[0]);
+	sysmenu_onroot = false;
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+}
+static void SYSMENU_HANDL_SD_FormatDialog(int8_t direction)
+{
+	(void) direction;
+
+	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_sd_format_handlers[0];
+	sysmenu_item_count = sizeof(sysmenu_sd_format_handlers) / sizeof(sysmenu_sd_format_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
@@ -3637,6 +4046,7 @@ static void SYSMENU_HANDL_SETTIME(int8_t direction)
 	if (!sysmenu_timeMenuOpened)
 		LCDDriver_Fill(BG_COLOR);
 	sysmenu_timeMenuOpened = true;
+
 	static uint8_t Hours;
 	static uint8_t Minutes;
 	static uint8_t Seconds;
@@ -3693,9 +4103,12 @@ static void SYSMENU_HANDL_SETTIME(int8_t direction)
 	}
 	if (direction == 0)
 	{
+		if(LCD_busy)
+			return;
+		LCD_busy = true;
 		#ifdef LCD_SMALL_INTERFACE
-			#define x_pos_clk 10
-			#define y_pos_clk 20
+			#define x_pos_clk 50
+			#define y_pos_clk 50
 		#else
 			#define x_pos_clk 76
 			#define y_pos_clk 100
@@ -3703,14 +4116,15 @@ static void SYSMENU_HANDL_SETTIME(int8_t direction)
 		sprintf(ctmp, "%d", Hours);
 		addSymbols(ctmp, ctmp, 2, "0", false);
 		LCDDriver_printText(ctmp, x_pos_clk, y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 0 ? FG_COLOR : BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, 3);
+		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 		sprintf(ctmp, "%d", Minutes);
 		addSymbols(ctmp, ctmp, 2, "0", false);
 		LCDDriver_printText(ctmp, LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 1 ? FG_COLOR : BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, 3);
+		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 		sprintf(ctmp, "%d", Seconds);
 		addSymbols(ctmp, ctmp, 2, "0", false);
 		LCDDriver_printText(ctmp, LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 2 ? FG_COLOR : BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+		LCD_busy = false;
 	}
 }
 
@@ -3718,8 +4132,8 @@ static void SYSMENU_HANDL_SETTIME(int8_t direction)
 
 static void SYSMENU_HANDL_Bootloader(int8_t direction)
 {
-#pragma unused(direction)
-	WM8731_CleanBuffer();
+    (void) direction;
+	CODEC_CleanBuffer();
 	TRX.NeedGoToBootloader = true;
 	SaveSettings();
 	HAL_Delay(500);
@@ -3778,6 +4192,9 @@ static void SYSMENU_HANDL_SYSINFO(int8_t direction)
 	y += y_offs;
 	sprintf(out, "VBAT VOLT: %.2f     ", TRX_VBAT_Voltage);
 	LCDDriver_printText(out, 5, y, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+	y += y_offs;
+	sprintf(out, "ALC: %.2fv (%d%%)    ", TRX_ALC_IN, getPowerFromALC(TRX_ALC_IN));
+	LCDDriver_printText(out, 5, y, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
 
 	LCD_UpdateQuery.SystemMenu = true;
 }
@@ -3788,7 +4205,12 @@ static void SYSMENU_HANDL_SUPPORT(int8_t direction)
 {
 	sysmenu_infowindow_opened = true;
 	LCDDriver_Fill(BG_COLOR);
+#ifndef LCD_SMALL_INTERFACE
 	LCDDriver_printText("MasterCard: 5599 0020 2091 0792", 10, 10, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+#else
+	LCDDriver_printText("MasterCard:", 10, 10, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+	LCDDriver_printText("5599 0020 2091 0792", 10, 20, FG_COLOR, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+#endif
 }
 
 //Back to prev menu
@@ -3863,8 +4285,8 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 {
 	if (CALIBRATE.RF_unit_type > 0 || direction > 0)
 		CALIBRATE.RF_unit_type += direction;
-	if (CALIBRATE.RF_unit_type > 3)
-		CALIBRATE.RF_unit_type = 3;
+	if (CALIBRATE.RF_unit_type > 5)
+		CALIBRATE.RF_unit_type = 5;
 
 	if (CALIBRATE.RF_unit_type == RF_UNIT_QRP)
 	{
@@ -3880,7 +4302,8 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 		CALIBRATE.rf_out_power_cb = 24;				   // 27mhz
 		CALIBRATE.rf_out_power_10m = 24;			   // 10m
 		CALIBRATE.rf_out_power_6m = 13;				   // 6m
-		CALIBRATE.rf_out_power_2m = 300;			   // 2m
+		CALIBRATE.rf_out_power_4m = 13;				   // 4m
+		CALIBRATE.rf_out_power_2m = 100;			   // 2m
 		CALIBRATE.RFU_LPF_END = 60000 * 1000;		   // LPF
 		CALIBRATE.RFU_HPF_START = 60000 * 1000;		   // HPF U14-RF1
 		CALIBRATE.RFU_BPF_0_START = 135 * 1000 * 1000; // 2m U14-RF3
@@ -3902,13 +4325,13 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 		CALIBRATE.RFU_BPF_8_START = 0;				   // disabled on qrp version
 		CALIBRATE.RFU_BPF_8_END = 0;				   // disabled on qrp version
 		CALIBRATE.SWR_FWD_Calibration_HF = 11.0f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_HF = 11.0f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_HF = 11.0f;	   // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_6M = 10.0f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_6M = 10.0f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_6M = 10.0f;	   // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_VHF = 3.6f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_VHF = 3.6f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_VHF = 3.6f;	   // SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 2;				   // Maximum RF power in Tune mode
-		CALIBRATE.MAX_RF_POWER = 7;					   // Max TRX Power for indication
+		CALIBRATE.MAX_RF_POWER_ON_METER = 7;					   // Max TRX Power for indication
 	}
 	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_RU4PN)
 	{
@@ -3924,6 +4347,7 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 		CALIBRATE.rf_out_power_cb = 40;			   // 27mhz
 		CALIBRATE.rf_out_power_10m = 40;		   // 10m
 		CALIBRATE.rf_out_power_6m = 40;			   // 6m
+		CALIBRATE.rf_out_power_4m = 40;			   // 4m
 		CALIBRATE.rf_out_power_2m = 50;			   // 2m
 		CALIBRATE.RFU_LPF_END = 0;				   // disabled in BIG version
 		CALIBRATE.RFU_HPF_START = 0;			   // disabled in BIG version
@@ -3946,13 +4370,13 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 		CALIBRATE.RFU_BPF_8_START = 35000 * 1000;  // 6m
 		CALIBRATE.RFU_BPF_8_END = 70000 * 1000;	   // 6m
 		CALIBRATE.SWR_FWD_Calibration_HF = 22.0f;  // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_HF = 22.0f;  // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_HF = 22.0f;  // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_6M = 22.0f;  // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_6M = 22.0f;  // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_6M = 22.0f;  // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_VHF = 22.0f; // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_VHF = 22.0f; // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_VHF = 22.0f; // SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 10;			   // Maximum RF power in Tune mode
-		CALIBRATE.MAX_RF_POWER = 100;			   // Max TRX Power for indication
+		CALIBRATE.MAX_RF_POWER_ON_METER = 100;			   // Max TRX Power for indication
 	}
 	if (CALIBRATE.RF_unit_type == RF_UNIT_RU4PN)
 	{
@@ -3991,7 +4415,8 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 		CALIBRATE.rf_out_power_cb = 40;				   // 27mhz
 		CALIBRATE.rf_out_power_10m = 40;			   // 10m
 		CALIBRATE.rf_out_power_6m = 40;				   // 6m
-		CALIBRATE.rf_out_power_2m = 270;				   // 2m
+		CALIBRATE.rf_out_power_4m = 40;				   // 4m
+		CALIBRATE.rf_out_power_2m = 70;				   // 2m
 		CALIBRATE.RFU_LPF_END = 53 * 1000 * 1000;	   // LPF
 		CALIBRATE.RFU_HPF_START = 60 * 1000 * 1000;	   // HPF
 		CALIBRATE.RFU_BPF_0_START = 1600 * 1000;	   // 1.6-2.5mH
@@ -4013,14 +4438,39 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction)
 		CALIBRATE.RFU_BPF_8_START = 0;				   // disabled
 		CALIBRATE.RFU_BPF_8_END = 0;				   // disabled
 		CALIBRATE.SWR_FWD_Calibration_HF = 17.5f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_HF = 17.5f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_HF = 17.5f;	   // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_6M = 19.0f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_6M = 19.0f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_6M = 19.0f;	   // SWR Transormator rate return
 		CALIBRATE.SWR_FWD_Calibration_VHF = 21.0f;	   // SWR Transormator rate forward
-		CALIBRATE.SWR_REF_Calibration_VHF = 9.5f;	   // SWR Transormator rate return
+		CALIBRATE.SWR_BWD_Calibration_VHF = 9.5f;	   // SWR Transormator rate return
 		CALIBRATE.TUNE_MAX_POWER = 15;				   // Maximum RF power in Tune mode
-		CALIBRATE.MAX_RF_POWER = 100;				   // Max TRX Power for indication
+		CALIBRATE.MAX_RF_POWER_ON_METER = 100;				   // Max TRX Power for indication
 	}
+    if (CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
+    {
+        CALIBRATE.RFU_LPF_END = 60000 * 1000;		   // LPF
+        CALIBRATE.RFU_HPF_START = 44000 * 1000;		   // HPF
+        CALIBRATE.RFU_BPF_0_START = 135 * 1000 * 1000; // 2m
+        CALIBRATE.RFU_BPF_0_END = 150 * 1000 * 1000;   // 2m
+        CALIBRATE.RFU_BPF_1_START = 1600 * 1000;	   // 160m
+        CALIBRATE.RFU_BPF_1_END = 2500 * 1000;		   // 160m
+        CALIBRATE.RFU_BPF_2_START = 2500 * 1000;	   // 80m
+        CALIBRATE.RFU_BPF_2_END = 4000 * 1000;		   // 80m
+        CALIBRATE.RFU_BPF_3_START = 4000 * 1000;	   // 60m
+        CALIBRATE.RFU_BPF_3_END = 6000 * 1000;		   // 60m
+        CALIBRATE.RFU_BPF_4_START = 6000 * 1000;	   // 40m
+        CALIBRATE.RFU_BPF_4_END = 7500 * 1000;		   // 40m
+        CALIBRATE.RFU_BPF_5_START = 7500 * 1000;	   // 30m
+        CALIBRATE.RFU_BPF_5_END = 12500 * 1000;		   // 30m
+        CALIBRATE.RFU_BPF_6_START = 12500 * 1000;	   // 20m
+        CALIBRATE.RFU_BPF_6_END = 15000 * 1000;		   // 20m
+        CALIBRATE.RFU_BPF_7_START = 15000 * 1000;      // 16m
+        CALIBRATE.RFU_BPF_7_END = 20000 * 1000;        // 16m
+        CALIBRATE.RFU_BPF_8_START = 20000 * 1000;      // 15m, 10m
+        CALIBRATE.RFU_BPF_8_END = 30000 * 1000;        // 15m, 10m
+        CALIBRATE.RFU_BPF_9_START = 30000 * 1000;      // 6m
+        CALIBRATE.RFU_BPF_9_END = 55000 * 1000;        // 6m
+    }
 	LCD_UpdateQuery.SystemMenuRedraw = true;
 }
 
@@ -4034,8 +4484,9 @@ static void SYSMENU_HANDL_CALIB_TangentType(int8_t direction)
 
 static void SYSMENU_HANDL_CALIBRATIONMENU(int8_t direction)
 {
-#pragma unused(direction)
-	if (!SYSMENU_hiddenmenu_enabled)
+    (void) direction;
+
+    if (!SYSMENU_hiddenmenu_enabled)
 		return;
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_calibration_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_calibration_handlers) / sizeof(sysmenu_calibration_handlers[0]);
@@ -4060,8 +4511,9 @@ static void SYSMENU_HANDL_FT8_Decoder(int8_t direction) // Tisho
 
 static void SYSMENU_HANDL_SWR_Tandem_Ctrl(int8_t direction) // Tisho
 {
-#pragma unused(direction)
-	if (SYSMENU_TDM_CTRL_opened)
+    (void) direction;
+
+    if (SYSMENU_TDM_CTRL_opened)
 	{
 	}
 	else
@@ -4120,14 +4572,28 @@ static void SYSMENU_HANDL_CALIB_DAC_SHIFT(int8_t direction)
 		CALIBRATE.DAC_GAINER_val = 27;
 }
 
+static void SYSMENU_HANDL_CALIB_DAC_driver_mode(int8_t direction)
+{
+	if (CALIBRATE.DAC_driver_mode > 0)
+		CALIBRATE.DAC_driver_mode += direction;
+	if (CALIBRATE.DAC_driver_mode == 0 && direction > 0)
+		CALIBRATE.DAC_driver_mode += direction;
+	if (CALIBRATE.DAC_driver_mode > 2)
+		CALIBRATE.DAC_driver_mode = 2;
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
 static void SYSMENU_HANDL_CALIB_RF_GAIN_2200M(int8_t direction)
 {
 	if (CALIBRATE.rf_out_power_2200m > 0)
 		CALIBRATE.rf_out_power_2200m += direction;
 	if (CALIBRATE.rf_out_power_2200m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_2200m += direction;
-	if (CALIBRATE.rf_out_power_2200m > 300)
-		CALIBRATE.rf_out_power_2200m = 300;
+	if (CALIBRATE.rf_out_power_2200m > 100)
+		CALIBRATE.rf_out_power_2200m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4140,8 +4606,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_160M(int8_t direction)
 		CALIBRATE.rf_out_power_160m += direction;
 	if (CALIBRATE.rf_out_power_160m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_160m += direction;
-	if (CALIBRATE.rf_out_power_160m > 300)
-		CALIBRATE.rf_out_power_160m = 300;
+	if (CALIBRATE.rf_out_power_160m > 100)
+		CALIBRATE.rf_out_power_160m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4154,8 +4620,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_80M(int8_t direction)
 		CALIBRATE.rf_out_power_80m += direction;
 	if (CALIBRATE.rf_out_power_80m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_80m += direction;
-	if (CALIBRATE.rf_out_power_80m > 300)
-		CALIBRATE.rf_out_power_80m = 300;
+	if (CALIBRATE.rf_out_power_80m > 100)
+		CALIBRATE.rf_out_power_80m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4168,8 +4634,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_40M(int8_t direction)
 		CALIBRATE.rf_out_power_40m += direction;
 	if (CALIBRATE.rf_out_power_40m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_40m += direction;
-	if (CALIBRATE.rf_out_power_40m > 300)
-		CALIBRATE.rf_out_power_40m = 300;
+	if (CALIBRATE.rf_out_power_40m > 100)
+		CALIBRATE.rf_out_power_40m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4182,8 +4648,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_30M(int8_t direction)
 		CALIBRATE.rf_out_power_30m += direction;
 	if (CALIBRATE.rf_out_power_30m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_30m += direction;
-	if (CALIBRATE.rf_out_power_30m > 300)
-		CALIBRATE.rf_out_power_30m = 300;
+	if (CALIBRATE.rf_out_power_30m > 100)
+		CALIBRATE.rf_out_power_30m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4196,8 +4662,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_20M(int8_t direction)
 		CALIBRATE.rf_out_power_20m += direction;
 	if (CALIBRATE.rf_out_power_20m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_20m += direction;
-	if (CALIBRATE.rf_out_power_20m > 300)
-		CALIBRATE.rf_out_power_20m = 300;
+	if (CALIBRATE.rf_out_power_20m > 100)
+		CALIBRATE.rf_out_power_20m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4210,8 +4676,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_17M(int8_t direction)
 		CALIBRATE.rf_out_power_17m += direction;
 	if (CALIBRATE.rf_out_power_17m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_17m += direction;
-	if (CALIBRATE.rf_out_power_17m > 300)
-		CALIBRATE.rf_out_power_17m = 300;
+	if (CALIBRATE.rf_out_power_17m > 100)
+		CALIBRATE.rf_out_power_17m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4224,8 +4690,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_15M(int8_t direction)
 		CALIBRATE.rf_out_power_15m += direction;
 	if (CALIBRATE.rf_out_power_15m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_15m += direction;
-	if (CALIBRATE.rf_out_power_15m > 300)
-		CALIBRATE.rf_out_power_15m = 300;
+	if (CALIBRATE.rf_out_power_15m > 100)
+		CALIBRATE.rf_out_power_15m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4238,8 +4704,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_12M(int8_t direction)
 		CALIBRATE.rf_out_power_12m += direction;
 	if (CALIBRATE.rf_out_power_12m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_12m += direction;
-	if (CALIBRATE.rf_out_power_12m > 300)
-		CALIBRATE.rf_out_power_12m = 300;
+	if (CALIBRATE.rf_out_power_12m > 100)
+		CALIBRATE.rf_out_power_12m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4252,8 +4718,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_CB(int8_t direction)
 		CALIBRATE.rf_out_power_cb += direction;
 	if (CALIBRATE.rf_out_power_cb == 0 && direction > 0)
 		CALIBRATE.rf_out_power_cb += direction;
-	if (CALIBRATE.rf_out_power_cb > 300)
-		CALIBRATE.rf_out_power_cb = 300;
+	if (CALIBRATE.rf_out_power_cb > 100)
+		CALIBRATE.rf_out_power_cb = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4266,8 +4732,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_10M(int8_t direction)
 		CALIBRATE.rf_out_power_10m += direction;
 	if (CALIBRATE.rf_out_power_10m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_10m += direction;
-	if (CALIBRATE.rf_out_power_10m > 300)
-		CALIBRATE.rf_out_power_10m = 300;
+	if (CALIBRATE.rf_out_power_10m > 100)
+		CALIBRATE.rf_out_power_10m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4280,8 +4746,22 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_6M(int8_t direction)
 		CALIBRATE.rf_out_power_6m += direction;
 	if (CALIBRATE.rf_out_power_6m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_6m += direction;
-	if (CALIBRATE.rf_out_power_6m > 300)
-		CALIBRATE.rf_out_power_6m = 300;
+	if (CALIBRATE.rf_out_power_6m > 100)
+		CALIBRATE.rf_out_power_6m = 100;
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
+static void SYSMENU_HANDL_CALIB_RF_GAIN_4M(int8_t direction)
+{
+	if (CALIBRATE.rf_out_power_4m > 0)
+		CALIBRATE.rf_out_power_4m += direction;
+	if (CALIBRATE.rf_out_power_4m == 0 && direction > 0)
+		CALIBRATE.rf_out_power_4m += direction;
+	if (CALIBRATE.rf_out_power_4m > 100)
+		CALIBRATE.rf_out_power_4m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4294,8 +4774,8 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_2M(int8_t direction)
 		CALIBRATE.rf_out_power_2m += direction;
 	if (CALIBRATE.rf_out_power_2m == 0 && direction > 0)
 		CALIBRATE.rf_out_power_2m += direction;
-	if (CALIBRATE.rf_out_power_2m > 300)
-		CALIBRATE.rf_out_power_2m = 300;
+	if (CALIBRATE.rf_out_power_2m > 100)
+		CALIBRATE.rf_out_power_2m = 100;
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
 	APROC_TX_clip_gain = 1.0f;
@@ -4500,6 +4980,24 @@ static void SYSMENU_HANDL_CALIB_BPF_8_END(int8_t direction)
 		CALIBRATE.RFU_BPF_8_END = 999999999;
 }
 
+static void SYSMENU_HANDL_CALIB_BPF_9_START(int8_t direction)
+{
+    CALIBRATE.RFU_BPF_9_START += direction * 100000;
+    if (CALIBRATE.RFU_BPF_9_START < 1)
+        CALIBRATE.RFU_BPF_9_START = 1;
+    if (CALIBRATE.RFU_BPF_9_START > 999999999)
+        CALIBRATE.RFU_BPF_9_START = 999999999;
+}
+
+static void SYSMENU_HANDL_CALIB_BPF_9_END(int8_t direction)
+{
+    CALIBRATE.RFU_BPF_9_END += direction * 100000;
+    if (CALIBRATE.RFU_BPF_9_END < 1)
+        CALIBRATE.RFU_BPF_9_END = 1;
+    if (CALIBRATE.RFU_BPF_9_END > 999999999)
+        CALIBRATE.RFU_BPF_9_END = 999999999;
+}
+
 static void SYSMENU_HANDL_CALIB_HPF_START(int8_t direction)
 {
 	CALIBRATE.RFU_HPF_START += direction * 100000;
@@ -4520,11 +5018,11 @@ static void SYSMENU_HANDL_CALIB_SWR_FWD_RATE_HF(int8_t direction)
 
 static void SYSMENU_HANDL_CALIB_SWR_REF_RATE_HF(int8_t direction)
 {
-	CALIBRATE.SWR_REF_Calibration_HF += (float32_t)direction * 0.1f;
-	if (CALIBRATE.SWR_REF_Calibration_HF < 1.0f)
-		CALIBRATE.SWR_REF_Calibration_HF = 1.0f;
-	if (CALIBRATE.SWR_REF_Calibration_HF > 200.0f)
-		CALIBRATE.SWR_REF_Calibration_HF = 200.0f;
+	CALIBRATE.SWR_BWD_Calibration_HF += (float32_t)direction * 0.1f;
+	if (CALIBRATE.SWR_BWD_Calibration_HF < 1.0f)
+		CALIBRATE.SWR_BWD_Calibration_HF = 1.0f;
+	if (CALIBRATE.SWR_BWD_Calibration_HF > 200.0f)
+		CALIBRATE.SWR_BWD_Calibration_HF = 200.0f;
 }
 
 static void SYSMENU_HANDL_CALIB_SWR_FWD_RATE_6M(int8_t direction)
@@ -4538,11 +5036,11 @@ static void SYSMENU_HANDL_CALIB_SWR_FWD_RATE_6M(int8_t direction)
 
 static void SYSMENU_HANDL_CALIB_SWR_REF_RATE_6M(int8_t direction)
 {
-	CALIBRATE.SWR_REF_Calibration_6M += (float32_t)direction * 0.1f;
-	if (CALIBRATE.SWR_REF_Calibration_6M < 1.0f)
-		CALIBRATE.SWR_REF_Calibration_6M = 1.0f;
-	if (CALIBRATE.SWR_REF_Calibration_6M > 200.0f)
-		CALIBRATE.SWR_REF_Calibration_6M = 200.0f;
+	CALIBRATE.SWR_BWD_Calibration_6M += (float32_t)direction * 0.1f;
+	if (CALIBRATE.SWR_BWD_Calibration_6M < 1.0f)
+		CALIBRATE.SWR_BWD_Calibration_6M = 1.0f;
+	if (CALIBRATE.SWR_BWD_Calibration_6M > 200.0f)
+		CALIBRATE.SWR_BWD_Calibration_6M = 200.0f;
 }
 
 static void SYSMENU_HANDL_CALIB_SWR_FWD_RATE_VHF(int8_t direction)
@@ -4556,37 +5054,30 @@ static void SYSMENU_HANDL_CALIB_SWR_FWD_RATE_VHF(int8_t direction)
 
 static void SYSMENU_HANDL_CALIB_SWR_REF_RATE_VHF(int8_t direction)
 {
-	CALIBRATE.SWR_REF_Calibration_VHF += (float32_t)direction * 0.1f;
-	if (CALIBRATE.SWR_REF_Calibration_VHF < 1.0f)
-		CALIBRATE.SWR_REF_Calibration_VHF = 1.0f;
-	if (CALIBRATE.SWR_REF_Calibration_VHF > 200.0f)
-		CALIBRATE.SWR_REF_Calibration_VHF = 200.0f;
+	CALIBRATE.SWR_BWD_Calibration_VHF += (float32_t)direction * 0.1f;
+	if (CALIBRATE.SWR_BWD_Calibration_VHF < 1.0f)
+		CALIBRATE.SWR_BWD_Calibration_VHF = 1.0f;
+	if (CALIBRATE.SWR_BWD_Calibration_VHF > 200.0f)
+		CALIBRATE.SWR_BWD_Calibration_VHF = 200.0f;
 }
 
-static void SYSMENU_HANDL_CALIB_MAX_RF_POWER(int8_t direction)
+static void SYSMENU_HANDL_CALIB_MAX_RF_POWER_ON_METER(int8_t direction)
 {
-	CALIBRATE.MAX_RF_POWER += direction;
-	if (CALIBRATE.MAX_RF_POWER < 5)
-		CALIBRATE.MAX_RF_POWER = 5;
-	if (CALIBRATE.MAX_RF_POWER > 200)
-		CALIBRATE.MAX_RF_POWER = 200;
+	CALIBRATE.MAX_RF_POWER_ON_METER += direction;
+	if (CALIBRATE.MAX_RF_POWER_ON_METER < 5)
+		CALIBRATE.MAX_RF_POWER_ON_METER = 5;
+	if (CALIBRATE.MAX_RF_POWER_ON_METER > 200)
+		CALIBRATE.MAX_RF_POWER_ON_METER = 200;
 }
 
 static void SYSMENU_HANDL_CALIB_VCXO(int8_t direction)
 {
 	CALIBRATE.VCXO_correction += direction;
-	
-	#if !defined(FRONTPANEL_LITE)
-	if (CALIBRATE.VCXO_correction < -100)
-		CALIBRATE.VCXO_correction = -100;
-	if (CALIBRATE.VCXO_correction > 100)
-		CALIBRATE.VCXO_correction = 100;
-	#else
+
 	if (CALIBRATE.VCXO_correction < -32750)
 		CALIBRATE.VCXO_correction = -32750;
 	if (CALIBRATE.VCXO_correction > 32750)
 		CALIBRATE.VCXO_correction = 32750;
-	#endif
 }
 // Tisho
 static void SYSMENU_HANDL_CALIB_FW_AD8307_SLP(int8_t direction)
@@ -4832,6 +5323,14 @@ static void SYSMENU_HANDL_CALIB_EXT_6m(int8_t direction)
 		CALIBRATE.EXT_6m = 15;
 }
 
+static void SYSMENU_HANDL_CALIB_EXT_4m(int8_t direction)
+{
+	if (CALIBRATE.EXT_4m > 0 || direction > 0)
+		CALIBRATE.EXT_4m += direction;
+	if (CALIBRATE.EXT_4m > 15)
+		CALIBRATE.EXT_4m = 15;
+}
+
 static void SYSMENU_HANDL_CALIB_EXT_FM(int8_t direction)
 {
 	if (CALIBRATE.EXT_FM > 0 || direction > 0)
@@ -5008,6 +5507,14 @@ static void SYSMENU_HANDL_CALIB_NOTX_6m(int8_t direction)
 		CALIBRATE.NOTX_6m = false;
 }
 
+static void SYSMENU_HANDL_CALIB_NOTX_4m(int8_t direction)
+{
+	if (direction > 0)
+		CALIBRATE.NOTX_4m = true;
+	if (direction < 0)
+		CALIBRATE.NOTX_4m = false;
+}
+
 static void SYSMENU_HANDL_CALIB_NOTX_2m(int8_t direction)
 {
 	if (direction > 0)
@@ -5170,11 +5677,57 @@ static void SYSMENU_HANDL_CALIB_TwoSignalTune_Balance(int8_t direction)
 		CALIBRATE.TwoSignalTune_Balance = 100;
 }
 
+static void SYSMENU_HANDL_CALIB_FlashGT911(int8_t direction)
+{
+	#ifdef TOUCHPAD_GT911
+	LCD_showError("Flashing GT911...", true);
+	LCD_busy = true;
+	bool result = GT911_Flash();
+	LCD_busy = false;
+	if(result)
+		LCD_showError("Success!", true);
+	else
+		LCD_showError("Error!", true);
+	#endif
+}
+
+static void SYSMENU_HANDL_CALIB_IF_GAIN_MIN(int8_t direction)
+{
+	if (CALIBRATE.IF_GAIN_MIN > 0 || direction > 0)
+		CALIBRATE.IF_GAIN_MIN += direction;
+	if (CALIBRATE.IF_GAIN_MIN > 200)
+		CALIBRATE.IF_GAIN_MIN = 200;
+}
+
+static void SYSMENU_HANDL_CALIB_IF_GAIN_MAX(int8_t direction)
+{
+	if (CALIBRATE.IF_GAIN_MAX > 0 || direction > 0)
+		CALIBRATE.IF_GAIN_MAX += direction;
+	if (CALIBRATE.IF_GAIN_MAX > 200)
+		CALIBRATE.IF_GAIN_MAX = 200;
+}
+
+static void SYSMENU_HANDL_CALIB_SETTINGS_RESET(int8_t direction)
+{
+	LoadSettings(true);
+}
+
+static void SYSMENU_HANDL_CALIB_CALIBRATION_RESET(int8_t direction)
+{
+	LoadCalibration(true);
+}
+
+static void SYSMENU_HANDL_CALIB_WIFI_RESET(int8_t direction)
+{
+	LoadWiFiSettings(true);
+}
+
 // SERVICES
 void SYSMENU_HANDL_SERVICESMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_services_opened = true;
+    (void) direction;
+
+    sysmenu_services_opened = true;
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_services_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_services_handlers) / sizeof(sysmenu_services_handlers[0]);
 	sysmenu_onroot = false;
@@ -5196,8 +5749,9 @@ void SYSMENU_SERVICE_FT8_HOTKEY(void)
 // SWR ANALYZER
 static void SYSMENU_HANDL_SWR_ANALYSER_MENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_swr_analyser_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_swr_analyser_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_swr_analyser_handlers) / sizeof(sysmenu_swr_analyser_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -5265,8 +5819,9 @@ static void SYSMENU_HANDL_SWR_HF_START(int8_t direction)
 // SPECTRUM ANALYZER
 static void SYSMENU_HANDL_SPECTRUMMENU(int8_t direction)
 {
-#pragma unused(direction)
-	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_spectrum_handlers[0];
+    (void) direction;
+
+    sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_spectrum_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_spectrum_handlers) / sizeof(sysmenu_spectrum_handlers[0]);
 	sysmenu_onroot = false;
 	LCD_UpdateQuery.SystemMenuRedraw = true;
@@ -5288,16 +5843,18 @@ static void SYSMENU_HANDL_SPECTRUM_Start(int8_t direction)
 
 static void SYSMENU_HANDL_SPECTRUM_Begin(int8_t direction)
 {
-	TRX.SPEC_Begin += direction * 100;
-	if (TRX.SPEC_Begin < 100)
-		TRX.SPEC_Begin = 100;
+	if (TRX.SPEC_Begin > 0 || direction > 0)
+		TRX.SPEC_Begin += direction;
+	if (TRX.SPEC_Begin > MAX_RX_FREQ_HZ)
+		TRX.SPEC_Begin = 1;
 }
 
 static void SYSMENU_HANDL_SPECTRUM_End(int8_t direction)
 {
-	TRX.SPEC_End += direction * 100;
-	if (TRX.SPEC_End < 100)
-		TRX.SPEC_End = 100;
+	if (TRX.SPEC_End > 0 || direction > 0)
+		TRX.SPEC_End += direction;
+	if (TRX.SPEC_End > MAX_RX_FREQ_HZ)
+		TRX.SPEC_End = 1;
 }
 
 static void SYSMENU_HANDL_SPECTRUM_TopDBM(int8_t direction)
@@ -5322,10 +5879,35 @@ static void SYSMENU_HANDL_SPECTRUM_BottomDBM(int8_t direction)
 		TRX.SPEC_BottomDBM = TRX.SPEC_TopDBM - 1;
 }
 
+// Auto calibration
+static void SYSMENU_HANDL_AUTO_CALIBRATION(int8_t direction)
+{
+#pragma unused(direction)
+	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_auto_calibration_handlers[0];
+	sysmenu_item_count = sizeof(sysmenu_auto_calibration_handlers) / sizeof(sysmenu_auto_calibration_handlers[0]);
+	sysmenu_onroot = false;
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+}
+
+static void SYSMENU_HANDL_AUTO_CALIBRATION_SWR(int8_t direction)
+{
+	SYSMENU_auto_calibration_opened = true;
+	AUTO_CALIBRATION_Start_SWR();
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+}
+
+static void SYSMENU_HANDL_AUTO_CALIBRATION_POWER(int8_t direction)
+{
+	SYSMENU_auto_calibration_opened = true;
+	AUTO_CALIBRATION_Start_POWER();
+	LCD_UpdateQuery.SystemMenuRedraw = true;
+}
+
 // WSPR Beacon
 static void SYSMENU_HANDL_WSPRMENU(int8_t direction)
 {
-#pragma unused(direction)
+    (void) direction;
+
 	sysmenu_handlers_selected = (const struct sysmenu_item_handler *)&sysmenu_wspr_handlers[0];
 	sysmenu_item_count = sizeof(sysmenu_wspr_handlers) / sizeof(sysmenu_wspr_handlers[0]);
 	sysmenu_onroot = false;
@@ -5476,6 +6058,14 @@ static void SYSMENU_HANDL_DAYNIGHT_MAP(int8_t direction)
 	WIFI_getDayNightMap();
 }
 
+// IONOGRAM
+static void SYSMENU_HANDL_IONOGRAM(int8_t direction)
+{
+	sysmenu_infowindow_opened = true;
+	SYSMENU_drawSystemMenu(true, false);
+	WIFI_getIonogram();
+}
+
 // RECORD CQ MESSAGE
 static void SYSMENU_HANDL_RECORD_CQ_WAV(int8_t direction)
 {
@@ -5483,13 +6073,6 @@ static void SYSMENU_HANDL_RECORD_CQ_WAV(int8_t direction)
 	FILEMANAGER_StartRecCQWav();
 }
 #endif
-
-// SD FILE MANAGER
-static void SYSMENU_HANDL_FILEMANAGER(int8_t direction)
-{
-	sysmenu_filemanager_opened = true;
-	SYSMENU_drawSystemMenu(true, false);
-}
 
 // LOCATOR INFO
 static void SYSMENU_HANDL_LOCATOR_INFO(int8_t direction)
@@ -5580,6 +6163,11 @@ void SYSMENU_drawSystemMenu(bool draw_background, bool only_infolines)
 		if(only_infolines) return;
 		SYSMENU_TRX_DrawLocatorMenu(draw_background);
 	}
+	else if (sysmenu_trx_setURSICode_menu_opened)
+	{
+		if(only_infolines) return;
+		SYSMENU_TRX_DrawURSICodeMenu(draw_background);
+	}
 	else if (SYSMENU_spectrum_opened)
 	{
 		if(only_infolines) return;
@@ -5627,6 +6215,12 @@ void SYSMENU_drawSystemMenu(bool draw_background, bool only_infolines)
 	{
 		if(only_infolines) return;
 		SELF_TEST_Draw();
+		return;
+	}
+	else if (SYSMENU_auto_calibration_opened)
+	{
+		if(only_infolines) return;
+		AUTO_CALIBRATION_Draw();
 		return;
 	}
 	else if (sysmenu_sysinfo_opened)
@@ -5756,6 +6350,11 @@ void SYSMENU_eventRotateSystemMenu(int8_t direction)
 		SYSMENU_TRX_RotateLocatorChar(direction);
 		return;
 	}
+	if (sysmenu_trx_setURSICode_menu_opened)
+	{
+		SYSMENU_TRX_RotateURSICodeChar(direction);
+		return;
+	}
 	if (sysmenu_timeMenuOpened)
 	{
 		SYSMENU_HANDL_SETTIME(direction);
@@ -5767,7 +6366,11 @@ void SYSMENU_eventRotateSystemMenu(int8_t direction)
 		FILEMANAGER_EventRotate(direction);
 		return;
 	}
-	
+	if (SYSMENU_auto_calibration_opened)
+	{
+		AUTO_CALIBRATION_EncRotate(direction);
+		return;
+	}
 	if(sysmenu_infowindow_opened)
 	{
 		return;
@@ -5787,36 +6390,42 @@ void SYSMENU_eventCloseSystemMenu(void)
 		sysmenu_wifi_selectap1_menu_opened = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 		WIFI_State = WIFI_CONFIGURED;
+		NeedSaveWiFi = true;
 	}
 	if (sysmenu_wifi_selectap2_menu_opened)
 	{
 		sysmenu_wifi_selectap2_menu_opened = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 		WIFI_State = WIFI_CONFIGURED;
+		NeedSaveWiFi = true;
 	}
 	if (sysmenu_wifi_selectap3_menu_opened)
 	{
 		sysmenu_wifi_selectap3_menu_opened = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 		WIFI_State = WIFI_CONFIGURED;
+		NeedSaveWiFi = true;
 	}
 	else if (sysmenu_wifi_setAP1password_menu_opened)
 	{
 		sysmenu_wifi_setAP1password_menu_opened = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 		WIFI_State = WIFI_CONFIGURED;
+		NeedSaveWiFi = true;
 	}
 	else if (sysmenu_wifi_setAP2password_menu_opened)
 	{
 		sysmenu_wifi_setAP2password_menu_opened = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 		WIFI_State = WIFI_CONFIGURED;
+		NeedSaveWiFi = true;
 	}
 	else if (sysmenu_wifi_setAP3password_menu_opened)
 	{
 		sysmenu_wifi_setAP3password_menu_opened = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 		WIFI_State = WIFI_CONFIGURED;
+		NeedSaveWiFi = true;
 	}
 	else 
 	#endif
@@ -5828,6 +6437,11 @@ void SYSMENU_eventCloseSystemMenu(void)
 	else if (sysmenu_trx_setLocator_menu_opened)
 	{
 		sysmenu_trx_setLocator_menu_opened = false;
+		LCD_UpdateQuery.SystemMenuRedraw = true;
+	}
+	else if (sysmenu_trx_setURSICode_menu_opened)
+	{
+		sysmenu_trx_setURSICode_menu_opened = false;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 	}
 	else if (SYSMENU_spectrum_opened)
@@ -5869,6 +6483,12 @@ void SYSMENU_eventCloseSystemMenu(void)
 	{
 		SYSMENU_selftest_opened = false;
 		SELF_TEST_Stop();
+		LCD_UpdateQuery.SystemMenuRedraw = true;
+	}
+	else if (SYSMENU_auto_calibration_opened)
+	{
+		SYSMENU_auto_calibration_opened = false;
+		AUTO_CALIBRATION_Stop();
 		LCD_UpdateQuery.SystemMenuRedraw = true;
 	}
 #if FT8_SUPPORT
@@ -5988,7 +6608,12 @@ void SYSMENU_eventSecEncoderClickSystemMenu(void)
 		return;
 	}
 	#endif
-	
+	if (SYSMENU_auto_calibration_opened)
+	{
+		AUTO_CALIBRATION_Enc2Click();
+		return;
+	}
+
 	if (sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_MENU || sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_RUN || sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_INFOLINE)
 	{
 		sysmenu_item_selected_by_enc2 = false;
@@ -6106,6 +6731,21 @@ void SYSMENU_eventSecRotateSystemMenu(int8_t direction)
 		}
 		return;
 	}
+	// URSI Code menu
+	if (sysmenu_trx_setURSICode_menu_opened)
+	{
+		if (direction < 0 && sysmenu_trx_selected_ursi_code_char_index > 0)
+		{
+			sysmenu_trx_selected_ursi_code_char_index--;
+			SYSMENU_TRX_DrawURSICodeMenu(true);
+		}
+		else if (sysmenu_trx_selected_ursi_code_char_index < (MAX_CALLSIGN_LENGTH - 1))
+		{
+			sysmenu_trx_selected_ursi_code_char_index++;
+			SYSMENU_TRX_DrawURSICodeMenu(true);
+		}
+		return;
+	}
 	if (SYSMENU_spectrum_opened)
 	{
 		SPEC_Stop();
@@ -6131,6 +6771,11 @@ void SYSMENU_eventSecRotateSystemMenu(int8_t direction)
 		SELF_TEST_EncRotate(direction);
 		return;
 	}
+	if (SYSMENU_auto_calibration_opened)
+	{
+		AUTO_CALIBRATION_Enc2Rotate(direction);
+		return;
+	}
 #if FT8_SUPPORT
 	if (SYSMENU_FT8_DECODER_opened) // Tisho
 	{
@@ -6143,7 +6788,6 @@ void SYSMENU_eventSecRotateSystemMenu(int8_t direction)
 	// time menu
 	if (sysmenu_timeMenuOpened)
 	{
-		LCDDriver_Fill(BG_COLOR);
 		if (direction < 0)
 		{
 			TimeMenuSelection--;
@@ -6232,8 +6876,9 @@ static void drawSystemMenuElement(const struct sysmenu_item_handler *menuElement
 	if (menuElement->checkVisibleHandler != NULL && !menuElement->checkVisibleHandler())
 		return;
 	char ctmp[32] = {0};
-	float32_t *atu_i = ATU_I_VALS;
-	float32_t *atu_c = ATU_C_VALS;
+	char enum_value[ENUM_MAX_LENGTH + 1] = {0};
+	const float32_t *atu_i = ATU_I_VALS;
+	const float32_t *atu_c = ATU_C_VALS;
 	float32_t float_tmp_val = 0;
 
 	if (!onlyVal)
@@ -6248,45 +6893,46 @@ static void drawSystemMenuElement(const struct sysmenu_item_handler *menuElement
 	switch (menuElement->type)
 	{
 	case SYSMENU_UINT8:
-		sprintf(ctmp, "%d", (uint8_t)*menuElement->value);
+		sprintf(ctmp, "%d", (uint8_t)*((uint8_t *)menuElement->value));
 		break;
 	case SYSMENU_B4:
-		sprintf(ctmp, "%d%d%d%d", bitRead((uint8_t)*menuElement->value, 3), bitRead((uint8_t)*menuElement->value, 2), bitRead((uint8_t)*menuElement->value, 1), bitRead((uint8_t)*menuElement->value, 0));
+		sprintf(ctmp, "%d%d%d%d", bitRead((uint8_t)*((uint8_t *)menuElement->value), 3), bitRead((uint8_t)*((uint8_t *)menuElement->value), 2), bitRead((uint8_t)*((uint8_t *)menuElement->value), 1), bitRead((uint8_t)*((uint8_t *)menuElement->value), 0));
 		break;
 	case SYSMENU_ENUM:
 	case SYSMENU_ENUMR:
-		sprintf(ctmp, "%s", menuElement->enumerate[(uint8_t)*menuElement->value]);
+		strncpy(enum_value, menuElement->enumerate[(uint8_t)*((uint8_t *)menuElement->value)], ENUM_MAX_LENGTH);
+		sprintf(ctmp, "%s", enum_value);
 		break;
 	case SYSMENU_UINT16:
-		sprintf(ctmp, "%d", (uint16_t)*menuElement->value);
+		sprintf(ctmp, "%d", (uint16_t)*((uint16_t *)menuElement->value));
 		break;
 	case SYSMENU_UINT32:
   case SYSMENU_UINT32R:
-		tmp_uint32 = (uint32_t)*menuElement->value;
+		tmp_uint32 = (uint32_t)*((uint32_t *)menuElement->value);
 		while((uint32_t)(pow(10, ENUM_MAX_LENGTH) - 1) <= tmp_uint32) {
 			tmp_uint32 /= 10;
 		}
 		sprintf(ctmp, "%u", tmp_uint32);
 		break;
 	case SYSMENU_UINT64:
-		sprintf(ctmp, "%llu", (uint64_t)*menuElement->value);
+		sprintf(ctmp, "%llu", (uint64_t)*((uint64_t *)menuElement->value));
 		break;
 	case SYSMENU_INT8:
-		sprintf(ctmp, "%d", (int8_t)*menuElement->value);
+		sprintf(ctmp, "%d", (int8_t)*((int8_t *)menuElement->value));
 		break;
 	case SYSMENU_INT16:
-		sprintf(ctmp, "%d", (int16_t)*menuElement->value);
+		sprintf(ctmp, "%d", (int16_t)*((int16_t *)menuElement->value));
 		break;
 	case SYSMENU_INT32:
-		sprintf(ctmp, "%d", (int32_t)*menuElement->value);
+		sprintf(ctmp, "%d", (int32_t)*((int32_t *)menuElement->value));
 		break;
 	case SYSMENU_FLOAT32:
 		dma_memcpy(&tmp_float, menuElement->value, sizeof(float32_t));
 		sprintf(ctmp, "%.2f", (double)tmp_float);
 		break;
 	case SYSMENU_BOOLEAN:
-		sprintf(ctmp, "%d", (int8_t)*menuElement->value);
-		if ((uint8_t)*menuElement->value == 1)
+		sprintf(ctmp, "%d", (int8_t)*((int8_t *)menuElement->value));
+		if ((uint8_t)*((uint8_t *)menuElement->value) == 1)
 			sprintf(ctmp, "YES");
 		else
 			sprintf(ctmp, "NO");
@@ -6301,23 +6947,23 @@ static void drawSystemMenuElement(const struct sysmenu_item_handler *menuElement
 		break;
 	case SYSMENU_FUNCBUTTON:
 #if HRDW_HAS_FUNCBUTTONS
-		sprintf(ctmp, "%s", (const char *)PERIPH_FrontPanel_FuncButtonsList[(uint8_t)*menuElement->value].name);
+		sprintf(ctmp, "%s", (const char *)PERIPH_FrontPanel_FuncButtonsList[(uint8_t)*((uint8_t *)menuElement->value)].name);
 #endif
 		break;
 	case SYSMENU_ATU_I:
 		float_tmp_val = 0;
-		for (uint8_t i = 0; i < ATU_MAXPOS; i++)
+		for (int i = 0; i < ATU_MAXPOS; i++)
 		{
-			if (bitRead((uint8_t)*menuElement->value, i))
+			if (bitRead((uint8_t)*((uint8_t *)menuElement->value), i))
 				float_tmp_val += atu_i[i + 1];
 		}
 		sprintf(ctmp, "%.2fuH", (double)float_tmp_val);
 		break;
 	case SYSMENU_ATU_C:
 		float_tmp_val = 0;
-		for (uint8_t i = 0; i < ATU_MAXPOS; i++)
+		for (int i = 0; i < ATU_MAXPOS; i++)
 		{
-			if (bitRead((uint8_t)*menuElement->value, i))
+			if (bitRead((uint8_t)*((uint8_t *)menuElement->value), i))
 				float_tmp_val += atu_c[i + 1];
 		}
 		sprintf(ctmp, "%dpF", (uint32_t)float_tmp_val);
@@ -6391,6 +7037,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_LPF(void)
 		return false;
 	case RF_UNIT_SPLIT:
 		return false;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6409,6 +7059,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_HPF(void)
 	case RF_UNIT_BIG:
 		return false;
 	case RF_UNIT_SPLIT:
+		return false;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
 		return false;
 	}
 
@@ -6429,6 +7083,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_BPF_8(void)
 		return true;
 	case RF_UNIT_SPLIT:
 		return true;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6448,9 +7106,36 @@ static bool SYSMENU_HANDL_CHECK_HAS_BPF_9(void)
 		return true;
 	case RF_UNIT_SPLIT:
 		return true;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
+		return false;
 	}
 
 	return false;
+}
+
+static bool SYSMENU_HANDL_CHECK_HAS_BPF_10(void)
+{
+    switch (CALIBRATE.RF_unit_type)
+    {
+        case RF_UNIT_QRP:
+            return false;
+        case RF_UNIT_RU4PN:
+            return false;
+        case RF_UNIT_WF_100D:
+            return false;
+        case RF_UNIT_BIG:
+            return false;
+        case RF_UNIT_SPLIT:
+            return false;
+        case RF_UNIT_LZ1HAA:
+            return true;
+				default:
+						return false;
+    }
+
+    return false;
 }
 
 bool SYSMENU_HANDL_CHECK_HAS_ATU(void)
@@ -6467,6 +7152,10 @@ bool SYSMENU_HANDL_CHECK_HAS_ATU(void)
 		return true;
 	case RF_UNIT_SPLIT:
 		return true;
+  case RF_UNIT_LZ1HAA:
+    return false;
+	default:
+		return false;
 	}
 
 	return false;
@@ -6485,6 +7174,10 @@ static bool SYSMENU_HANDL_CHECK_HAS_RFFILTERS_BYPASS(void)
 	case RF_UNIT_BIG:
 		return false;
 	case RF_UNIT_SPLIT:
+		return false;
+  case RF_UNIT_LZ1HAA:
+    return true;
+	default:
 		return false;
 	}
 

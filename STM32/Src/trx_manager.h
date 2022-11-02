@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "settings.h"
 
-#define TRX_on_TX (TRX_ptt_hard || TRX_ptt_soft || TRX_Tune || CurrentVFO->Mode == TRX_MODE_LOOPBACK || (TRX.CW_PTT_Type == KEY_PTT && CW_Key_Timeout_est > 0))
+#define TRX_on_TX (TRX_ptt_hard || TRX_ptt_soft || TRX_Tune || CurrentVFO->Mode == TRX_MODE_LOOPBACK || ((TRX.CW_PTT_Type == KEY_PTT || TRX.CW_PTT_Type == KEY_AND_EXT_PTT) && CW_Key_Timeout_est > 0))
 #define TRX_SLOW_SETFREQ_MIN_STEPSIZE 100 // step in hz for slowly touchpad tuning
 #define TRX_GetSamplerateByENUM(rate) (((rate) == TRX_SAMPLERATE_K48) ? 48000 : ((rate) == TRX_SAMPLERATE_K96) ? 96000  \
                                                                           : ((rate) == TRX_SAMPLERATE_K192)  ? 192000 \
@@ -24,9 +24,87 @@ extern void TRX_DoAutoGain(void);
 extern void TRX_Restart_Mode(void);
 extern void TRX_TemporaryMute(void);
 extern void TRX_ProcessScanMode(void);
-extern void TRX_setFrequencySlowly(uint32_t target_freq);
+extern void TRX_setFrequencySlowly(uint64_t target_freq);
 extern void TRX_setFrequencySlowly_Process(void);
-extern bool TRX_TX_Disabled(uint32_t freq);
+extern bool TRX_TX_Disabled(uint64_t freq);
+extern void TRX_DoFrequencyEncoder(float32_t direction, bool secondary_encoder);
+
+extern void BUTTONHANDLER_MODE_P(uint32_t parameter);
+extern void BUTTONHANDLER_MODE_N(uint32_t parameter);
+extern void BUTTONHANDLER_BAND_P(uint32_t parameter);
+extern void BUTTONHANDLER_BAND_N(uint32_t parameter);
+extern void BUTTONHANDLER_SAMPLE_N(uint32_t parameter);
+extern void BUTTONHANDLER_SAMPLE_P(uint32_t parameter);
+extern void BUTTONHANDLER_WPM(uint32_t parameter);
+extern void BUTTONHANDLER_KEYER(uint32_t parameter);
+extern void BUTTONHANDLER_SCAN(uint32_t parameter);
+extern void BUTTONHANDLER_REC(uint32_t parameter);
+extern void BUTTONHANDLER_PLAY(uint32_t parameter);
+extern void BUTTONHANDLER_RIT(uint32_t parameter);
+extern void BUTTONHANDLER_XIT(uint32_t parameter);
+extern void BUTTONHANDLER_SPLIT(uint32_t parameter);
+extern void BUTTONHANDLER_STEP(uint32_t parameter);
+extern void BUTTONHANDLER_BANDMAP(uint32_t parameter);
+extern void BUTTONHANDLER_VOX(uint32_t parameter);
+extern void BUTTONHANDLER_FILEMANAGER(uint32_t parameter);
+extern void BUTTONHANDLER_FT8(uint32_t parameter);
+extern void BUTTONHANDLER_AUTOGAINER(uint32_t parameter);
+extern void BUTTONHANDLER_UP(uint32_t parameter);
+extern void BUTTONHANDLER_DOWN(uint32_t parameter);
+extern void BUTTONHANDLER_FUNC(uint32_t parameter);
+extern void BUTTONHANDLER_FUNCH(uint32_t parameter);
+extern void BUTTONHANDLER_DOUBLE(uint32_t parameter);
+extern void BUTTONHANDLER_DOUBLEMODE(uint32_t parameter);
+extern void BUTTONHANDLER_PRE(uint32_t parameter);
+extern void BUTTONHANDLER_ATT(uint32_t parameter);
+extern void BUTTONHANDLER_ATTHOLD(uint32_t parameter);
+extern void BUTTONHANDLER_PGA(uint32_t parameter);
+extern void BUTTONHANDLER_PGA_ONLY(uint32_t parameter);
+extern void BUTTONHANDLER_DRV_ONLY(uint32_t parameter);
+extern void BUTTONHANDLER_AGC(uint32_t parameter);
+extern void BUTTONHANDLER_AGC_SPEED(uint32_t parameter);
+extern void BUTTONHANDLER_DNR(uint32_t parameter);
+extern void BUTTONHANDLER_DNR_HOLD(uint32_t parameter);
+extern void BUTTONHANDLER_NB(uint32_t parameter);
+extern void BUTTONHANDLER_NOTCH(uint32_t parameter);
+extern void BUTTONHANDLER_NOTCH_MANUAL(uint32_t parameter);
+extern void BUTTONHANDLER_FAST(uint32_t parameter);
+extern void BUTTONHANDLER_MUTE(uint32_t parameter);
+extern void BUTTONHANDLER_MUTE_AFAMP(uint32_t parameter);
+extern void BUTTONHANDLER_AsB(uint32_t parameter);
+extern void BUTTONHANDLER_ArB(uint32_t parameter);
+extern void BUTTONHANDLER_TUNE(uint32_t parameter);
+extern void BUTTONHANDLER_RF_POWER(uint32_t parameter);
+extern void BUTTONHANDLER_ANT(uint32_t parameter);
+extern void BUTTONHANDLER_BW(uint32_t parameter);
+extern void BUTTONHANDLER_HPF(uint32_t parameter);
+extern void BUTTONHANDLER_SERVICES(uint32_t parameter);
+extern void BUTTONHANDLER_MENU(uint32_t parameter);
+extern void BUTTONHANDLER_MENUHOLD(uint32_t parameter);
+extern void BUTTONHANDLER_LOCK(uint32_t parameter);
+extern void BUTTONHANDLER_SET_CUR_VFO_BAND(uint32_t parameter);
+extern void BUTTONHANDLER_SET_VFOA_BAND(uint32_t parameter);
+extern void BUTTONHANDLER_SET_VFOB_BAND(uint32_t parameter);
+extern void BUTTONHANDLER_SET_BAND_MEMORY(uint32_t parameter);
+extern void BUTTONHANDLER_GET_BAND_MEMORY(uint32_t parameter);
+extern void BUTTONHANDLER_SETMODE(uint32_t parameter);
+extern void BUTTONHANDLER_SETSECMODE(uint32_t parameter);
+extern void BUTTONHANDLER_SET_RX_BW(uint32_t parameter);
+extern void BUTTONHANDLER_SET_TX_BW(uint32_t parameter);
+extern void BUTTONHANDLER_SETRF_POWER(uint32_t parameter);
+extern void BUTTONHANDLER_SET_ATT_DB(uint32_t parameter);
+extern void BUTTONHANDLER_LEFT_ARR(uint32_t parameter);
+extern void BUTTONHANDLER_RIGHT_ARR(uint32_t parameter);
+extern void BUTTONHANDLER_SQL(uint32_t parameter);
+extern void BUTTONHANDLER_SQUELCH(uint32_t parameter);
+extern void BUTTONHANDLER_ZOOM_N(uint32_t parameter);
+extern void BUTTONHANDLER_ZOOM_P(uint32_t parameter);
+extern void BUTTONHANDLER_SelectMemoryChannels(uint32_t parameter);
+extern void BUTTONHANDLER_SaveMemoryChannels(uint32_t parameter);
+extern void BUTTONHANDLER_IF(uint32_t parameter);
+extern void BUTTONHANDLER_VLT(uint32_t parameter);
+extern void BUTTONHANDLER_SNAP(uint32_t parameter);
+extern void BUTTONHANDLER_AUTO_SNAP(uint32_t parameter);
 
 volatile extern bool TRX_ptt_hard;
 volatile extern bool TRX_ptt_soft;
@@ -92,5 +170,7 @@ extern volatile float32_t TRX_VBAT_Voltage;
 extern uint32_t TRX_Inactive_Time;
 volatile extern uint_fast16_t CW_Key_Timeout_est;
 extern uint32_t dbg_FPGA_samples;
+extern uint8_t TRX_TX_Harmonic;
+extern uint8_t TRX_TX_sendZeroes;
 
 #endif

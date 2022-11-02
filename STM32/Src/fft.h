@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include "functions.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "screen_layout.h"
 
 #ifdef STM32H743xx
@@ -22,11 +22,8 @@
 #endif
 
 #define FFT_HALF_SIZE (FFT_SIZE / 2)
-#define FFT_DOUBLE_SIZE_BUFFER (FFT_SIZE * 2)                                                                                                                // Buffer size for FFT calculation
-#define FFT_MIN ((float32_t)TRX.FFT_Sensitivity * 0.5f)                                                                                                      // MIN threshold of FFT signal
-#define FFT_TARGET ((float32_t)TRX.FFT_Sensitivity)                                                                                                          // average threshold of the FFT signal
-#define FFT_COMPRESS_INTERVAL 0.9f                                                                                                                           // compress interval of the FFT signal
-#define FFT_MAX ((float32_t)TRX.FFT_Sensitivity * 2.0f)                                                                                                      // MAX FFT signal threshold
+#define FFT_DOUBLE_SIZE_BUFFER (FFT_SIZE * 2)                                                                                                                // Buffer size for FFT calculation                                                                                                     // average threshold of the FFT signal
+#define FFT_COMPRESS_INTERVAL 0.95f                                                                                                                           // compress interval of the FFT signal
 #define FFT_STEP_COEFF 10.0f                                                                                                                                 // step coefficient for auto-calibration of the FFT signal (more - slower)
 #define FFT_HZ_IN_PIXEL (float32_t)((float32_t)TRX_GetRXSampleRate * ((float32_t)FFT_USEFUL_SIZE / (float32_t)FFT_SIZE) / (float32_t)LAYOUT->FFT_PRINT_SIZE) // hertz per FFT pixel RX
 #define FFT_TX_HZ_IN_PIXEL (float32_t)((float32_t)TRX_SAMPLERATE * ((float32_t)FFT_USEFUL_SIZE / (float32_t)FFT_SIZE) / (float32_t)LAYOUT->FFT_PRINT_SIZE)   // hertz per FFT pixel TX
@@ -34,8 +31,13 @@
 #define FFT_BW_BRIGHTNESS_2 3                                                                                                                                // pixel brightness on bw bar
 #define FFT_SCALE_LINES_BRIGHTNESS 0.4f                                                                                                                      // pixel brightness on scale lines
 #define FFT_MAX_GRID_NUMBER 13                                                                                                                               // max grid lines
-#define FFT_LENS_STEP_START 0.4f                                                                                                                             // start lens step
-#define FFT_LENS_STEP 0.013f                                                                                                                                 // each lens step
+#if (defined(LAY_800x480))
+	#define FFT_LENS_STEP_START 0.19f	// each lens step
+	#define FFT_LENS_STEP 0.0055f
+#else
+	#define FFT_LENS_STEP_START 0.4f	// each lens step
+	#define FFT_LENS_STEP 0.013f
+#endif
 #define FFT_3D_SLIDES 40                                                                                                                                     // 3D FFT parameters
 #define FFT_3D_Y_OFFSET 2
 #define FFT_3D_X_OFFSET 5
@@ -78,7 +80,7 @@ extern void FFT_bufferPrepare(void);                     // FFT Buffer process
 extern void FFT_doFFT(void);                             // FFT calculation
 extern bool FFT_printFFT(void);                          // FFT output
 extern void FFT_afterPrintFFT(void);                     // FFT output after callback
-extern uint32_t getFreqOnFFTPosition(uint16_t position); // get frequency from pixel X position
+extern uint64_t getFreqOnFFTPosition(uint16_t position); // get frequency from pixel X position
 extern void FFT_ShortBufferPrintFFT(void);
 
 #endif

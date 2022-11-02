@@ -64,16 +64,23 @@ static uint8_t getBPFByFreq(uint32_t freq)
 		return 5;
 	if (freq >= CALIBRATE.RFU_BPF_6_START && freq < CALIBRATE.RFU_BPF_6_END)
 		return 6;
-	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D)
+	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D || CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
 	{
 		if (freq >= CALIBRATE.RFU_BPF_7_START && freq < CALIBRATE.RFU_BPF_7_END)
 			return 7;
 	}
-	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT)
+	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || CALIBRATE.RF_unit_type == RF_UNIT_SPLIT || CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
 	{
 		if (freq >= CALIBRATE.RFU_BPF_8_START && freq < CALIBRATE.RFU_BPF_8_END)
 			return 8;
 	}
+    if (CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
+    {
+        if (freq >= CALIBRATE.RFU_BPF_9_START && freq < CALIBRATE.RFU_BPF_9_END)
+            return 9;
+        if (freq >= CALIBRATE.RFU_HPF_START)
+            return 10;
+    }
 	if (CALIBRATE.RF_unit_type == RF_UNIT_QRP || CALIBRATE.RF_unit_type == RF_UNIT_RU4PN)
 	{
 		if (freq >= CALIBRATE.RFU_HPF_START)
@@ -123,7 +130,7 @@ static void RF_UNIT_ProcessATU(void)
 
 	if (!ATU_BestValsProbed)
 	{
-		int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+		int8_t band = getBandFromFreq(CurrentVFO->RealRXFreq, true);
 		if (band >= 0)
 		{
 			TRX.ATU_I = TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I;
@@ -166,9 +173,9 @@ static void RF_UNIT_ProcessATU(void)
 			LCD_showTooltip(buff);
 			ATU_Finished = true;
 			delay_stages_count = 0;
-			FRONTPANEL_BUTTONHANDLER_TUNE(0);
+			BUTTONHANDLER_TUNE(0);
 
-			int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+			int8_t band = getBandFromFreq(CurrentVFO->RealRXFreq, true);
 			if (band >= 0)
 			{
 				TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I = TRX.ATU_I;
@@ -352,7 +359,7 @@ static void RF_UNIT_ProcessATU(void)
 			LCD_showTooltip(buff);
 			delay_stages_count = 0;
 
-			int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+			int8_t band = getBandFromFreq(CurrentVFO->RealRXFreq, true);
 			if (band >= 0)
 			{
 				TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_I = TRX.ATU_I;
@@ -360,7 +367,7 @@ static void RF_UNIT_ProcessATU(void)
 				TRX.BANDS_SAVED_SETTINGS[band].BEST_ATU_T = TRX.ATU_T;
 			}
 
-			FRONTPANEL_BUTTONHANDLER_TUNE(0);
+			BUTTONHANDLER_TUNE(0);
 		}
 
 		LCD_UpdateQuery.StatusInfoBar = true;
@@ -373,9 +380,9 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 	bool dualrx_bpf_disabled = false;
 	if (CALIBRATE.RF_unit_type == RF_UNIT_QRP || CALIBRATE.RF_unit_type == RF_UNIT_RU4PN || CALIBRATE.RF_unit_type == RF_UNIT_WF_100D)
 	{
-		if (TRX.Dual_RX && SecondaryVFO->Freq > CALIBRATE.RFU_LPF_END)
+		if (TRX.Dual_RX && SecondaryVFO->RealRXFreq > CALIBRATE.RFU_LPF_END)
 			dualrx_lpf_disabled = true;
-		if (TRX.Dual_RX && getBPFByFreq(CurrentVFO->Freq) != getBPFByFreq(SecondaryVFO->Freq))
+		if (TRX.Dual_RX && getBPFByFreq(CurrentVFO->RealRXFreq) != getBPFByFreq(SecondaryVFO->RealRXFreq))
 			dualrx_bpf_disabled = true;
 	}
 
@@ -412,15 +419,15 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 		att_val -= 0.5f;
 	}
 
-	uint8_t bpf = getBPFByFreq(CurrentVFO->Freq);
-	uint8_t bpf_second = getBPFByFreq(SecondaryVFO->Freq);
+	uint8_t bpf = getBPFByFreq(CurrentVFO->RealRXFreq);
+	uint8_t bpf_second = getBPFByFreq(SecondaryVFO->RealRXFreq);
 
 	bool turn_on_tx_lpf = true;
 	if (((HAL_GetTick() - TRX_TX_EndTime) > TX_LPF_TIMEOUT || TRX_TX_EndTime == 0) && !TRX_on_TX)
 		turn_on_tx_lpf = false;
 
 	uint8_t band_out = 0;
-	int8_t band = getBandFromFreq(CurrentVFO->Freq, true);
+	int8_t band = getBandFromFreq(CurrentVFO->RealRXFreq, true);
 	if (band == BANDID_2200m || band == 1 || band == 2) // 2200m
 		band_out = CALIBRATE.EXT_2200m;
 	if (band == BANDID_160m || band == 4) // 160m
@@ -447,6 +454,8 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 		band_out = CALIBRATE.EXT_10m;
 	if (band == BANDID_6m) // 6m
 		band_out = CALIBRATE.EXT_6m;
+	if (band == BANDID_4m) // 4m
+		band_out = CALIBRATE.EXT_4m;
 	if (band == BANDID_FM || band == 31) // FM
 		band_out = CALIBRATE.EXT_FM;
 	if (band == BANDID_2m || band == BANDID_Marine) // 2m
@@ -465,31 +474,6 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 		band_out = CALIBRATE.EXT_TRANSV_6cm;
 	if (TRX.Transverter_3cm && band == BANDID_3cm) // 3cm
 		band_out = CALIBRATE.EXT_TRANSV_3cm;
-	
-	// Skip shift register updating while transmit
-	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG || 
-		CALIBRATE.RF_unit_type == RF_UNIT_RU4PN || 
-		CALIBRATE.RF_unit_type == RF_UNIT_WF_100D || 
-		CALIBRATE.RF_unit_type == RF_UNIT_SPLIT) 
-	{
-		static bool shift_registers_lock = false;
-		static uint8_t shift_registers_lock_counter = 0;
-		
-		if (TRX_on_TX && !TRX_Tune && !shift_registers_lock) {
-			shift_registers_lock_counter++;
-			if(shift_registers_lock_counter >= 3) // 30ms lock delay
-				shift_registers_lock = true;
-		}
-		
-		if (!TRX_on_TX) {
-			shift_registers_lock = false;
-			shift_registers_lock_counter = 0;
-		}
-		
-		if(shift_registers_lock && (TRX_RF_Temperature < CALIBRATE.FAN_MEDIUM_START)) {
-			return;
-		}
-	}
 
 	// QRP Version RF Unit ///////////////////////////////////////////////////////////////////////
 	if (CALIBRATE.RF_unit_type == RF_UNIT_QRP)
@@ -505,7 +489,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 			if (!clean)
 			{
 				// U7-QH LPF_ON
-				if (registerNumber == 0 && TRX.RF_Filters && (CurrentVFO->Freq <= CALIBRATE.RFU_LPF_END) && !dualrx_lpf_disabled)
+				if (registerNumber == 0 && TRX.RF_Filters && (CurrentVFO->RealRXFreq <= CALIBRATE.RFU_LPF_END) && !dualrx_lpf_disabled)
 					SET_DATA_PIN;
 				// U7-QG LNA_ON
 				if (registerNumber == 1 && !TRX_on_TX && TRX.LNA)
@@ -631,7 +615,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 	// BIG Version RF Unit ///////////////////////////////////////////////////////////////////////
 	if (CALIBRATE.RF_unit_type == RF_UNIT_BIG)
 	{
-		if (TRX_Tune && CurrentVFO->Freq <= 70000000)
+		if (TRX_Tune && CurrentVFO->RealRXFreq <= 70000000)
 			RF_UNIT_ProcessATU();
 
 		HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_RESET); // latch
@@ -645,7 +629,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 			if (!clean)
 			{
 				// U1-7 HF-VHF-SELECT
-				if (registerNumber == 0 && CurrentVFO->Freq >= 70000000)
+				if (registerNumber == 0 && CurrentVFO->RealRXFreq >= 70000000)
 					SET_DATA_PIN;
 				// U1-6 ATT_ON_1
 				if (registerNumber == 1 && !(TRX.ATT && att_val_1))
@@ -703,7 +687,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 				// U2-5 UNUSED
 				// if (registerNumber == 18 &&
 				// U2-4 VHF_AMP_BIAS_ON
-				if (registerNumber == 19 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq >= 70000000)
+				if (registerNumber == 19 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq >= 70000000)
 					SET_DATA_PIN;
 				// U2-3 TUN_I_1
 				if (registerNumber == 20 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 0))
@@ -740,7 +724,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 				if (registerNumber == 30 && (bpf == 8 || (!TRX_on_TX && TRX.Dual_RX && bpf_second == 8)))
 					SET_DATA_PIN;
 				// U7-0 HF_AMP_BIAS_ON
-				if (registerNumber == 31 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq < 70000000)
+				if (registerNumber == 31 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq < 70000000)
 					SET_DATA_PIN;
 
 				// U11-7 ANT1-2_OUT
@@ -819,7 +803,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 	// SPLIT Version RF Unit ///////////////////////////////////////////////////////////////////////
 	if (CALIBRATE.RF_unit_type == RF_UNIT_SPLIT)
 	{
-		if (TRX_Tune && CurrentVFO->Freq <= 70000000)
+		if (TRX_Tune && CurrentVFO->RealRXFreq <= 70000000)
 			RF_UNIT_ProcessATU();
 
 		HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_RESET); // latch
@@ -953,13 +937,13 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 				// U2-5 EXT_1
 				// if (registerNumber == 26 &&
 				// U2-4 HF_AMP_BIAS_ON
-				if (registerNumber == 27 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq < 70000000)
+				if (registerNumber == 27 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq < 70000000)
 					SET_DATA_PIN;
 				// U2-3 VHF_AMP_BIAS_ON
-				if (registerNumber == 28 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq >= 70000000)
+				if (registerNumber == 28 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq >= 70000000)
 					SET_DATA_PIN;
 				// U2-2 HF-VHF-SELECT
-				if (registerNumber == 29 && CurrentVFO->Freq >= 70000000)
+				if (registerNumber == 29 && CurrentVFO->RealRXFreq >= 70000000)
 					SET_DATA_PIN;
 				// U2-1 BPF_9
 				if (registerNumber == 30 && (bpf == 8 || (!TRX_on_TX && TRX.Dual_RX && bpf_second == 8)))
@@ -1027,7 +1011,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 	// RU4PN Version RF Unit ///////////////////////////////////////////////////////////////////////
 	if (CALIBRATE.RF_unit_type == RF_UNIT_RU4PN)
 	{
-		if (TRX_Tune && CurrentVFO->Freq <= 70000000)
+		if (TRX_Tune && CurrentVFO->RealRXFreq <= 70000000)
 			RF_UNIT_ProcessATU();
 
 		HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_RESET); // latch
@@ -1044,13 +1028,13 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 				if (registerNumber == 0 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 2))
 					SET_DATA_PIN;
 				// U2-6 HF-VHF-SELECT
-				if (registerNumber == 1 && CurrentVFO->Freq >= 70000000)
+				if (registerNumber == 1 && CurrentVFO->RealRXFreq >= 70000000)
 					SET_DATA_PIN;
 				// U2-5 HF_AMP_BIAS_ON
-				if (registerNumber == 2 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq < 70000000)
+				if (registerNumber == 2 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq < 70000000)
 					SET_DATA_PIN;
 				// U2-4 VHF_AMP_BIAS_ON
-				if (registerNumber == 3 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq >= 70000000)
+				if (registerNumber == 3 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq >= 70000000)
 					SET_DATA_PIN;
 				// U2-3 TUN_C_1
 				if (registerNumber == 4 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 0))
@@ -1066,7 +1050,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 					SET_DATA_PIN;
 
 				// U3-7 HF-VHF-SELECT
-				if (registerNumber == 8 && CurrentVFO->Freq >= 70000000)
+				if (registerNumber == 8 && CurrentVFO->RealRXFreq >= 70000000)
 					SET_DATA_PIN;
 				// U3-6 NOT USED
 				// if (registerNumber == 9)
@@ -1151,7 +1135,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 					SET_DATA_PIN;
 
 				// U1-7 LPF_ON
-				if (registerNumber == 24 && (TRX.RF_Filters && (CurrentVFO->Freq <= CALIBRATE.RFU_LPF_END) && !dualrx_lpf_disabled))
+				if (registerNumber == 24 && (TRX.RF_Filters && (CurrentVFO->RealRXFreq <= CALIBRATE.RFU_LPF_END) && !dualrx_lpf_disabled))
 					SET_DATA_PIN;
 				// U1-6 ATT_ON_1
 				if (registerNumber == 25 && !(TRX.ATT && att_val_1))
@@ -1176,28 +1160,28 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 					SET_DATA_PIN;
 
 				// U7-7 LPF_7
-				if (registerNumber == 32 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Freq > 31000000 && CurrentVFO->Freq <= 60000000)
+				if (registerNumber == 32 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->RealRXFreq > 31000000 && CurrentVFO->RealRXFreq <= 60000000)
 					SET_DATA_PIN;
 				// U7-6 LPF_6
-				if (registerNumber == 33 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Freq > 22000000 && CurrentVFO->Freq <= 31000000)
+				if (registerNumber == 33 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->RealRXFreq > 22000000 && CurrentVFO->RealRXFreq <= 31000000)
 					SET_DATA_PIN;
 				// U7-5 LPF_5
-				if (registerNumber == 34 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Freq > 15000000 && CurrentVFO->Freq <= 22000000)
+				if (registerNumber == 34 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->RealRXFreq > 15000000 && CurrentVFO->RealRXFreq <= 22000000)
 					SET_DATA_PIN;
 				// U7-4 LPF_4
-				if (registerNumber == 35 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Freq > 7500000 && CurrentVFO->Freq <= 15000000)
+				if (registerNumber == 35 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->RealRXFreq > 7500000 && CurrentVFO->RealRXFreq <= 15000000)
 					SET_DATA_PIN;
 				// U7-3 TUN_I_5
 				if (registerNumber == 36 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 4))
 					SET_DATA_PIN;
 				// U7-2 LPF_1
-				if (registerNumber == 37 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Freq <= 2500000)
+				if (registerNumber == 37 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->RealRXFreq <= 2500000)
 					SET_DATA_PIN;
 				// U7-1 LPF_2
-				if (registerNumber == 38 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Freq > 2500000 && CurrentVFO->Freq <= 4500000)
+				if (registerNumber == 38 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->RealRXFreq > 2500000 && CurrentVFO->RealRXFreq <= 4500000)
 					SET_DATA_PIN;
 				// U7-0 LPF_3
-				if (registerNumber == 39 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Freq > 4500000 && CurrentVFO->Freq <= 7500000)
+				if (registerNumber == 39 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->RealRXFreq > 4500000 && CurrentVFO->RealRXFreq <= 7500000)
 					SET_DATA_PIN;
 
 				// U21-7 TUN_T
@@ -1238,22 +1222,137 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 	// WF-100D RF Unit ///////////////////////////////////////////////////////////////////////
 	if (CALIBRATE.RF_unit_type == RF_UNIT_WF_100D)
 	{
-		if (TRX_Tune && CurrentVFO->Freq <= 70000000)
+		if (TRX_Tune && CurrentVFO->RealRXFreq <= 70000000)
 			RF_UNIT_ProcessATU();
 
 		uint8_t lpf_index = 7; //6m
-		if (CurrentVFO->Freq <= 2000000) //160m
+		if (CurrentVFO->RealRXFreq <= 2000000) //160m
 			lpf_index = 1;
-		if (CurrentVFO->Freq > 2000000 && CurrentVFO->Freq <= 5000000) //80m
+		if (CurrentVFO->RealRXFreq > 2000000 && CurrentVFO->RealRXFreq <= 5000000) //80m
 			lpf_index = 2;
-		if (CurrentVFO->Freq > 5000000 && CurrentVFO->Freq <= 9000000) //40m
+		if (CurrentVFO->RealRXFreq > 5000000 && CurrentVFO->RealRXFreq <= 9000000) //40m
 			lpf_index = 3;
-		if (CurrentVFO->Freq > 9000000 && CurrentVFO->Freq <= 16000000) //30m,20m
+		if (CurrentVFO->RealRXFreq > 9000000 && CurrentVFO->RealRXFreq <= 16000000) //30m,20m
 			lpf_index = 4;
-		if (CurrentVFO->Freq > 16000000 && CurrentVFO->Freq <= 22000000) //17m,15m
+		if (CurrentVFO->RealRXFreq > 16000000 && CurrentVFO->RealRXFreq <= 22000000) //17m,15m
 			lpf_index = 5;
-		if (CurrentVFO->Freq > 22000000 && CurrentVFO->Freq <= 30000000) //12m,CB,10m
+		if (CurrentVFO->RealRXFreq > 22000000 && CurrentVFO->RealRXFreq <= 30000000) //12m,CB,10m
 			lpf_index = 6;
+		
+		bool wf_100d_shift_array[56];
+		static bool wf_100d_shift_array_old[56];
+		
+		wf_100d_shift_array[0] = false; // U1-7 -
+		// U1-6 FAN_OUT
+		wf_100d_shift_array[1] = false;
+		static bool fan_pwm = false;
+		if (FAN_Active && TRX_RF_Temperature <= CALIBRATE.FAN_MEDIUM_STOP) // Temperature at which the fan stops
+			FAN_Active = false;
+		if (!FAN_Active && TRX_RF_Temperature >= CALIBRATE.FAN_MEDIUM_START) // Temperature at which the fan starts at half power
+		{
+			FAN_Active = true;
+			fan_pwm = true;
+		}
+		if (TRX_RF_Temperature >= CALIBRATE.FAN_FULL_START) // Temperature at which the fan starts at full power
+			fan_pwm = false;
+
+		if (FAN_Active != FAN_Active_old)
+		{
+			FAN_Active_old = FAN_Active;
+			LCD_UpdateQuery.StatusInfoGUI = true;
+		}
+
+		if (FAN_Active)
+		{
+			if (fan_pwm) // PWM
+			{
+				const uint8_t on_ticks = 1;
+				const uint8_t off_ticks = 1;
+				static bool pwm_status = false; // true - on false - off
+				static uint8_t pwm_ticks = 0;
+				pwm_ticks++;
+				if (pwm_status)
+					wf_100d_shift_array[1] = true;
+				if ((pwm_status && pwm_ticks == on_ticks) || (!pwm_status && pwm_ticks == off_ticks))
+				{
+					pwm_status = !pwm_status;
+					pwm_ticks = 0;
+				}
+			}
+			else
+				wf_100d_shift_array[1] = true;
+		}
+		wf_100d_shift_array[2] = false; // U1-5 -
+		wf_100d_shift_array[3] = false; // U1-4 -=
+		wf_100d_shift_array[4] = TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK; // U1-3 TX_PTT_OUT
+		wf_100d_shift_array[5] = TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq < 70000000;// U1-2 HF_AMP_BIAS_ON
+		wf_100d_shift_array[6] = CurrentVFO->RealRXFreq >= 70000000; // U1-1 HF-VHF-SELECT
+		wf_100d_shift_array[7] = TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq >= 70000000;// U1-0 VHF_AMP_BIAS_ON
+
+		wf_100d_shift_array[8] = TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 6); // U2-7 TUN_I_7
+		wf_100d_shift_array[9] = TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 5); // U2-6 TUN_I_6
+		wf_100d_shift_array[10] = TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 4); // U2-5 TUN_I_5
+		wf_100d_shift_array[11] = !TRX.ANT_selected; // U2-4 ANT1-2_OUT
+		wf_100d_shift_array[12] = TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 3); // U2-3 TUN_I_4
+		wf_100d_shift_array[13] = TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 2); // U2-2 TUN_I_3
+		wf_100d_shift_array[14] = TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 1); // U2-1 TUN_I_2
+		wf_100d_shift_array[15] = TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 0); // U2-0 TUN_I_1
+
+		wf_100d_shift_array[16] = TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 6); // U3-7 TUN_C_7
+		wf_100d_shift_array[17] = TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 5); // U3-6 TUN_C_6
+		wf_100d_shift_array[18] = TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 4); // U3-5 TUN_C_5
+		wf_100d_shift_array[19] = TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 3); // U3-4 TUN_C_4
+		wf_100d_shift_array[20] = TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 2); // U3-3 TUN_C_3
+		wf_100d_shift_array[21] = TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 1); // U3-2 TUN_C_2
+		wf_100d_shift_array[22] = TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 0); // U3-1 TUN_C_1
+		wf_100d_shift_array[23] = TRX.TUNER_Enabled && TRX.ATU_T; // U3-0 TUN_T
+
+		wf_100d_shift_array[24] = false; // U23-7 -
+		wf_100d_shift_array[25] = !(TRX.ATT && att_val_16); // U23-6 ATT_ON_16
+		wf_100d_shift_array[26] = !(TRX.ATT && att_val_05); // U23-5 ATT_ON_0.5
+		wf_100d_shift_array[27] = !(TRX.ATT && att_val_1); // U23-4 ATT_ON_1
+		wf_100d_shift_array[28] = !(TRX.ATT && att_val_2); // U23-3 ATT_ON_2
+		wf_100d_shift_array[29] = !(TRX.ATT && att_val_4); // U23-2 ATT_ON_4
+		wf_100d_shift_array[30] = !(TRX.ATT && att_val_8); // U23-1 ATT_ON_8
+		wf_100d_shift_array[31] = false; // U23-0 -
+
+		wf_100d_shift_array[32] = (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 5; // U24-7 LPF_5
+		wf_100d_shift_array[33] = (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 6; // U24-6 LPF_6
+		wf_100d_shift_array[34] = (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 7; // U24-5 LPF_7
+		wf_100d_shift_array[35] = TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->RealRXFreq < 70000000; // U24-4 HF_AMP_BIAS_ON
+		wf_100d_shift_array[36] = (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 1; // U24-3 LPF_1
+		wf_100d_shift_array[37] = (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 2; // U24-2 LPF_2
+		wf_100d_shift_array[38] = (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 3; // U24-1 LPF_3
+		wf_100d_shift_array[39] = (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 4; // U24-0 LPF_4
+
+		wf_100d_shift_array[40] = !dualrx_bpf_disabled && TRX.RF_Filters && ((CurrentVFO->RealRXFreq >= CALIBRATE.RFU_HPF_START && bpf == 255) || bpf == 7); // U31-H U3 BPF_1_A1 hpf 145(7)
+		wf_100d_shift_array[41] = !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 1 || bpf == 0); // U31-G U7 BPF_3_A1 2.5-4(1) 1.6-2.5(0)
+		wf_100d_shift_array[42] = !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 3 || bpf == 0); // U31-F U7 BPF_3_A0 7-12(3) 1.6-2.5(0)
+		wf_100d_shift_array[43] = !dualrx_bpf_disabled && TRX.RF_Filters && ((CurrentVFO->RealRXFreq <= CALIBRATE.RFU_LPF_END && bpf == 255) || bpf == 7); // U31-E U3 BPF_1_A0 lpf 145(7)
+		wf_100d_shift_array[44] = !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 6 || bpf == 4); // U31-D U5 BPF_2_A0 21.5-30(6) 12-14.5(4)
+		wf_100d_shift_array[45] = !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 5 || bpf == 4); // U31-C U5 BPF_2_A1 14.5-21.5(5) 12-14.5(4)
+		wf_100d_shift_array[46] = !(TRX.RF_Filters && !dualrx_bpf_disabled && (bpf == 5 || bpf == 6 || bpf == 4)); // U31-B U5 BPF_2_EN net5?, 21.5-30(6), 14.5-21.5(5), 12-14.5(4)
+		wf_100d_shift_array[47] = !(TRX.RF_Filters && !dualrx_bpf_disabled && (bpf == 1 || bpf == 3 || bpf == 0 || bpf == 2)); // U31-A U7 BPF_3_EN 6-7.3(2), 7-12(3), 2.5-4(1), 1.6-2.5(0);
+
+		wf_100d_shift_array[48] = false; // U32-H -
+		wf_100d_shift_array[49] = false; // U32-G -
+		wf_100d_shift_array[50] = false; // U32-F -
+		wf_100d_shift_array[51] = false; // U32-E -
+		wf_100d_shift_array[52] = TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK; // U32-D Net_RX/TX
+		wf_100d_shift_array[53] = !TRX_on_TX && TRX.LNA; // U32-C - LNA_ON
+		wf_100d_shift_array[54] = false; // U32-B -
+		wf_100d_shift_array[55] = !(TRX.RF_Filters && ((CurrentVFO->RealRXFreq >= CALIBRATE.RFU_HPF_START && bpf == 255) || (CurrentVFO->RealRXFreq <= CALIBRATE.RFU_LPF_END && bpf == 255) || bpf == 7 || dualrx_bpf_disabled)); // U32-A U3 BPF_1_EN bypass, lpf, hpf, 145(7)
+
+		bool array_equal = true;
+		for (uint8_t i = 0; i < 56; i++) {
+			if (wf_100d_shift_array[i] != wf_100d_shift_array_old[i])
+			{
+				wf_100d_shift_array_old[i] = wf_100d_shift_array[i];
+				array_equal = false;
+			}
+		}
+		if (array_equal && !clean)
+			return;
 
 		HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_RESET); // latch
 		MINI_DELAY
@@ -1265,207 +1364,7 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 			MINI_DELAY
 			if (!clean)
 			{
-				// U1-7 -
-				// if (registerNumber == 0
-				// U1-6 FAN_OUT
-				if (registerNumber == 1)
-				{
-					static bool fan_pwm = false;
-					if (FAN_Active && TRX_RF_Temperature <= CALIBRATE.FAN_MEDIUM_STOP) // Temperature at which the fan stops
-						FAN_Active = false;
-					if (!FAN_Active && TRX_RF_Temperature >= CALIBRATE.FAN_MEDIUM_START) // Temperature at which the fan starts at half power
-					{
-						FAN_Active = true;
-						fan_pwm = true;
-					}
-					if (TRX_RF_Temperature >= CALIBRATE.FAN_FULL_START) // Temperature at which the fan starts at full power
-						fan_pwm = false;
-
-					if (FAN_Active != FAN_Active_old)
-					{
-						FAN_Active_old = FAN_Active;
-						LCD_UpdateQuery.StatusInfoGUI = true;
-					}
-
-					if (FAN_Active)
-					{
-						if (fan_pwm) // PWM
-						{
-							const uint8_t on_ticks = 1;
-							const uint8_t off_ticks = 1;
-							static bool pwm_status = false; // true - on false - off
-							static uint8_t pwm_ticks = 0;
-							pwm_ticks++;
-							if (pwm_status)
-								SET_DATA_PIN;
-							if ((pwm_status && pwm_ticks == on_ticks) || (!pwm_status && pwm_ticks == off_ticks))
-							{
-								pwm_status = !pwm_status;
-								pwm_ticks = 0;
-							}
-						}
-						else
-							SET_DATA_PIN;
-					}
-				}
-				// U1-5 -
-				// if (registerNumber == 2
-				// U1-4 -
-				// if (registerNumber == 3
-				// U1-3 TX_PTT_OUT
-				if (registerNumber == 4 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK)
-					SET_DATA_PIN;
-				// U1-2 HF_AMP_BIAS_ON
-				if (registerNumber == 5 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq < 70000000)
-					SET_DATA_PIN;
-				// U1-1 HF-VHF-SELECT
-				if (registerNumber == 6 && CurrentVFO->Freq >= 70000000)
-					SET_DATA_PIN;
-				// U1-0 VHF_AMP_BIAS_ON
-				if (registerNumber == 7 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq >= 70000000)
-					SET_DATA_PIN;
-
-				// U2-7 TUN_I_7
-				if (registerNumber == 8 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 6))
-					SET_DATA_PIN;
-				// U2-6 TUN_I_6
-				if (registerNumber == 9 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 5))
-					SET_DATA_PIN;
-				// U2-5 TUN_I_5
-				if (registerNumber == 10 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 4))
-					SET_DATA_PIN;
-				// U2-4 ANT1-2_OUT
-				if (registerNumber == 11 && !TRX.ANT_selected)
-					SET_DATA_PIN;
-				// U2-3 TUN_I_4
-				if (registerNumber == 12 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 3))
-					SET_DATA_PIN;
-				// U2-2 TUN_I_3
-				if (registerNumber == 13 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 2))
-					SET_DATA_PIN;
-				// U2-1 TUN_I_2
-				if (registerNumber == 14 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 1))
-					SET_DATA_PIN;
-				// U2-0 TUN_I_1
-				if (registerNumber == 15 && TRX.TUNER_Enabled && bitRead(TRX.ATU_I, 0))
-					SET_DATA_PIN;
-
-				// U3-7 TUN_C_7
-				if (registerNumber == 16 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 6))
-					SET_DATA_PIN;
-				// U3-6 TUN_C_6
-				if (registerNumber == 17 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 5))
-					SET_DATA_PIN;
-				// U3-5 TUN_C_5
-				if (registerNumber == 18 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 4))
-					SET_DATA_PIN;
-				// U3-4 TUN_C_4
-				if (registerNumber == 19 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 3))
-					SET_DATA_PIN;
-				// U3-3 TUN_C_3
-				if (registerNumber == 20 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 2))
-					SET_DATA_PIN;
-				// U3-2 TUN_C_2
-				if (registerNumber == 21 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 1))
-					SET_DATA_PIN;
-				// U3-1 TUN_C_1
-				if (registerNumber == 22 && TRX.TUNER_Enabled && bitRead(TRX.ATU_C, 0))
-					SET_DATA_PIN;
-				// U3-0 TUN_T
-				if (registerNumber == 23 && TRX.TUNER_Enabled && TRX.ATU_T)
-					SET_DATA_PIN;
-
-				// U23-7 -
-				// if (registerNumber == 24
-				// U23-6 ATT_ON_16
-				if (registerNumber == 25 && !(TRX.ATT && att_val_16))
-					SET_DATA_PIN;
-				// U23-5 ATT_ON_0.5
-				if (registerNumber == 26 && !(TRX.ATT && att_val_05))
-					SET_DATA_PIN;
-				// U23-4 ATT_ON_1
-				if (registerNumber == 27 && !(TRX.ATT && att_val_1))
-					SET_DATA_PIN;
-				// U23-3 ATT_ON_2
-				if (registerNumber == 28 && !(TRX.ATT && att_val_2))
-					SET_DATA_PIN;
-				// U23-2 ATT_ON_4
-				if (registerNumber == 29 && !(TRX.ATT && att_val_4))
-					SET_DATA_PIN;
-				// U23-1 ATT_ON_8
-				if (registerNumber == 30 && !(TRX.ATT && att_val_8))
-					SET_DATA_PIN;
-				// U23-0 -
-				// if (registerNumber == 31
-
-				// U24-7 LPF_5
-				if (registerNumber == 32 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 5)
-					SET_DATA_PIN;
-				// U24-6 LPF_6
-				if (registerNumber == 33 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 6)
-					SET_DATA_PIN;
-				// U24-5 LPF_7
-				if (registerNumber == 34 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 7)
-					SET_DATA_PIN;
-				// U24-4 HF_AMP_BIAS_ON
-				if (registerNumber == 35 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK && CurrentVFO->Freq < 70000000)
-					SET_DATA_PIN;
-				// U24-3 LPF_1
-				if (registerNumber == 36 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 1)
-					SET_DATA_PIN;
-				// U24-2 LPF_2
-				if (registerNumber == 37 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 2)
-					SET_DATA_PIN;
-				// U24-1 LPF_3
-				if (registerNumber == 38 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 3)
-					SET_DATA_PIN;
-				// U24-0 LPF_4
-				if (registerNumber == 39 && (turn_on_tx_lpf || TRX_on_TX) && CurrentVFO->Mode != TRX_MODE_LOOPBACK && lpf_index == 4)
-					SET_DATA_PIN;
-
-				// U31-H U3 BPF_1_A1
-				if (registerNumber == 40 && !dualrx_bpf_disabled && TRX.RF_Filters && ((CurrentVFO->Freq >= CALIBRATE.RFU_HPF_START && bpf == 255) || bpf == 7)) // hpf 145(7)
-					SET_DATA_PIN;
-				// U31-G U7 BPF_3_A1
-				if (registerNumber == 41 && !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 1 || bpf == 0)) // 2.5-4(1) 1.6-2.5(0)
-					SET_DATA_PIN;
-				// U31-F U7 BPF_3_A0
-				if (registerNumber == 42 && !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 3 || bpf == 0)) // 7-12(3) 1.6-2.5(0)
-					SET_DATA_PIN;
-				// U31-E U3 BPF_1_A0
-				if (registerNumber == 43 && !dualrx_bpf_disabled && TRX.RF_Filters && ((CurrentVFO->Freq <= CALIBRATE.RFU_LPF_END && bpf == 255) || bpf == 7)) // lpf 145(7)
-					SET_DATA_PIN;
-				// U31-D U5 BPF_2_A0
-				if (registerNumber == 44 && !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 6 || bpf == 4)) // 21.5-30(6) 12-14.5(4)
-					SET_DATA_PIN;
-				// U31-C U5 BPF_2_A1
-				if (registerNumber == 45 && !dualrx_bpf_disabled && TRX.RF_Filters && (bpf == 5 || bpf == 4)) // 14.5-21.5(5) 12-14.5(4)
-					SET_DATA_PIN;
-				// U31-B U5 BPF_2_EN
-				if (registerNumber == 46 && !(TRX.RF_Filters && !dualrx_bpf_disabled && (bpf == 5 || bpf == 6 || bpf == 4))) // net5?, 21.5-30(6), 14.5-21.5(5), 12-14.5(4)
-					SET_DATA_PIN;
-				// U31-A U7 BPF_3_EN
-				if (registerNumber == 47 && !(TRX.RF_Filters && !dualrx_bpf_disabled && (bpf == 1 || bpf == 3 || bpf == 0 || bpf == 2))) // 6-7.3(2), 7-12(3), 2.5-4(1), 1.6-2.5(0)
-					SET_DATA_PIN;
-
-				// U32-H -
-				// if (registerNumber == 48)
-				// U32-G -
-				// if (registerNumber == 49)
-				// U32-F -
-				// if (registerNumber == 50)
-				// U32-E -
-				// if (registerNumber == 51)
-				// U32-D Net_RX/TX
-				if (registerNumber == 52 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK)
-					SET_DATA_PIN;
-				// U32-C - LNA_ON
-				if (registerNumber == 53 && (!TRX_on_TX && TRX.LNA))
-					SET_DATA_PIN;
-				// U32-B -
-				// if (registerNumber == 54)
-				// U32-A U3 BPF_1_EN
-				if (registerNumber == 55 && !(TRX.RF_Filters && ((CurrentVFO->Freq >= CALIBRATE.RFU_HPF_START && bpf == 255) || (CurrentVFO->Freq <= CALIBRATE.RFU_LPF_END && bpf == 255) || bpf == 7 || dualrx_bpf_disabled))) // bypass, lpf, hpf, 145(7)
+				if (wf_100d_shift_array[registerNumber])
 					SET_DATA_PIN;
 			}
 			MINI_DELAY
@@ -1477,6 +1376,151 @@ void RF_UNIT_UpdateState(bool clean) // pass values to RF-UNIT
 		HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(RFUNIT_OE_GPIO_Port, RFUNIT_OE_Pin, GPIO_PIN_RESET);
 	}
+
+    // LZ1HAA Version RF Unit ///////////////////////////////////////////////////////////////////////
+    if (CALIBRATE.RF_unit_type == RF_UNIT_LZ1HAA)
+    {
+        static volatile uint32_t data = 0;
+        if (TRX_Tune && CurrentVFO->Freq <= 70000000)
+            RF_UNIT_ProcessATU();
+
+        HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_RESET); // latch
+        MINI_DELAY
+        for (uint8_t registerNumber = 0; registerNumber < 24; registerNumber++)
+        {
+            HAL_GPIO_WritePin(RFUNIT_CLK_GPIO_Port, RFUNIT_CLK_Pin, GPIO_PIN_RESET); // data block
+            MINI_DELAY
+            HAL_GPIO_WritePin(RFUNIT_DATA_GPIO_Port, RFUNIT_DATA_Pin, GPIO_PIN_RESET); // data
+            MINI_DELAY
+            if (!clean)
+            {
+                //============================ ATT ===================================
+
+                // IC5-7
+//                if (registerNumber == 0) continue;
+                // IC5-6
+//                if (registerNumber == 1) continue;
+                // IC5-5 ATT_ON_16
+                if (registerNumber == 2 && !(TRX.ATT && att_val_16)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-4 ATT_ON_8
+                if (registerNumber == 3 && !(TRX.ATT && att_val_8)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-3 ATT_ON_4
+                if (registerNumber == 4 && !(TRX.ATT && att_val_4)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-2 ATT_ON_2
+                if (registerNumber == 5 && !(TRX.ATT && att_val_2)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-1 ATT_ON_1
+                if (registerNumber == 6 && !(TRX.ATT && att_val_1)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC5-0 ATT_ON_0.5
+                if (registerNumber == 7 && !(TRX.ATT && att_val_05)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                //========================== END ATT =================================
+
+                // IC4-7
+//                if (registerNumber == 8) continue;
+
+                // IC4-6 TX_PTT_OUT
+                if (registerNumber == 9 && TRX_on_TX && CurrentVFO->Mode != TRX_MODE_LOOPBACK) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-5 LNA_ON
+                if (registerNumber == 10 && (!TRX_on_TX && TRX.LNA)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-4 LPF_ON
+                if (registerNumber == 11 && (TRX.RF_Filters && (CurrentVFO->Freq <= CALIBRATE.RFU_LPF_END) && !dualrx_lpf_disabled)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-3 BPF_OFF
+                if (registerNumber == 12 && !(TRX.RF_Filters && !dualrx_bpf_disabled && bpf != 255)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-2 BAND HPF
+                if (registerNumber == 13 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 10)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-1 BAND_OUT_9
+                if (registerNumber == 14 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 9)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC4-0 BAND_OUT_8
+                if (registerNumber == 15 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 8)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-7 BAND_OUT_7
+                if (registerNumber == 16 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 7)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-6 BAND_OUT_6
+                if (registerNumber == 17 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 6)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-5 BAND_OUT_5
+                if (registerNumber == 18 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 5)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-4 BAND_OUT_4
+                if (registerNumber == 19 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 4)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-3 BAND_OUT_3
+                if (registerNumber == 20 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 3)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-2 BAND_OUT_2
+                if (registerNumber == 21 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 2)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-1 BAND_OUT_1
+                if (registerNumber == 22 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 1)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+                // IC3-0 BAND_OUT_0
+                if (registerNumber == 23 && (TRX.RF_Filters && !dualrx_bpf_disabled && bpf == 0)) {
+                    SET_DATA_PIN;
+                    data |= (1 << registerNumber);
+                }
+            }
+            MINI_DELAY
+            HAL_GPIO_WritePin(RFUNIT_CLK_GPIO_Port, RFUNIT_CLK_Pin, GPIO_PIN_SET);
+            MINI_DELAY
+        }
+        MINI_DELAY
+        HAL_GPIO_WritePin(RFUNIT_CLK_GPIO_Port, RFUNIT_CLK_Pin, GPIO_PIN_RESET);
+        MINI_DELAY
+        HAL_GPIO_WritePin(RFUNIT_RCLK_GPIO_Port, RFUNIT_RCLK_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(RFUNIT_OE_GPIO_Port, RFUNIT_OE_Pin, GPIO_PIN_RESET);
+    }
 }
 
 void RF_UNIT_ProcessSensors(void)
@@ -1517,8 +1561,11 @@ void RF_UNIT_ProcessSensors(void)
 	//VBAT
 	TRX_VBAT_Voltage = (float32_t)(HAL_ADCEx_InjectedGetValue(&hadc3, ADC_INJECTED_RANK_3)) * TRX_STM32_VREF / B14_RANGE;
 	
+	//ALC
+	float32_t ALC_IN = (float32_t)HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4) * TRX_STM32_VREF / B16_RANGE;
+	TRX_ALC_IN = TRX_ALC_IN * 0.9f + ALC_IN * 0.1f;
+	
 	// SWR
-	TRX_ALC_IN = (float32_t)HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4) * TRX_STM32_VREF / B16_RANGE;
 	float32_t forward = (float32_t)(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2)) * TRX_STM32_VREF / B16_RANGE;
 	float32_t backward = (float32_t)(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1)) * TRX_STM32_VREF / B16_RANGE;
 	// println("FWD: ", forward, " BKW: ", backward);
@@ -1567,9 +1614,9 @@ void RF_UNIT_ProcessSensors(void)
 		forward += 0.21f; // drop on diode
 
 		// Transformation ratio of the SWR meter
-		if (CurrentVFO->Freq >= 80000000)
+		if (CurrentVFO->RealRXFreq >= 80000000)
 			forward = forward * CALIBRATE.SWR_FWD_Calibration_VHF;
-		else if (CurrentVFO->Freq >= 40000000)
+		else if (CurrentVFO->RealRXFreq >= 40000000)
 			forward = forward * CALIBRATE.SWR_FWD_Calibration_6M;
 		else
 			forward = forward * CALIBRATE.SWR_FWD_Calibration_HF;
@@ -1580,12 +1627,12 @@ void RF_UNIT_ProcessSensors(void)
 			backward += 0.21f; // drop on diode
 
 			// Transformation ratio of the SWR meter
-			if (CurrentVFO->Freq >= 80000000)
-				backward = backward * CALIBRATE.SWR_REF_Calibration_VHF;
-			else if (CurrentVFO->Freq >= 40000000)
-				backward = backward * CALIBRATE.SWR_REF_Calibration_6M;
+			if (CurrentVFO->RealRXFreq >= 80000000)
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_VHF;
+			else if (CurrentVFO->RealRXFreq >= 40000000)
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_6M;
 			else
-				backward = backward * CALIBRATE.SWR_REF_Calibration_HF;
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_HF;
 		}
 		else
 			backward = 0.001f;

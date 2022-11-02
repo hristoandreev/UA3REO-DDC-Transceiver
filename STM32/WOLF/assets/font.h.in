@@ -1,0 +1,9 @@
+#ifndef FONT_H_
+#define FONT_H_
+
+#include "lcd_driver.h"
+
+#define PROGMEM //__attribute__((section("FontFlashSection"))) __attribute__((aligned(4)))
+@FONTS_LIST@
+
+#endif

@@ -144,7 +144,7 @@ void FILEMANAGER_EventSecondaryRotate(int8_t direction)
 	if (direction > 0 || current_index > 0)
 		current_index += direction;
 
-	int16_t real_file_index = FILEMANAGER_files_startindex + current_index - 1;
+	uint16_t real_file_index = FILEMANAGER_files_startindex + current_index - 1U;
 
 	// limit
 	if (real_file_index >= FILEMANAGER_files_count)
@@ -599,6 +599,8 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			sysmenu_ota_opened = false;
 			return;
 		}
+		//WIFI_NewFW_STM32 = true; //DEBUG
+		//WIFI_NewFW_FPGA = true; //DEBUG
 		if (!WIFI_NewFW_STM32 && !WIFI_NewFW_FPGA)
 		{
 			LCD_showInfo("No updates", true);
@@ -731,11 +733,11 @@ void FILEMANAGER_OTAUpdate_handler(void)
 		{
 			__HAL_CRC_DR_RESET(&HRDW_CRC_HANDLE);
 			uint32_t bytesreaded;
-			uint32_t bytesprocessed;
+			uint32_t bytesprocessed = 0;
 			bool read_flag = true;
 			while (read_flag)
 			{
-				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded) != FR_OK || bytesreaded == 0)
+				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded) != FR_OK || bytesreaded == 0)
 				{
 					read_flag = false;
 				}
@@ -750,7 +752,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			// read original CRC
 			f_open(&File, "firmware_fpga.crc", FA_READ | FA_OPEN_EXISTING);
 			dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
-			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded);
+			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded);
 			f_close(&File);
 			println("Need CRC: ", (char *)SD_workbuffer_A);
 
@@ -760,7 +762,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			println("File CRC: ", tmp);
 			if (strstr((char *)SD_workbuffer_A, tmp) != NULL)
 			{
-				LCD_showInfo("CRC OK", true);
+				LCD_showInfo("FPGA CRC OK", true);
 
 				if (WIFI_NewFW_STM32)
 					sysmenu_ota_opened_state = 10;
@@ -769,17 +771,23 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			}
 			else
 			{
-				LCD_showInfo("CRC ERROR", true);
-				sysmenu_ota_opened_state = 1;
+				LCD_showInfo("FPGA CRC ERROR", true);
+				sysmenu_ota_opened_state = 0;
 				downloaded_fpga_fw = false;
+				downloaded_stm_fw = false;
+				downloaded_fpga_crc = false;
+				downloaded_stm_crc = false;
 				LCD_UpdateQuery.SystemMenuRedraw = true;
 				return;
 			}
 		}
 		else
 		{
-			sysmenu_ota_opened_state = 1;
+			sysmenu_ota_opened_state = 0;
 			downloaded_fpga_fw = false;
+			downloaded_stm_fw = false;
+			downloaded_fpga_crc = false;
+			downloaded_stm_crc = false;
 			LCD_UpdateQuery.SystemMenuRedraw = true;
 			return;
 		}
@@ -807,11 +815,11 @@ void FILEMANAGER_OTAUpdate_handler(void)
 		{
 			__HAL_CRC_DR_RESET(&HRDW_CRC_HANDLE);
 			uint32_t bytesreaded;
-			uint32_t bytesprocessed;
+			uint32_t bytesprocessed = 0;
 			bool read_flag = true;
 			while (read_flag)
 			{
-				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded) != FR_OK || bytesreaded == 0)
+				if (f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded) != FR_OK || bytesreaded == 0)
 				{
 					read_flag = false;
 				}
@@ -826,7 +834,7 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			// read original CRC
 			f_open(&File, "firmware_stm32.crc", FA_READ | FA_OPEN_EXISTING);
 			dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
-			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), &bytesreaded);
+			f_read(&File, &SD_workbuffer_A, sizeof(SD_workbuffer_A), (UINT *)&bytesreaded);
 			f_close(&File);
 			println("Need CRC: ", (char *)SD_workbuffer_A);
 
@@ -836,22 +844,24 @@ void FILEMANAGER_OTAUpdate_handler(void)
 			println("File CRC: ", tmp);
 			if (strstr((char *)SD_workbuffer_A, tmp) != NULL)
 			{
-				LCD_showInfo("CRC OK", true);
+				LCD_showInfo("STM32 CRC OK", true);
 				sysmenu_ota_opened_state = 15;
 			}
 			else
 			{
-				LCD_showInfo("CRC ERROR", true);
-				sysmenu_ota_opened_state = 5;
-				downloaded_fpga_fw = false;
+				LCD_showInfo("STM32 CRC ERROR", true);
+				sysmenu_ota_opened_state = 0;
+				downloaded_stm_fw = false;
+				downloaded_stm_crc = false;
 				LCD_UpdateQuery.SystemMenuRedraw = true;
 				return;
 			}
 		}
 		else
 		{
-			sysmenu_ota_opened_state = 5;
-			downloaded_fpga_fw = false;
+			sysmenu_ota_opened_state = 0;
+			downloaded_stm_fw = false;
+			downloaded_stm_crc = false;
 			LCD_UpdateQuery.SystemMenuRedraw = true;
 			return;
 		}

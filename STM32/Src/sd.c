@@ -6,7 +6,6 @@
 #include "fatfs.h"
 #include "functions.h"
 #include "lcd.h"
-#include "ff_gen_drv.h"
 #include "user_diskio.h"
 #include "system_menu.h"
 #include "vocoder.h"
@@ -21,7 +20,6 @@ sd_info_ptr sdinfo = {
 	.BLOCK_SIZE = 512,
 	.CAPACITY = 0,
 };
-extern Disk_drvTypeDef disk;
 bool SD_RecordInProcess = false;
 bool SD_RecordingCQmessage = false;
 TRX_MODE rec_cqmessage_old_mode;
@@ -46,8 +44,8 @@ void (*SDCOMM_WRITE_TO_FILE_callback)(void);
 SRAM FIL File = {0};
 SRAM static FILINFO fileInfo = {0};
 SRAM static DIR dir = {0};
-SRAM BYTE SD_workbuffer_A[_MAX_SS] = {0};
-SRAM BYTE SD_workbuffer_B[_MAX_SS] = {0};
+SRAM BYTE SD_workbuffer_A[FF_MAX_SS] = {0};
+SRAM BYTE SD_workbuffer_B[FF_MAX_SS] = {0};
 SRAM static WAV_header wav_hdr = {0};
 BYTE SD_workbuffer_current = false; // false - fill A save B, true - fill B save A
 
@@ -56,7 +54,7 @@ static void SDCOMM_LISTROOT_handler(void);
 static void SDCOMM_MKFS_handler(void);
 static void SDCOMM_EXPORT_SETT_handler(void);
 static void SDCOMM_IMPORT_SETT_handler(void);
-static bool SD_WRITE_SETT_LINE(char *name, uint32_t *value, SystemMenuType type);
+static bool SD_WRITE_SETT_LINE(char *name, void *value, SystemMenuType type);
 static bool SD_WRITE_SETT_STRING(char *name, char *value);
 static void SDCOMM_PARSE_SETT_LINE(char *line);
 static bool SDCOMM_CREATE_RECORD_FILE_handler(void);
@@ -118,8 +116,7 @@ void SD_Process(void)
 		SD_Present_tryTime = HAL_GetTick();
 		SD_Mounted = false;
 
-		disk.is_initialized[SDFatFs.drv] = false;
-		if (disk_initialize(SDFatFs.drv) == RES_OK)
+		if (disk_initialize(SDFatFs.pdrv) == RES_OK)
 		{
 			println("[OK] SD Card Inserted: ", (uint32_t)(sdinfo.CAPACITY / (uint64_t)1024 / (uint64_t)1024), "Mb");
 			SD_Present = true;
@@ -369,12 +366,13 @@ static bool SDCOMM_CREATE_RECORD_FILE_main(char *filename, bool audio_rec)
 		wav_hdr.datasize = 0;
 
 		uint32_t byteswritten;
-		f_write(&File, &wav_hdr, sizeof(wav_hdr), &byteswritten);
+		f_write(&File, &wav_hdr, sizeof(wav_hdr), (UINT *)&byteswritten);
 
 		if (audio_rec)
 		{
 			SD_RecordInProcess = true;
 			LCD_UpdateQuery.StatusInfoBar = true;
+			LCD_UpdateQuery.TopButtons = true;
 			LCD_showTooltip("Start recording");
 		}
 		else
@@ -452,6 +450,7 @@ static bool SDCOMM_WRITE_PACKET_RECORD_FILE_handler(void)
 		}
 		LCD_UpdateQuery.StatusInfoBar = true;
 		LCD_UpdateQuery.SystemMenuRedraw = true;
+		LCD_UpdateQuery.TopButtons = true;
 		need_cqmess_reopen = true;
 		LCD_showTooltip("Stop recording");
 
@@ -460,7 +459,7 @@ static bool SDCOMM_WRITE_PACKET_RECORD_FILE_handler(void)
 		
 		// update wav length
 		f_lseek(&File, 0);
-		f_write(&File, &wav_hdr, sizeof(wav_hdr), &byteswritten);
+		f_write(&File, &wav_hdr, sizeof(wav_hdr), (UINT *)&byteswritten);
 
 		f_close(&File);
 		SD_NeedStopRecord = false;
@@ -476,7 +475,7 @@ void SDCOMM_FLASH_BIN_handler(void)
 		dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
 		println("[FLASH] File Opened");
 		TRX_Mute = true;
-		WM8731_CleanBuffer();
+		CODEC_CleanBuffer();
 
 		// SCB_DisableICache();
 		// SCB_DisableDCache();
@@ -540,12 +539,14 @@ void SDCOMM_FLASH_BIN_handler(void)
 						// println("[FLASH] Flashing error: ", res, " ", HAL_FLASH_GetError());
 						return;
 					}
+
 					// Check the written value
-					if (*(uint32_t *)LastPGAddress != *(uint32_t *)(SD_workbuffer_A + block_addr))
-					{
-						LCD_showInfo("Flash Verify error", true);
-						return;
-					}
+					//if (*(uint32_t *)LastPGAddress != *(uint32_t *)(SD_workbuffer_A + block_addr))
+					//{
+						//LCD_showInfo("Flash Verify error", true);
+						//return;
+					//}
+
 					// println("[FLASH] Block flashed: ", LastPGAddress);
 					// print_flush();
 
@@ -651,7 +652,7 @@ void SDCOMM_FLASH_JIC_handler(bool restart)
 		dma_memset(SD_workbuffer_A, 0x00, sizeof(SD_workbuffer_A));
 		println("[FLASH] File Opened");
 		TRX_Mute = true;
-		WM8731_CleanBuffer();
+		CODEC_CleanBuffer();
 
 		FPGA_bus_stop = true;
 		HAL_Delay(100);
@@ -740,7 +741,7 @@ static bool SDCOMM_OPEN_PLAY_FILE_handler(void)
 
 		// read header
 		uint32_t bytesreaded;
-		FRESULT res = f_read(&File, &wav_hdr, sizeof(wav_hdr), &bytesreaded);
+		FRESULT res = f_read(&File, &wav_hdr, sizeof(wav_hdr), (UINT *)&bytesreaded);
 		// println((TCHAR*)SD_workbuffer_A);
 		// println(bytesreaded, " ", res);
 
@@ -792,7 +793,7 @@ static void SDCOMM_READ_PLAY_FILE_handler(void)
 	}
 }
 
-static bool SD_WRITE_SETT_LINE(char *name, uint32_t *value, SystemMenuType type)
+static bool SD_WRITE_SETT_LINE(char *name, void *value, SystemMenuType type)
 {
 	uint32_t byteswritten;
 	char valbuff[64] = {0};
@@ -805,44 +806,44 @@ static bool SD_WRITE_SETT_LINE(char *name, uint32_t *value, SystemMenuType type)
 	switch (type)
 	{
 	case SYSMENU_BOOLEAN:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_B4:
 	case SYSMENU_UINT8:
 	case SYSMENU_ATU_I:
 	case SYSMENU_ATU_C:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_ENUM:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_ENUMR:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_UINT16:
-		sprintf(valbuff, "%u", (uint16_t)*value);
+		sprintf(valbuff, "%u", (uint16_t)*((uint16_t *)value));
 		break;
 	case SYSMENU_UINT32:
-		sprintf(valbuff, "%u", (uint32_t)*value);
+		sprintf(valbuff, "%u", (uint32_t)*((uint32_t *)value));
 		break;
 	case SYSMENU_UINT64:
-		sprintf(valbuff, "%llu", (uint64_t)*value);
+		sprintf(valbuff, "%llu", (uint64_t)*((uint64_t *)value));
 		break;
 	case SYSMENU_INT8:
-		sprintf(valbuff, "%d", (int8_t)*value);
+		sprintf(valbuff, "%d", (int8_t)*((int8_t *)value));
 		break;
 	case SYSMENU_INT16:
-		sprintf(valbuff, "%d", (int16_t)*value);
+		sprintf(valbuff, "%d", (int16_t)*((int16_t *)value));
 		break;
 	case SYSMENU_INT32:
-		sprintf(valbuff, "%d", (int32_t)*value);
+		sprintf(valbuff, "%d", (int32_t)*((int32_t *)value));
 		break;
 	case SYSMENU_FLOAT32:
 		dma_memcpy(&tmp_float, value, sizeof(float32_t));
 		sprintf(valbuff, "%.6f", (double)tmp_float);
 		break;
 	case SYSMENU_FUNCBUTTON:
-		sprintf(valbuff, "%u", (uint8_t)*value);
+		sprintf(valbuff, "%u", (uint8_t)*((uint8_t *)value));
 		break;
 	case SYSMENU_RUN:
 	case SYSMENU_UINT32R:
@@ -941,6 +942,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.FRQ_FAST_STEP", (uint32_t *)&TRX.FRQ_FAST_STEP, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("TRX.FRQ_ENC_STEP", (uint32_t *)&TRX.FRQ_ENC_STEP, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("TRX.FRQ_ENC_FAST_STEP", (uint32_t *)&TRX.FRQ_ENC_FAST_STEP, SYSMENU_UINT32);
+			SD_WRITE_SETT_LINE("TRX.FRQ_ENC_WFM_STEP_KHZ", (uint32_t *)&TRX.FRQ_ENC_WFM_STEP_KHZ, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("TRX.FRQ_CW_STEP_DIVIDER", (uint32_t *)&TRX.FRQ_CW_STEP_DIVIDER, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.Debug_Type", (uint32_t *)&TRX.Debug_Type, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.BandMapEnabled", (uint32_t *)&TRX.BandMapEnabled, SYSMENU_BOOLEAN);
@@ -948,11 +950,14 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.InputType_DIGI", (uint32_t *)&TRX.InputType_DIGI, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.AutoGain", (uint32_t *)&TRX.AutoGain, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.SPLIT_Enabled", (uint32_t *)&TRX.SPLIT_Enabled, SYSMENU_BOOLEAN);
+#if HRDW_HAS_DUAL_RX
 			SD_WRITE_SETT_LINE("TRX.Dual_RX", (uint32_t *)&TRX.Dual_RX, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.Encoder_Accelerate", (uint32_t *)&TRX.Encoder_Accelerate, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Dual_RX_Type", (uint32_t *)&TRX.Dual_RX_Type, SYSMENU_UINT8);
+#endif
+			SD_WRITE_SETT_LINE("TRX.Encoder_Accelerate", (uint32_t *)&TRX.Encoder_Accelerate, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_STRING("TRX.CALLSIGN", TRX.CALLSIGN);
 			SD_WRITE_SETT_STRING("TRX.LOCATOR", TRX.LOCATOR);
+			SD_WRITE_SETT_STRING("TRX.URSI_CODE", TRX.URSI_CODE);
 			SD_WRITE_SETT_LINE("TRX.Custom_Transverter_Enabled", (uint32_t *)&TRX.Custom_Transverter_Enabled, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Transverter_Offset_Mhz", (uint32_t *)&TRX.Transverter_Offset_Mhz, SYSMENU_UINT16);
 			SD_WRITE_SETT_LINE("TRX.ATU_Enabled", (uint32_t *)&TRX.ATU_Enabled, SYSMENU_BOOLEAN);
@@ -963,21 +968,30 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.Transverter_6cm", (uint32_t *)&TRX.Transverter_6cm, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Transverter_3cm", (uint32_t *)&TRX.Transverter_3cm, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.Auto_Input_Switch", (uint32_t *)&TRX.Auto_Input_Switch, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.Auto_Snap", (uint32_t *)&TRX.Auto_Snap, SYSMENU_BOOLEAN);
 			// AUDIO
+			SD_WRITE_SETT_LINE("TRX.Volume", (uint32_t *)&TRX.Volume, SYSMENU_UINT16);
+			SD_WRITE_SETT_LINE("TRX.Volume_Step", (uint32_t *)&TRX.Volume_Step, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.IF_Gain", (uint32_t *)&TRX.IF_Gain, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.AGC_GAIN_TARGET2", (uint32_t *)&TRX.AGC_GAIN_TARGET, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_GAIN", (uint32_t *)&TRX.MIC_GAIN, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_GAIN_DB", (uint32_t *)&TRX.MIC_GAIN_DB, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("TRX.MIC_Boost", (uint32_t *)&TRX.MIC_Boost, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.MIC_NOISE_GATE", (uint32_t *)&TRX.MIC_NOISE_GATE, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.RX_EQ_LOW", (uint32_t *)&TRX.RX_EQ_LOW, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.RX_EQ_MID", (uint32_t *)&TRX.RX_EQ_MID, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.RX_EQ_HIG", (uint32_t *)&TRX.RX_EQ_HIG, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_EQ_LOW_SSB", (uint32_t *)&TRX.MIC_EQ_LOW_SSB, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_EQ_MID_SSB", (uint32_t *)&TRX.MIC_EQ_MID_SSB, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_EQ_HIG_SSB", (uint32_t *)&TRX.MIC_EQ_HIG_SSB, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_EQ_LOW_AMFM", (uint32_t *)&TRX.MIC_EQ_LOW_AMFM, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_EQ_MID_AMFM", (uint32_t *)&TRX.MIC_EQ_MID_AMFM, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.MIC_EQ_HIG_AMFM", (uint32_t *)&TRX.MIC_EQ_HIG_AMFM, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.RX_EQ_P1", (uint32_t *)&TRX.RX_EQ_P1, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.RX_EQ_P2", (uint32_t *)&TRX.RX_EQ_P2, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.RX_EQ_P3", (uint32_t *)&TRX.RX_EQ_P3, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.RX_EQ_P4", (uint32_t *)&TRX.RX_EQ_P4, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.RX_EQ_P5", (uint32_t *)&TRX.RX_EQ_P5, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P1_SSB", (uint32_t *)&TRX.MIC_EQ_P1_SSB, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P2_SSB", (uint32_t *)&TRX.MIC_EQ_P2_SSB, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P3_SSB", (uint32_t *)&TRX.MIC_EQ_P3_SSB, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P4_SSB", (uint32_t *)&TRX.MIC_EQ_P4_SSB, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P5_SSB", (uint32_t *)&TRX.MIC_EQ_P5_SSB, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P1_AMFM", (uint32_t *)&TRX.MIC_EQ_P1_AMFM, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P2_AMFM", (uint32_t *)&TRX.MIC_EQ_P2_AMFM, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P3_AMFM", (uint32_t *)&TRX.MIC_EQ_P3_AMFM, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P4_AMFM", (uint32_t *)&TRX.MIC_EQ_P4_AMFM, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("TRX.MIC_EQ_P5_AMFM", (uint32_t *)&TRX.MIC_EQ_P5_AMFM, SYSMENU_INT8);
 			SD_WRITE_SETT_LINE("TRX.MIC_REVERBER", (uint32_t *)&TRX.MIC_REVERBER, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.DNR1_SNR_THRESHOLD", (uint32_t *)&TRX.DNR1_SNR_THRESHOLD, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.DNR2_SNR_THRESHOLD", (uint32_t *)&TRX.DNR2_SNR_THRESHOLD, SYSMENU_UINT8);
@@ -1007,6 +1021,8 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.SELFHEAR_Volume", (uint32_t *)&TRX.SELFHEAR_Volume, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.FM_Stereo", (uint32_t *)&TRX.FM_Stereo, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.AGC_Spectral", (uint32_t *)&TRX.AGC_Spectral, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.TX_CESSB", (uint32_t *)&TRX.TX_CESSB, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("TRX.TX_CESSB_COMPRESS_DB", (uint32_t *)&TRX.TX_CESSB_COMPRESS_DB, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("TRX.VAD_THRESHOLD", (uint32_t *)&TRX.VAD_THRESHOLD, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("TRX.VOX", (uint32_t *)&TRX.VOX, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.VOX_TIMEOUT", (uint32_t *)&TRX.VOX_TIMEOUT, SYSMENU_UINT16);
@@ -1071,15 +1087,15 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("TRX.ADC_SHDN", (uint32_t *)&TRX.ADC_SHDN, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("TRX.ADC_DITH", (uint32_t *)&TRX.ADC_DITH, SYSMENU_BOOLEAN);
 			// WIFI
-			SD_WRITE_SETT_LINE("TRX.WIFI_Enabled", (uint32_t *)&TRX.WIFI_Enabled, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_LINE("TRX.WIFI_TIMEZONE", (uint32_t *)&TRX.WIFI_TIMEZONE, SYSMENU_INT8);
-			SD_WRITE_SETT_LINE("TRX.WIFI_CAT_SERVER", (uint32_t *)&TRX.WIFI_CAT_SERVER, SYSMENU_BOOLEAN);
-			SD_WRITE_SETT_STRING("TRX.WIFI_AP1", TRX.WIFI_AP1);
-			SD_WRITE_SETT_STRING("TRX.WIFI_AP2", TRX.WIFI_AP2);
-			SD_WRITE_SETT_STRING("TRX.WIFI_AP3", TRX.WIFI_AP3);
-			SD_WRITE_SETT_STRING("TRX.WIFI_PASSWORD1", TRX.WIFI_PASSWORD1);
-			SD_WRITE_SETT_STRING("TRX.WIFI_PASSWORD2", TRX.WIFI_PASSWORD2);
-			SD_WRITE_SETT_STRING("TRX.WIFI_PASSWORD3", TRX.WIFI_PASSWORD3);
+			SD_WRITE_SETT_LINE("WIFI.Enabled", (uint32_t *)&WIFI.Enabled, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("WIFI.Timezone", (uint32_t *)&WIFI.Timezone, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("WIFI.CAT_Server", (uint32_t *)&WIFI.CAT_Server, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_STRING("WIFI.AP_1", WIFI.AP_1);
+			SD_WRITE_SETT_STRING("WIFI.AP_2", WIFI.AP_2);
+			SD_WRITE_SETT_STRING("WIFI.AP_3", WIFI.AP_3);
+			SD_WRITE_SETT_STRING("WIFI.Password_1", WIFI.Password_1);
+			SD_WRITE_SETT_STRING("WIFI.Password_2", WIFI.Password_2);
+			SD_WRITE_SETT_STRING("WIFI.Password_3", WIFI.Password_3);
 			// SERVICES
 			SD_WRITE_SETT_LINE("TRX.SWR_CUSTOM_Begin", (uint32_t *)&TRX.SWR_CUSTOM_Begin, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("TRX.SWR_CUSTOM_End", (uint32_t *)&TRX.SWR_CUSTOM_End, SYSMENU_UINT32);
@@ -1115,6 +1131,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.CICFIR_GAINER_384K_3", (uint32_t *)&CALIBRATE.CICFIR_GAINER_384K_val, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.DAC_GAINER_3", (uint32_t *)&CALIBRATE.DAC_GAINER_val, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.TXCICFIR_GAINER_3", (uint32_t *)&CALIBRATE.TXCICFIR_GAINER_val, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.DAC_driver_mode", (uint32_t *)&CALIBRATE.DAC_driver_mode, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_2200m", (uint32_t *)&CALIBRATE.rf_out_power_2200m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_160m", (uint32_t *)&CALIBRATE.rf_out_power_160m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_80m", (uint32_t *)&CALIBRATE.rf_out_power_80m, SYSMENU_UINT8);
@@ -1127,6 +1144,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_cb", (uint32_t *)&CALIBRATE.rf_out_power_cb, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_10m", (uint32_t *)&CALIBRATE.rf_out_power_10m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_6m", (uint32_t *)&CALIBRATE.rf_out_power_6m, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_4m", (uint32_t *)&CALIBRATE.rf_out_power_4m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.rf_out_power_2m", (uint32_t *)&CALIBRATE.rf_out_power_2m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.smeter_calibration_hf", (uint32_t *)&CALIBRATE.smeter_calibration_hf, SYSMENU_INT16);
 			SD_WRITE_SETT_LINE("CALIBRATE.smeter_calibration_vhf", (uint32_t *)&CALIBRATE.smeter_calibration_vhf, SYSMENU_INT16);
@@ -1150,15 +1168,16 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.RFU_BPF_7_END", (uint32_t *)&CALIBRATE.RFU_BPF_7_END, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.RFU_BPF_8_START", (uint32_t *)&CALIBRATE.RFU_BPF_8_START, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.RFU_BPF_8_END", (uint32_t *)&CALIBRATE.RFU_BPF_8_END, SYSMENU_UINT32);
+            SD_WRITE_SETT_LINE("CALIBRATE.RFU_BPF_9_START", (uint32_t *)&CALIBRATE.RFU_BPF_9_START, SYSMENU_UINT32);
+            SD_WRITE_SETT_LINE("CALIBRATE.RFU_BPF_9_END", (uint32_t *)&CALIBRATE.RFU_BPF_9_END, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.RFU_HPF_START", (uint32_t *)&CALIBRATE.RFU_HPF_START, SYSMENU_UINT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.SWR_FWD_Calibration_HF", (uint32_t *)&CALIBRATE.SWR_FWD_Calibration_HF, SYSMENU_FLOAT32);
-			SD_WRITE_SETT_LINE("CALIBRATE.SWR_REF_Calibration_HF", (uint32_t *)&CALIBRATE.SWR_REF_Calibration_HF, SYSMENU_FLOAT32);
+			SD_WRITE_SETT_LINE("CALIBRATE.SWR_BWD_Calibration_HF", (uint32_t *)&CALIBRATE.SWR_BWD_Calibration_HF, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.SWR_FWD_Calibration_6M", (uint32_t *)&CALIBRATE.SWR_FWD_Calibration_6M, SYSMENU_FLOAT32);
-			SD_WRITE_SETT_LINE("CALIBRATE.SWR_REF_Calibration_6M", (uint32_t *)&CALIBRATE.SWR_REF_Calibration_6M, SYSMENU_FLOAT32);
+			SD_WRITE_SETT_LINE("CALIBRATE.SWR_BWD_Calibration_6M", (uint32_t *)&CALIBRATE.SWR_BWD_Calibration_6M, SYSMENU_FLOAT32);
 			SD_WRITE_SETT_LINE("CALIBRATE.SWR_FWD_Calibration_VHF", (uint32_t *)&CALIBRATE.SWR_FWD_Calibration_VHF, SYSMENU_FLOAT32);
-			SD_WRITE_SETT_LINE("CALIBRATE.SWR_REF_Calibration_VHF", (uint32_t *)&CALIBRATE.SWR_REF_Calibration_VHF, SYSMENU_FLOAT32);
-			SD_WRITE_SETT_LINE("CALIBRATE.MAX_RF_POWER", (uint32_t *)&CALIBRATE.MAX_RF_POWER, SYSMENU_UINT8);
-			SD_WRITE_SETT_LINE("CALIBRATE.VCXO_correction", (uint32_t *)&CALIBRATE.VCXO_correction, SYSMENU_INT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.SWR_BWD_Calibration_VHF", (uint32_t *)&CALIBRATE.SWR_BWD_Calibration_VHF, SYSMENU_FLOAT32);
+			SD_WRITE_SETT_LINE("CALIBRATE.VCXO_correction", (uint32_t *)&CALIBRATE.VCXO_correction, SYSMENU_INT16);
 			SD_WRITE_SETT_LINE("CALIBRATE.FAN_MEDIUM_START", (uint32_t *)&CALIBRATE.FAN_MEDIUM_START, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.FAN_MEDIUM_STOP", (uint32_t *)&CALIBRATE.FAN_MEDIUM_STOP, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.FAN_FULL_START", (uint32_t *)&CALIBRATE.FAN_FULL_START, SYSMENU_UINT8);
@@ -1167,6 +1186,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.FM_DEVIATION_SCALE", (uint32_t *)&CALIBRATE.FM_DEVIATION_SCALE, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.SSB_POWER_ADDITION", (uint32_t *)&CALIBRATE.SSB_POWER_ADDITION, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.AM_MODULATION_INDEX", (uint32_t *)&CALIBRATE.AM_MODULATION_INDEX, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.MAX_RF_POWER_ON_METER", (uint32_t *)&CALIBRATE.MAX_RF_POWER_ON_METER, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.TUNE_MAX_POWER", (uint32_t *)&CALIBRATE.TUNE_MAX_POWER, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.RTC_Coarse_Calibration", (uint32_t *)&CALIBRATE.RTC_Coarse_Calibration, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.RTC_Calibration", (uint32_t *)&CALIBRATE.RTC_Calibration, SYSMENU_INT16);
@@ -1183,6 +1203,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_CB", (uint32_t *)&CALIBRATE.EXT_CB, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_10m", (uint32_t *)&CALIBRATE.EXT_10m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_6m", (uint32_t *)&CALIBRATE.EXT_6m, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.EXT_4m", (uint32_t *)&CALIBRATE.EXT_4m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_FM", (uint32_t *)&CALIBRATE.EXT_FM, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_2m", (uint32_t *)&CALIBRATE.EXT_2m, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.EXT_70cm", (uint32_t *)&CALIBRATE.EXT_70cm, SYSMENU_UINT8);
@@ -1205,6 +1226,7 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_CB", (uint32_t *)&CALIBRATE.NOTX_CB, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_10m", (uint32_t *)&CALIBRATE.NOTX_10m, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_6m", (uint32_t *)&CALIBRATE.NOTX_6m, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_4m", (uint32_t *)&CALIBRATE.NOTX_4m, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_FM", (uint32_t *)&CALIBRATE.NOTX_FM, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_2m", (uint32_t *)&CALIBRATE.NOTX_2m, SYSMENU_BOOLEAN);
 			SD_WRITE_SETT_LINE("CALIBRATE.NOTX_70cm", (uint32_t *)&CALIBRATE.NOTX_70cm, SYSMENU_BOOLEAN);
@@ -1223,6 +1245,17 @@ static void SDCOMM_EXPORT_SETT_handler(void)
 			SD_WRITE_SETT_LINE("CALIBRATE.CAT_Type", (uint32_t *)&CALIBRATE.CAT_Type, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.TwoSignalTune_Balance", (uint32_t *)&CALIBRATE.TwoSignalTune_Balance, SYSMENU_UINT8);
 			SD_WRITE_SETT_LINE("CALIBRATE.LinearPowerControl", (uint32_t *)&CALIBRATE.LinearPowerControl, SYSMENU_BOOLEAN);
+			SD_WRITE_SETT_LINE("CALIBRATE.IF_GAIN_MIN", (uint32_t *)&CALIBRATE.IF_GAIN_MIN, SYSMENU_UINT8);
+			SD_WRITE_SETT_LINE("CALIBRATE.IF_GAIN_MAX", (uint32_t *)&CALIBRATE.IF_GAIN_MAX, SYSMENU_UINT8);
+			
+			// Func buttons settings
+			char buff[64] = {0};
+			for (uint8_t i = 0; i < FUNCBUTTONS_COUNT; i++)
+			{
+				sprintf(buff, "TRX.FuncButtons[%d]", i);
+				SD_WRITE_SETT_LINE(buff, (uint32_t *)&TRX.FuncButtons[i], SYSMENU_UINT8);
+			}
+			
 			// Bands settings
 			/*char buff[64] = {0};
 			for (uint8_t i = 0; i < BANDS_COUNT; i++)
@@ -1436,6 +1469,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.FRQ_ENC_STEP = uintval;
 	if (strcmp(name, "TRX.FRQ_ENC_FAST_STEP") == 0)
 		TRX.FRQ_ENC_FAST_STEP = uintval;
+	if (strcmp(name, "TRX.FRQ_ENC_WFM_STEP_KHZ") == 0)
+		TRX.FRQ_ENC_WFM_STEP_KHZ = uintval;
 	if (strcmp(name, "TRX.FRQ_CW_STEP_DIVIDER") == 0)
 		TRX.FRQ_CW_STEP_DIVIDER = (uint8_t)uintval;
 	if (strcmp(name, "TRX.Debug_Type") == 0)
@@ -1450,27 +1485,39 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.AutoGain = bval;
 	if (strcmp(name, "TRX.SPLIT_Enabled") == 0)
 		TRX.SPLIT_Enabled = bval;
+#if HRDW_HAS_DUAL_RX
 	if (strcmp(name, "TRX.Dual_RX") == 0)
 		TRX.Dual_RX = bval;
-	if (strcmp(name, "TRX.Encoder_Accelerate") == 0)
-		TRX.Encoder_Accelerate = bval;
 	if (strcmp(name, "TRX.Dual_RX_Type") == 0)
 		TRX.Dual_RX_Type = (DUAL_RX_TYPE)uintval;
+#endif
+	if (strcmp(name, "TRX.Encoder_Accelerate") == 0)
+		TRX.Encoder_Accelerate = bval;
 	if (strcmp(name, "TRX.CALLSIGN") == 0)
 	{
 		dma_memset(TRX.CALLSIGN, 0x00, sizeof(TRX.CALLSIGN));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.CALLSIGN))
-			lens = sizeof(TRX.CALLSIGN);
-		strncpy(TRX.CALLSIGN, value, lens);
+		if (lens > (sizeof(TRX.CALLSIGN) - 1))
+			lens = sizeof(TRX.CALLSIGN) - 1;
+//		strncpy(TRX.CALLSIGN, value, lens);
+		memcpy(TRX.CALLSIGN, value, lens);
 	}
 	if (strcmp(name, "TRX.LOCATOR") == 0)
 	{
 		dma_memset(TRX.LOCATOR, 0x00, sizeof(TRX.LOCATOR));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.LOCATOR))
-			lens = sizeof(TRX.LOCATOR);
-		strncpy(TRX.LOCATOR, value, lens);
+		if (lens > (sizeof(TRX.LOCATOR) - 1))
+			lens = sizeof(TRX.LOCATOR) - 1;
+//		strncpy(TRX.LOCATOR, value, lens);
+		memcpy(TRX.LOCATOR, value, lens);
+	}
+	if (strcmp(name, "TRX.URSI_CODE") == 0)
+	{
+		dma_memset(TRX.URSI_CODE, 0x00, sizeof(TRX.URSI_CODE));
+		uint32_t lens = strlen(value);
+		if (lens > sizeof(TRX.URSI_CODE) - 1)
+			lens = sizeof(TRX.URSI_CODE) - 1;
+		strncpy(TRX.URSI_CODE, value, lens);
 	}
 	if (strcmp(name, "TRX.Custom_Transverter_Enabled") == 0)
 		TRX.Custom_Transverter_Enabled = bval;
@@ -1492,35 +1539,53 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.Transverter_3cm = bval;
 	if (strcmp(name, "TRX.Auto_Input_Switch") == 0)
 		TRX.Auto_Input_Switch = bval;
+	if (strcmp(name, "TRX.Auto_Snap") == 0)
+		TRX.Auto_Snap = bval;
 	// AUDIO
+	if (strcmp(name, "TRX.Volume") == 0)
+		TRX.Volume = (uint16_t)uintval;
+	if (strcmp(name, "TRX.Volume_Step") == 0)
+		TRX.Volume_Step = (uint8_t)uintval;
 	if (strcmp(name, "TRX.IF_Gain") == 0)
 		TRX.IF_Gain = (uint8_t)uintval;
 	if (strcmp(name, "TRX.AGC_GAIN_TARGET2") == 0)
 		TRX.AGC_GAIN_TARGET = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_GAIN") == 0)
-		TRX.MIC_GAIN = (uint8_t)uintval;
+	if (strcmp(name, "TRX.MIC_GAIN_DB") == 0)
+		TRX.MIC_GAIN_DB = floatval;
 	if (strcmp(name, "TRX.MIC_Boost") == 0)
 		TRX.MIC_Boost = bval;
 	if (strcmp(name, "TRX.MIC_NOISE_GATE") == 0)
 		TRX.MIC_NOISE_GATE = (int8_t)intval;
-	if (strcmp(name, "TRX.RX_EQ_LOW") == 0)
-		TRX.RX_EQ_LOW = (int8_t)intval;
-	if (strcmp(name, "TRX.RX_EQ_MID") == 0)
-		TRX.RX_EQ_MID = (int8_t)intval;
-	if (strcmp(name, "TRX.RX_EQ_HIG") == 0)
-		TRX.RX_EQ_HIG = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_EQ_LOW_SSB") == 0)
-		TRX.MIC_EQ_LOW_SSB = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_EQ_MID_SSB") == 0)
-		TRX.MIC_EQ_MID_SSB = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_EQ_HIG_SSB") == 0)
-		TRX.MIC_EQ_HIG_SSB = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_EQ_LOW_AMFM") == 0)
-		TRX.MIC_EQ_LOW_AMFM = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_EQ_MID_AMFM") == 0)
-		TRX.MIC_EQ_MID_AMFM = (int8_t)intval;
-	if (strcmp(name, "TRX.MIC_EQ_HIG_AMFM") == 0)
-		TRX.MIC_EQ_HIG_AMFM = (int8_t)intval;
+	if (strcmp(name, "TRX.RX_EQ_P1") == 0)
+		TRX.RX_EQ_P1 = (int8_t)intval;
+	if (strcmp(name, "TRX.RX_EQ_P2") == 0)
+		TRX.RX_EQ_P2 = (int8_t)intval;
+	if (strcmp(name, "TRX.RX_EQ_P3") == 0)
+		TRX.RX_EQ_P3 = (int8_t)intval;
+	if (strcmp(name, "TRX.RX_EQ_P4") == 0)
+		TRX.RX_EQ_P4 = (int8_t)intval;
+	if (strcmp(name, "TRX.RX_EQ_P5") == 0)
+		TRX.RX_EQ_P5 = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P1_SSB") == 0)
+		TRX.MIC_EQ_P1_SSB = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P2_SSB") == 0)
+		TRX.MIC_EQ_P2_SSB = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P3_SSB") == 0)
+		TRX.MIC_EQ_P3_SSB = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P4_SSB") == 0)
+		TRX.MIC_EQ_P4_SSB = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P5_SSB") == 0)
+		TRX.MIC_EQ_P5_SSB = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P1_AMFM") == 0)
+		TRX.MIC_EQ_P1_AMFM = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P2_AMFM") == 0)
+		TRX.MIC_EQ_P2_AMFM = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P3_AMFM") == 0)
+		TRX.MIC_EQ_P3_AMFM = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P4_AMFM") == 0)
+		TRX.MIC_EQ_P4_AMFM = (int8_t)intval;
+	if (strcmp(name, "TRX.MIC_EQ_P5_AMFM") == 0)
+		TRX.MIC_EQ_P5_AMFM = (int8_t)intval;
 	if (strcmp(name, "TRX.MIC_REVERBER") == 0)
 		TRX.MIC_REVERBER = (uint8_t)uintval;
 	if (strcmp(name, "TRX.DNR1_SNR_THRESHOLD") == 0)
@@ -1579,6 +1644,10 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		TRX.FM_Stereo = bval;
 	if (strcmp(name, "TRX.AGC_Spectral") == 0)
 		TRX.AGC_Spectral = bval;
+	if (strcmp(name, "TRX.TX_CESSB") == 0)
+		TRX.TX_CESSB = bval;
+	if (strcmp(name, "TRX.TX_CESSB_COMPRESS_DB") == 0)
+		TRX.TX_CESSB_COMPRESS_DB = floatval;
 	if (strcmp(name, "TRX.VAD_THRESHOLD") == 0)
 		TRX.VAD_THRESHOLD = (uint8_t)uintval;
 	if (strcmp(name, "TRX.VOX") == 0)
@@ -1702,59 +1771,59 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 	if (strcmp(name, "TRX.ADC_DITH") == 0)
 		TRX.ADC_DITH = uintval;
 	// WIFI
-	if (strcmp(name, "TRX.WIFI_Enabled") == 0)
-		TRX.WIFI_Enabled = uintval;
-	if (strcmp(name, "TRX.WIFI_TIMEZONE") == 0)
-		TRX.WIFI_TIMEZONE = (int8_t)intval;
-	if (strcmp(name, "TRX.WIFI_CAT_SERVER") == 0)
-		TRX.WIFI_CAT_SERVER = uintval;
-	if (strcmp(name, "TRX.WIFI_AP1") == 0)
+	if (strcmp(name, "WIFI.Enabled") == 0)
+		WIFI.Enabled = uintval;
+	if (strcmp(name, "WIFI.Timezone") == 0)
+		WIFI.Timezone = (int8_t)intval;
+	if (strcmp(name, "WIFI.CAT_Server") == 0)
+		WIFI.CAT_Server = uintval;
+	if (strcmp(name, "WIFI.AP_1") == 0)
 	{
-		dma_memset(TRX.WIFI_AP1, 0x00, sizeof(TRX.WIFI_AP1));
+		dma_memset(WIFI.AP_1, 0x00, sizeof(WIFI.AP_1));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_AP1))
-			lens = sizeof(TRX.WIFI_AP1);
-		strncpy(TRX.WIFI_AP1, value, lens);
+		if (lens > sizeof(WIFI.AP_1) - 1)
+			lens = sizeof(WIFI.AP_1) - 1;
+		strncpy(WIFI.AP_1, value, lens);
 	}
-	if (strcmp(name, "TRX.WIFI_AP2") == 0)
+	if (strcmp(name, "WIFI.AP_2") == 0)
 	{
-		dma_memset(TRX.WIFI_AP2, 0x00, sizeof(TRX.WIFI_AP2));
+		dma_memset(WIFI.AP_2, 0x00, sizeof(WIFI.AP_2));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_AP2))
-			lens = sizeof(TRX.WIFI_AP2);
-		strncpy(TRX.WIFI_AP2, value, lens);
+		if (lens > sizeof(WIFI.AP_2) - 1)
+			lens = sizeof(WIFI.AP_2) - 1;
+		strncpy(WIFI.AP_2, value, lens);
 	}
-	if (strcmp(name, "TRX.WIFI_AP3") == 0)
+	if (strcmp(name, "WIFI.AP_3") == 0)
 	{
-		dma_memset(TRX.WIFI_AP3, 0x00, sizeof(TRX.WIFI_AP3));
+		dma_memset(WIFI.AP_3, 0x00, sizeof(WIFI.AP_3));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_AP3))
-			lens = sizeof(TRX.WIFI_AP3);
-		strncpy(TRX.WIFI_AP3, value, lens);
+		if (lens > sizeof(WIFI.AP_3) - 1)
+			lens = sizeof(WIFI.AP_3) - 1;
+		strncpy(WIFI.AP_3, value, lens);
 	}
-	if (strcmp(name, "TRX.WIFI_PASSWORD1") == 0)
+	if (strcmp(name, "WIFI.Password_1") == 0)
 	{
-		dma_memset(TRX.WIFI_PASSWORD1, 0x00, sizeof(TRX.WIFI_PASSWORD1));
+		dma_memset(WIFI.Password_1, 0x00, sizeof(WIFI.Password_1));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_PASSWORD1))
-			lens = sizeof(TRX.WIFI_PASSWORD1);
-		strncpy(TRX.WIFI_PASSWORD1, value, lens);
+		if (lens > sizeof(WIFI.Password_1) - 1)
+			lens = sizeof(WIFI.Password_1) - 1;
+		strncpy(WIFI.Password_1, value, lens);
 	}
-	if (strcmp(name, "TRX.WIFI_PASSWORD2") == 0)
+	if (strcmp(name, "WIFI.Password_2") == 0)
 	{
-		dma_memset(TRX.WIFI_PASSWORD2, 0x00, sizeof(TRX.WIFI_PASSWORD2));
+		dma_memset(WIFI.Password_2, 0x00, sizeof(WIFI.Password_2));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_PASSWORD2))
-			lens = sizeof(TRX.WIFI_PASSWORD2);
-		strncpy(TRX.WIFI_PASSWORD2, value, lens);
+		if (lens > sizeof(WIFI.Password_2) - 1)
+			lens = sizeof(WIFI.Password_2) - 1;
+		strncpy(WIFI.Password_2, value, lens);
 	}
-	if (strcmp(name, "TRX.WIFI_PASSWORD3") == 0)
+	if (strcmp(name, "WIFI.Password_3") == 0)
 	{
-		dma_memset(TRX.WIFI_PASSWORD3, 0x00, sizeof(TRX.WIFI_PASSWORD3));
+		dma_memset(WIFI.Password_3, 0x00, sizeof(WIFI.Password_3));
 		uint32_t lens = strlen(value);
-		if (lens > sizeof(TRX.WIFI_PASSWORD3))
-			lens = sizeof(TRX.WIFI_PASSWORD3);
-		strncpy(TRX.WIFI_PASSWORD3, value, lens);
+		if (lens > sizeof(WIFI.Password_3) - 1)
+			lens = sizeof(WIFI.Password_3) - 1;
+		strncpy(WIFI.Password_3, value, lens);
 	}
 	// SERVICES
 	if (strcmp(name, "TRX.SWR_CUSTOM_Begin") == 0)
@@ -1824,6 +1893,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.TXCICFIR_GAINER_val = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.DAC_GAINER_3") == 0)
 		CALIBRATE.DAC_GAINER_val = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.DAC_driver_mode") == 0)
+		CALIBRATE.DAC_driver_mode = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_2200m") == 0)
 		CALIBRATE.rf_out_power_2200m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_160m") == 0)
@@ -1848,6 +1919,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.rf_out_power_10m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_6m") == 0)
 		CALIBRATE.rf_out_power_6m = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.rf_out_power_4m") == 0)
+		CALIBRATE.rf_out_power_4m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.rf_out_power_2m") == 0)
 		CALIBRATE.rf_out_power_2m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.smeter_calibration_hf") == 0)
@@ -1894,24 +1967,28 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.RFU_BPF_8_START = uintval;
 	if (strcmp(name, "CALIBRATE.RFU_BPF_8_END") == 0)
 		CALIBRATE.RFU_BPF_8_END = uintval;
-	if (strcmp(name, "CALIBRATE.RFU_HPF_START") == 0)
+    if (strcmp(name, "CALIBRATE.RFU_BPF_9_START") == 0)
+        CALIBRATE.RFU_BPF_9_START = uintval;
+    if (strcmp(name, "CALIBRATE.RFU_BPF_9_END") == 0)
+        CALIBRATE.RFU_BPF_9_END = uintval;
+    if (strcmp(name, "CALIBRATE.RFU_HPF_START") == 0)
 		CALIBRATE.RFU_HPF_START = uintval;
 	if (strcmp(name, "CALIBRATE.SWR_FWD_Calibration_HF") == 0)
 		CALIBRATE.SWR_FWD_Calibration_HF = floatval;
-	if (strcmp(name, "CALIBRATE.SWR_REF_Calibration_HF") == 0)
-		CALIBRATE.SWR_REF_Calibration_HF = floatval;
+	if (strcmp(name, "CALIBRATE.SWR_BWD_Calibration_HF") == 0)
+		CALIBRATE.SWR_BWD_Calibration_HF = floatval;
 	if (strcmp(name, "CALIBRATE.SWR_FWD_Calibration_6M") == 0)
 		CALIBRATE.SWR_FWD_Calibration_6M = floatval;
-	if (strcmp(name, "CALIBRATE.SWR_REF_Calibration_6M") == 0)
-		CALIBRATE.SWR_REF_Calibration_6M = floatval;
+	if (strcmp(name, "CALIBRATE.SWR_BWD_Calibration_6M") == 0)
+		CALIBRATE.SWR_BWD_Calibration_6M = floatval;
 	if (strcmp(name, "CALIBRATE.SWR_FWD_Calibration_VHF") == 0)
 		CALIBRATE.SWR_FWD_Calibration_VHF = floatval;
-	if (strcmp(name, "CALIBRATE.SWR_REF_Calibration_VHF") == 0)
-		CALIBRATE.SWR_REF_Calibration_VHF = floatval;
-	if (strcmp(name, "CALIBRATE.MAX_RF_POWER") == 0)
-		CALIBRATE.MAX_RF_POWER = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.SWR_BWD_Calibration_VHF") == 0)
+		CALIBRATE.SWR_BWD_Calibration_VHF = floatval;
+	if (strcmp(name, "CALIBRATE.MAX_RF_POWER_ON_METER") == 0)
+		CALIBRATE.MAX_RF_POWER_ON_METER = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.VCXO_correction") == 0)
-		CALIBRATE.VCXO_correction = (int8_t)intval;
+		CALIBRATE.VCXO_correction = (int16_t)intval;
 	if (strcmp(name, "CALIBRATE.FAN_MEDIUM_START") == 0)
 		CALIBRATE.FAN_MEDIUM_START = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.FAN_MEDIUM_STOP") == 0)
@@ -1961,6 +2038,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.EXT_10m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.EXT_6m") == 0)
 		CALIBRATE.EXT_6m = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.EXT_4m") == 0)
+		CALIBRATE.EXT_4m = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.EXT_FM") == 0)
 		CALIBRATE.EXT_FM = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.EXT_2m") == 0)
@@ -2005,6 +2084,8 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.NOTX_10m = bval;
 	if (strcmp(name, "CALIBRATE.NOTX_6m") == 0)
 		CALIBRATE.NOTX_6m = bval;
+	if (strcmp(name, "CALIBRATE.NOTX_4m") == 0)
+		CALIBRATE.NOTX_4m = bval;
 	if (strcmp(name, "CALIBRATE.NOTX_2m") == 0)
 		CALIBRATE.NOTX_2m = bval;
 	if (strcmp(name, "CALIBRATE.NOTX_70cm") == 0)
@@ -2039,7 +2120,20 @@ static void SDCOMM_PARSE_SETT_LINE(char *line)
 		CALIBRATE.TwoSignalTune_Balance = (uint8_t)uintval;
 	if (strcmp(name, "CALIBRATE.LinearPowerControl") == 0)
 		CALIBRATE.LinearPowerControl = bval;
+	if (strcmp(name, "CALIBRATE.IF_GAIN_MIN") == 0)
+		CALIBRATE.IF_GAIN_MIN = (uint8_t)uintval;
+	if (strcmp(name, "CALIBRATE.IF_GAIN_MAX") == 0)
+		CALIBRATE.IF_GAIN_MAX = (uint8_t)uintval;
 
+	// Func buttons settings
+	char buff[64] = {0};
+	for (uint8_t i = 0; i < FUNCBUTTONS_COUNT; i++)
+	{
+		sprintf(buff, "TRX.FuncButtons[%d]", i);
+		if (strcmp(name, buff) == 0)
+			TRX.FuncButtons[i] = (uint8_t)uintval;
+	}
+	
 	// Bands settings
 	/*char buff[64] = {0};
 	for (uint8_t i = 0; i < BANDS_COUNT; i++)
@@ -2219,7 +2313,14 @@ static void SDCOMM_IMPORT_SETT_handler(void)
 static void SDCOMM_MKFS_handler(void)
 {
 	LCD_showInfo("Start formatting...", false);
-	FRESULT res = f_mkfs((TCHAR const *)USERPath, FM_FAT32, 0, SD_workbuffer_A, sizeof SD_workbuffer_A);
+
+	MKFS_PARM mkfs_param;
+	mkfs_param.fmt = FM_FAT32; /* Format option (FM_FAT, FM_FAT32, FM_EXFAT and FM_SFD) */
+	mkfs_param.n_fat = 0;			/* Number of FATs */
+	mkfs_param.align = 0;			/* Data area alignment (sector) */
+	mkfs_param.n_root = 0;		/* Number of root directory entries */
+	mkfs_param.au_size = 0;		/* Cluster size (byte) */
+	FRESULT res = f_mkfs((TCHAR const *)USERPath, &mkfs_param, SD_workbuffer_A, sizeof SD_workbuffer_A);
 	if (res == FR_OK)
 	{
 		LCD_showInfo("SD Format complete", true);

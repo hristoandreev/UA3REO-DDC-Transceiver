@@ -308,11 +308,11 @@ void RF_UNIT_ProcessSensors(void)
 			
 			// Transformation ratio of the SWR meter
 			if (CurrentVFO->Freq >= 80000000)
-				backward = backward * CALIBRATE.SWR_REF_Calibration_VHF;
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_VHF;
 			else if (CurrentVFO->Freq >= 40000000)
-				backward = backward * CALIBRATE.SWR_REF_Calibration_6M;
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_6M;
 			else
-				backward = backward * CALIBRATE.SWR_REF_Calibration_HF;
+				backward = backward * CALIBRATE.SWR_BWD_Calibration_HF;
 		}
 		else
 			backward = 0.001f;
@@ -363,6 +363,9 @@ void RF_UNIT_ProcessSensors(void)
 	//Yaesu MH-48
 	for (uint16_t tb = 0; tb < (sizeof(PERIPH_FrontPanel_TANGENT_MH48) / sizeof(PERIPH_FrontPanel_Button)); tb++)
 	{
+		if(TRX_on_TX)
+			break;
+		
 		if((SW2_Voltage < 500.0f || SW2_Voltage > 3100.0f) && PERIPH_FrontPanel_TANGENT_MH48[tb].channel == 1)
 			FRONTPANEL_CheckButton(&PERIPH_FrontPanel_TANGENT_MH48[tb], SW1_Voltage);
 		if(SW1_Voltage > 2800.0f & PERIPH_FrontPanel_TANGENT_MH48[tb].channel == 2)

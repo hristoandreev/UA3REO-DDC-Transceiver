@@ -109,8 +109,10 @@ __asm(".global __use_no_heap\n\t");
 #define Aligned_InvalidateDCache_by_Addr(buff, size) (SCB_InvalidateDCache_by_Addr((uint32_t *)(((uint32_t)buff) & ~(uint32_t)0x1F), (size) + 32))
 #define Aligned_CleanInvalidateDCache_by_Addr(buff, size) (SCB_CleanInvalidateDCache_by_Addr((uint32_t *)(((uint32_t)buff) & ~(uint32_t)0x1F), (size) + 32))
 
+#if defined(__clang__)
 #define isnanf __ARM_isnanf
 #define isinff __ARM_isinff
+#endif
 
 #define F_PI 3.141592653589793238463f
 #define F_2PI (3.141592653589793238463f * 2.0f)
@@ -226,5 +228,6 @@ extern char cleanASCIIgarbage(char chr);
 extern bool textStartsWith(const char *a, const char *b);
 extern void *alloc_to_wtf(uint32_t size, bool reset);
 extern float fast_sqrt(const float x);
+extern uint8_t getPowerFromALC(float32_t alc);
 
 #endif

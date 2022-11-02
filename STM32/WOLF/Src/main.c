@@ -33,7 +33,7 @@
 #include "rf_unit.h"
 #include "fpga.h"
 #include "fft.h"
-#include "wm8731.h"
+#include "codec.h"
 #include "audio_processor.h"
 #include "profiler.h"
 #include "usb_device.h"
@@ -300,7 +300,7 @@ int main(void)
 		MX_IWDG1_Init();
 	}
 
-  println("[OK] Calibration loading");
+  println("[OK] Calibration & WiFi loading");
 	if(reset_calibrations)
 		LoadCalibration(true);
 	else
@@ -355,7 +355,7 @@ int main(void)
   HAL_ADCEx_Calibration_Start(&hadc1, LL_ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
   HAL_ADCEx_Calibration_Start(&hadc3, LL_ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
   println("[OK] AudioCodec init");
-  WM8731_Init();
+  CODEC_Init();
   println("[OK] TRX init");
   TRX_Init();
   println("[OK] Audioprocessor & TIM5 init");
@@ -1647,9 +1647,9 @@ static void MX_FMC_Init(void)
   Timing.AccessMode = FMC_ACCESS_MODE_A;
 #endif
 #if (defined(LCD_RA8875))
-  Timing.AddressSetupTime = 20;
-  Timing.DataSetupTime = 20;
-  Timing.BusTurnAroundDuration = 10;
+  Timing.AddressSetupTime = 30;
+  Timing.DataSetupTime = 30;
+  Timing.BusTurnAroundDuration = 20;
   Timing.AccessMode = FMC_ACCESS_MODE_A;
   //fast timings in lcd_driver_RA8875.c
 #endif
@@ -1848,11 +1848,12 @@ static void MX_GPIO_Init(void)
 //обработка вывода отладки
 FILE __stdout;
 FILE __stdin;
-
-int fputc(int ch, FILE *f)
-{
+#if defined(__clang__)
+int fputc(int ch, FILE *f) {
 #pragma unused(f)
-
+#else
+int __io_putchar(int ch) {
+#endif
   //SWD
   if (SWD_DEBUG_ENABLED)
     ITM_SendChar((uint32_t)ch);
