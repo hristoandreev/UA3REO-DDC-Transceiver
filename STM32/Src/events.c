@@ -164,10 +164,10 @@ void EVENTS_do_ENC(void) // 20 0000 hz
 #ifdef HAS_TOUCHPAD
   static bool TOUCH_Int_Last = true;
   bool TOUCH_Int_Now = HAL_GPIO_ReadPin(ENC2SW_AND_TOUCHPAD_GPIO_Port, ENC2SW_AND_TOUCHPAD_Pin);
-  if (TOUCH_Int_Last != TOUCH_Int_Now)
+  //if (TOUCH_Int_Last != TOUCH_Int_Now)
   {
     TOUCH_Int_Last = TOUCH_Int_Now;
-    if (TOUCH_Int_Now)
+    //if (TOUCH_Int_Now)
       TOUCHPAD_reserveInterrupt();
   }
   return;
