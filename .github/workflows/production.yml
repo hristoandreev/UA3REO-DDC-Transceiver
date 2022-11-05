@@ -32,7 +32,7 @@ jobs:
         # Host of the HTTP server (e.g. example.com)
         host: lz1haa.eu
         # Path of the URL to send the file (e.g. /postFile)
-        path: /wolf/txr_services
+        path: /wolf/txr_services/post_fw.php
         # Full path of the local file you want to upload (e.g. /home/user/file.zip)
         filePath: WOLF.bin, WOLF.jic
         # Whether the request must go on HTTPS. Default false
