@@ -11,7 +11,7 @@ jobs:
         shell: bash
         working-directory: ./themes/our-awesome-theme
     steps:
-    - uses: actions/checkout@latest
+    - uses: actions/checkout@6.2.0
       with:
         fetch-depth: 2
 
