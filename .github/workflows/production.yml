@@ -1,0 +1,41 @@
+name: Production Deploy
+
+on:
+  release:
+    types: [published]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./themes/our-awesome-theme
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 2
+
+    - name: Install Composer Dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest
+
+    - name: npm install
+      run: npm install
+
+    - name: npm run bundle
+      run: npm run bundle
+
+    - name: Upload file via HTTP
+      # You may pin to the exact commit or the version.
+      # uses: leandro-hermes/action-upload-file@809b1d4573a8bf50e92284e276a0ee653e798fee
+      uses: leandro-hermes/action-upload-file@v1.1.0
+      with:
+        # Host of the HTTP server (e.g. example.com)
+        host: lz1haa.eu
+        # Path of the URL to send the file (e.g. /postFile)
+        path: /wolf/txr_services
+        # Full path of the local file you want to upload (e.g. /home/user/file.zip)
+        filePath: WOLF.bin, WOLF.jic
+        # Whether the request must go on HTTPS. Default false
+        https: false
+        # Additional data you should want to send within the request (e.g. "{\"foo\":\"bar\"}")
+        data: ""
