@@ -899,6 +899,17 @@ static void WIFI_getHTTPResponse(void) {
 					WIFI_HTTP_Response_ContentLength = (uint32_t)(atoi(istr4));
 					*istr5 = ' ';
 				}
+			} else {
+				istr4 = strstr(WIFI_HTTResponseHTML, "content-length: ");
+				if (istr4 != NULL) {
+					istr4 += 16;
+					char *istr5 = strchr(istr4, '\r');
+					if (istr5 != NULL) {
+						*istr5 = 0;
+						WIFI_HTTP_Response_ContentLength = (uint32_t)(atoi(istr4));
+						*istr5 = ' ';
+					}
+				}
 			}
 
 			// get response body
