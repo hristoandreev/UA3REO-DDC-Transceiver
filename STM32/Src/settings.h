@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define SETT_VERSION 68         // Settings config version
+#define SETT_VERSION 71         // Settings config version
 #define CALIB_VERSION 51        // Calibration config version
 #define WIFI_SETTINGS_VERSION 1 // WiFi config version
 
@@ -133,7 +133,7 @@ extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 	#define HRDW_MCP3008_1 true
 	#define HRDW_HAS_FUNCBUTTONS true
 	#define MAX_VOLUME_VALUE 1024.0f
-	#define FUNCBUTTONS_COUNT (32+4)
+	#define FUNCBUTTONS_COUNT (32+5)
 	#define FUNCBUTTONS_ON_PAGE 8
 	#define FUNCBUTTONS_PAGES 4
     #define OTA_CONFIG_FRONT_PANEL "BIG"
@@ -143,7 +143,7 @@ extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 	#define HRDW_MCP3008_1 true
 	#define HRDW_HAS_FUNCBUTTONS true
 	#define MAX_VOLUME_VALUE 1024.0f
-	#define FUNCBUTTONS_COUNT (27+6)
+	#define FUNCBUTTONS_COUNT (27 + 7)
 	#define FUNCBUTTONS_ON_PAGE 9
 	#define FUNCBUTTONS_PAGES 3
 	#define OTA_CONFIG_FRONT_PANEL "WF_100D"
@@ -171,44 +171,44 @@ static char ota_config_frontpanel[] = "Mini";
 // LCDs
 #if defined(LCD_ILI9481)
 #define OTA_CONFIG_LCD "ILI9481"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_ILI9481_IPS)
 #define OTA_CONFIG_LCD "ILI9481_IPS"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_HX8357B)
 #define OTA_CONFIG_LCD "HX8357B"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_HX8357C) && !defined(LCD_SLOW)
 #define OTA_CONFIG_LCD "HX8357C"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_HX8357C) && defined(LCD_SLOW)
 #define OTA_CONFIG_LCD "HX8357C-SLOW"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_ILI9486)
 #define OTA_CONFIG_LCD "ILI9486"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_ST7796S)
 #define OTA_CONFIG_LCD "ST7796S"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_ILI9341)
@@ -226,13 +226,13 @@ static char ota_config_lcd[] = "ILI9341";
 #if defined(LCD_RA8875)
 #define OTA_CONFIG_LCD "RA8875"
 	#ifdef STM32H743xx
-		#define FT8_SUPPORT true 
+		#define FT8_SUPPORT true
 	#endif
 #endif
 #if defined(LCD_NONE)
 #define OTA_CONFIG_LCD "NONE"
-	#ifdef STM32H743xx 
-		#define FT8_SUPPORT true 
+	#ifdef STM32H743xx
+		#define FT8_SUPPORT true
 	#endif
 #endif
 
@@ -469,6 +469,7 @@ extern struct TRX_SETTINGS {
 	uint8_t DNR_AVERAGE;
 	uint8_t DNR_MINIMAL;
 	uint8_t VAD_THRESHOLD;
+	uint8_t NOISE_BLANKER_THRESHOLD;
 	uint8_t RX_AGC_SSB_speed;
 	uint8_t RX_AGC_CW_speed;
 	uint8_t RX_AGC_Max_gain;
