@@ -1355,9 +1355,9 @@ void WIFI_checkFWUpdates(void) {
 	if (WIFI_connected && WIFI_State != WIFI_READY)
 		return;
 	char url[128];
-	sprintf(url, "/trx_services/check_fw_updates.php?dev=0&stm32=%s&fpga=%d.%d.%d", version_string, FPGA_FW_Version[2], FPGA_FW_Version[1],
+	sprintf(url, "/wolf/trx_services/check_fw_updates.php?dev=0&stm32=%s&fpga=%d.%d.%d", version_string, FPGA_FW_Version[2], FPGA_FW_Version[1],
 	        FPGA_FW_Version[0]);
-	WIFI_getHTTPpage("ua3reo.ru", url, WIFI_checkFWUpdates_callback, false, false);
+	WIFI_getHTTPpage("lz1haa.eu", url, WIFI_checkFWUpdates_callback, false, false);
 }
 
 static char *WIFI_downloadFileToSD_filename;
@@ -1379,9 +1379,9 @@ static void WIFI_WIFI_downloadFileToSD_callback_writed(void) {
 	else
 	{
 		char url[160] = {0};
-		sprintf(url, "%s&start=%d&count=%d", WIFI_downloadFileToSD_url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
+		sprintf(url, "/wolf/%s&start=%d&count=%d", WIFI_downloadFileToSD_url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
 		println("[WIFI] Get next file part");
-		WIFI_getHTTPpage("ua3reo.ru", url, WIFI_downloadFileToSD_callback, false, false);
+		WIFI_getHTTPpage("lz1haa.eu", url, WIFI_downloadFileToSD_callback, false, false);
 
 		// progress
 		int32_t downloaded_kb = WIFI_downloadFileToSD_startIndex / 1024;
@@ -1456,8 +1456,8 @@ void WIFI_downloadFileToSD(char *url, char *filename)
 	WIFI_downloadFileToSD_filename = filename;
 	WIFI_downloadFileToSD_startIndex = 0;
 	strcpy(WIFI_downloadFileToSD_url, url);
-	sprintf(url1, "%s&start=%d&count=%d", url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
-	WIFI_getHTTPpage("ua3reo.ru", url1, WIFI_downloadFileToSD_callback, false, false);
+	sprintf(url1, "/wolf%s&start=%d&count=%d", url, WIFI_downloadFileToSD_startIndex, WIFI_downloadFileToSD_part_size);
+	WIFI_getHTTPpage("lz1haa.eu", url1, WIFI_downloadFileToSD_callback, false, false);
 }
 
 #endif
