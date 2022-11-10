@@ -3,6 +3,9 @@ name: Production Deploy
 on:
   release:
     types: [published]
+    
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 jobs:
   upload:
     runs-on: ubuntu-latest
