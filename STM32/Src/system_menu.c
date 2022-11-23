@@ -507,7 +507,7 @@ const static struct sysmenu_item_handler sysmenu_handlers[] =
 
 const static struct sysmenu_item_handler sysmenu_trx_handlers[] =
 	{
-		{"RF Power", SYSMENU_UINT8, NULL, &TRX.RF_Power, SYSMENU_HANDL_TRX_RFPower},
+		{"RF Power", SYSMENU_UINT8, NULL, &TRX.RF_Gain, SYSMENU_HANDL_TRX_RFPower},
         {"Power for each band", SYSMENU_BOOLEAN, NULL, &TRX.RF_Gain_For_Each_Band, SYSMENU_HANDL_TRX_RF_Gain_For_Each_Band},
         {"Power for each mode", SYSMENU_BOOLEAN, NULL, &TRX.RF_Gain_For_Each_Mode, SYSMENU_HANDL_TRX_RF_Gain_For_Each_Mode},
         {"Channel Mode", SYSMENU_BOOLEAN, NULL, &TRX.ChannelMode, SYSMENU_HANDL_TRX_ChannelMode},
