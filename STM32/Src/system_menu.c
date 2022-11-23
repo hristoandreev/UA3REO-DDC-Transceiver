@@ -31,6 +31,8 @@
 static void SYSMENU_HANDL_TRX_RFPower(int8_t direction);
 static void SYSMENU_HANDL_TRX_BandMap(int8_t direction);
 static void SYSMENU_HANDL_TRX_ChannelMode(int8_t direction);
+static void SYSMENU_HANDL_TRX_RF_Gain_For_Each_Band(int8_t direction);
+static void SYSMENU_HANDL_TRX_RF_Gain_For_Each_Mode(int8_t direction);
 static void SYSMENU_HANDL_TRX_AutoGain(int8_t direction);
 static void SYSMENU_HANDL_TRX_TWO_SIGNAL_TUNE(int8_t direction);
 static void SYSMENU_HANDL_TRX_RFFilters(int8_t direction);
@@ -56,7 +58,6 @@ static void SYSMENU_HANDL_TRX_SetCallsign(int8_t direction);
 static void SYSMENU_HANDL_TRX_SetLocator(int8_t direction);
 static void SYSMENU_HANDL_TRX_SetURSICode(int8_t direction);
 static void SYSMENU_HANDL_TRX_TRANSV_ENABLE(int8_t direction);
-static void SYSMENU_HANDL_TRX_TRANSV_OFFSET(int8_t direction);
 static void SYSMENU_HANDL_TRX_ATU_I(int8_t direction);
 static void SYSMENU_HANDL_TRX_ATU_C(int8_t direction);
 static void SYSMENU_HANDL_TRX_ATU_T(int8_t direction);
@@ -375,11 +376,23 @@ static void SYSMENU_HANDL_CALIB_ENABLE_60m_band(int8_t direction);
 static void SYSMENU_HANDL_CALIB_ENABLE_4m_band(int8_t direction);
 static void SYSMENU_HANDL_CALIB_ENABLE_AIR_band(int8_t direction);
 static void SYSMENU_HANDL_CALIB_ENABLE_marine_band(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_OFFSET_Custom(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_70cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_70cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_23cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_23cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_13cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_13cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_6cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_6cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_3cm(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_3cm(int8_t direction);
 static void SYSMENU_HANDL_CALIB_OTA_update(int8_t direction);
 static void SYSMENU_HANDL_CALIB_TX_StartDelay(int8_t direction);
 static void SYSMENU_HANDL_CALIB_PWR_VLT_Calibration(int8_t direction);
 static void SYSMENU_HANDL_CALIB_PWR_CUR_Calibration(int8_t direction);
 static void SYSMENU_HANDL_CALIB_LCD_Rotate(int8_t direction);
+static void SYSMENU_HANDL_CALIB_TOUCHPAD_horizontal_flip(int8_t direction);
 static void SYSMENU_HANDL_INA226_PWR_MON(int8_t direction); // Tisho
 static void SYSMENU_HANDL_INA226_CUR_CALL(int8_t direction);
 static void SYSMENU_HANDL_CALIB_ATU_AVERAGING(int8_t direction);
@@ -495,7 +508,9 @@ const static struct sysmenu_item_handler sysmenu_handlers[] =
 const static struct sysmenu_item_handler sysmenu_trx_handlers[] =
 	{
 		{"RF Power", SYSMENU_UINT8, NULL, &TRX.RF_Power, SYSMENU_HANDL_TRX_RFPower},
-		{"Channel Mode", SYSMENU_BOOLEAN, NULL, &TRX.ChannelMode, SYSMENU_HANDL_TRX_ChannelMode},
+        {"Power for each band", SYSMENU_BOOLEAN, NULL, &TRX.RF_Gain_For_Each_Band, SYSMENU_HANDL_TRX_RF_Gain_For_Each_Band},
+        {"Power for each mode", SYSMENU_BOOLEAN, NULL, &TRX.RF_Gain_For_Each_Mode, SYSMENU_HANDL_TRX_RF_Gain_For_Each_Mode},
+        {"Channel Mode", SYSMENU_BOOLEAN, NULL, &TRX.ChannelMode, SYSMENU_HANDL_TRX_ChannelMode},
 		{"Band Map", SYSMENU_BOOLEAN, NULL, &TRX.BandMapEnabled, SYSMENU_HANDL_TRX_BandMap},
 		{"AutoGainer", SYSMENU_BOOLEAN, NULL, &TRX.AutoGain, SYSMENU_HANDL_TRX_AutoGain},
 #if !defined(FRONTPANEL_LITE)
@@ -537,7 +552,6 @@ const static struct sysmenu_item_handler sysmenu_trx_handlers[] =
 		{"Transverter 6cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_6cm, SYSMENU_HANDL_TRX_TRANSV_6CM},
 		{"Transverter 3cm", SYSMENU_BOOLEAN, NULL, &TRX.Transverter_3cm, SYSMENU_HANDL_TRX_TRANSV_3CM},
 		{"Custom Transverter", SYSMENU_BOOLEAN, NULL, &TRX.Custom_Transverter_Enabled, SYSMENU_HANDL_TRX_TRANSV_ENABLE},
-		{"Transverter Offset, mHz", SYSMENU_UINT16, NULL, &TRX.Transverter_Offset_Mhz, SYSMENU_HANDL_TRX_TRANSV_OFFSET},
 		{"TUNER Enabled", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.TUNER_Enabled, SYSMENU_HANDL_TRX_TUNER_Enabled},
 		{"ATU Enabled", SYSMENU_BOOLEAN, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.ATU_Enabled, SYSMENU_HANDL_TRX_ATU_Enabled},
 		{"ATU Ind", SYSMENU_ATU_I, SYSMENU_HANDL_CHECK_HAS_ATU, &TRX.ATU_I, SYSMENU_HANDL_TRX_ATU_I},
@@ -936,6 +950,17 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] =
 		{"EXT Transv 13cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_13cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_13cm},
 		{"EXT Transv 6cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_6cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_6cm},
 		{"EXT Transv 3cm", SYSMENU_B4, NULL, &CALIBRATE.EXT_TRANSV_3cm, SYSMENU_HANDL_CALIB_EXT_TRANSV_3cm},
+        {"Transverter Offset, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_Custom_Offset_Mhz, SYSMENU_HANDL_CALIB_TRANSV_OFFSET_Custom},
+        {"Transverter 70cm RF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_70cm_RF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_RF_70cm},
+        {"Transverter 70cm IF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_70cm_IF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_IF_70cm},
+        {"Transverter 23cm RF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_23cm_RF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_RF_23cm},
+        {"Transverter 23cm IF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_23cm_IF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_IF_23cm},
+        {"Transverter 13cm RF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_13cm_RF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_RF_13cm},
+        {"Transverter 13cm IF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_13cm_IF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_IF_13cm},
+        {"Transverter 6cm RF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_6cm_RF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_RF_6cm},
+        {"Transverter 6cm IF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_6cm_IF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_IF_6cm},
+        {"Transverter 3cm RF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_3cm_RF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_RF_3cm},
+        {"Transverter 3cm IF, mHz", SYSMENU_UINT16, NULL, &CALIBRATE.Transverter_3cm_IF_Mhz, SYSMENU_HANDL_CALIB_TRANSV_IF_3cm},
 #endif
 		{"NOTX NOT HAM", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_NOTHAM, SYSMENU_HANDL_CALIB_NOTX_NOTHAM},
 		{"NOTX 2200m", SYSMENU_BOOLEAN, NULL, &CALIBRATE.NOTX_2200m, SYSMENU_HANDL_CALIB_NOTX_2200m},
@@ -967,6 +992,10 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] =
 #endif
 		{"TX Start Delay", SYSMENU_UINT16, NULL, &CALIBRATE.TX_StartDelay, SYSMENU_HANDL_CALIB_TX_StartDelay},
 		{"LCD Rotate", SYSMENU_BOOLEAN, NULL, &CALIBRATE.LCD_Rotate, SYSMENU_HANDL_CALIB_LCD_Rotate},
+#ifdef TOUCHPAD_GT911
+        {"TOUCHPAD horiz flip", SYSMENU_BOOLEAN, NULL, &CALIBRATE.TOUCHPAD_horizontal_flip, SYSMENU_HANDL_CALIB_TOUCHPAD_horizontal_flip},
+        {"Flash GT911", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALIB_FlashGT911},
+#endif
 #if defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D)
 		{"INA226_PWR_MON", SYSMENU_BOOLEAN, NULL, &CALIBRATE.INA226_EN, SYSMENU_HANDL_INA226_PWR_MON},				  // Tisho
 		{"INA226_Cur_Calc(mA/Bit)", SYSMENU_FLOAT32, NULL, &CALIBRATE.INA226_CurCalc, SYSMENU_HANDL_INA226_CUR_CALL}, // Tisho
@@ -984,9 +1013,6 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] =
 #endif
 		{"TSignal Balance", SYSMENU_UINT8, NULL, &CALIBRATE.TwoSignalTune_Balance, SYSMENU_HANDL_CALIB_TwoSignalTune_Balance},
 		{"Linear Pwr Control", SYSMENU_BOOLEAN, NULL, &CALIBRATE.LinearPowerControl, SYSMENU_HANDL_CALIB_LinearPowerControl},
-#ifdef TOUCHPAD_GT911
-    {"Flash GT911", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALIB_FlashGT911},
-#endif
 		{"IF Gain MIN", SYSMENU_UINT8, NULL, &CALIBRATE.IF_GAIN_MIN, SYSMENU_HANDL_CALIB_IF_GAIN_MIN},
 		{"IF Gain MAX", SYSMENU_UINT8, NULL, &CALIBRATE.IF_GAIN_MAX, SYSMENU_HANDL_CALIB_IF_GAIN_MAX},
 		{"Settings reset", SYSMENU_RUN, NULL, NULL, SYSMENU_HANDL_CALIB_SETTINGS_RESET},
@@ -1193,6 +1219,20 @@ static void SYSMENU_HANDL_TRX_BandMap(int8_t direction) {
 		TRX.BandMapEnabled = false;
 }
 
+static void SYSMENU_HANDL_TRX_RF_Gain_For_Each_Band(int8_t direction) {
+	if (direction > 0)
+		TRX.RF_Gain_For_Each_Band = true;
+	if (direction < 0)
+		TRX.RF_Gain_For_Each_Band = false;
+}
+
+static void SYSMENU_HANDL_TRX_RF_Gain_For_Each_Mode(int8_t direction) {
+	if (direction > 0)
+		TRX.RF_Gain_For_Each_Mode = true;
+	if (direction < 0)
+		TRX.RF_Gain_For_Each_Mode = false;
+}
+
 static void SYSMENU_HANDL_TRX_ChannelMode(int8_t direction) {
 	if (direction > 0)
 		TRX.ChannelMode = true;
@@ -1230,10 +1270,15 @@ static void SYSMENU_HANDL_TRX_FineRITTune(int8_t direction) {
 }
 
 static void SYSMENU_HANDL_TRX_RFPower(int8_t direction) {
-	if (direction > 0 || TRX.RF_Power > 0)
-		TRX.RF_Power += direction;
-	if (TRX.RF_Power > 100)
-		TRX.RF_Power = 100;
+	if (direction > 0 || TRX.RF_Gain > 0)
+		TRX.RF_Gain += direction;
+	if (TRX.RF_Gain > 100)
+		TRX.RF_Gain = 100;
+
+	int8_t band = getBandFromFreq(CurrentVFO->RealRXFreq, true);
+	if (band >= 0) {
+		TRX.BANDS_SAVED_SETTINGS[band].RF_Gain = TRX.RF_Gain;
+	}
 
 	APROC_TX_clip_gain = 1.0f;
 	ATU_TunePowerStabilized = false;
@@ -1505,8 +1550,7 @@ static void SYSMENU_TRX_DrawCallsignMenu(bool full_redraw) {
 	}
 
 	LCDDriver_printText(TRX.CALLSIGN, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-	LCDDriver_drawFastHLine(8 + sysmenu_trx_selected_callsign_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top,
-	                        RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
+	LCDDriver_drawFastHLine(8 + sysmenu_trx_selected_callsign_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
 
 #if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
 	LCD_printKeyboard(SYSMENU_TRX_Callsign_keyboardHandler, false);
@@ -1537,8 +1581,7 @@ static void SYSMENU_TRX_DrawLocatorMenu(bool full_redraw) {
 	}
 
 	LCDDriver_printText(TRX.LOCATOR, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-	LCDDriver_drawFastHLine(8 + sysmenu_trx_selected_locator_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top,
-	                        RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
+	LCDDriver_drawFastHLine(8 + sysmenu_trx_selected_locator_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
 
 #if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
 	LCD_printKeyboard(SYSMENU_TRX_Locator_keyboardHandler, false);
@@ -1569,8 +1612,8 @@ static void SYSMENU_TRX_DrawURSICodeMenu(bool full_redraw) {
 	}
 
 	LCDDriver_printText(TRX.URSI_CODE, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-	LCDDriver_drawFastHLine(8 + sysmenu_trx_selected_ursi_code_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top,
-	                        RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
+	LCDDriver_drawFastHLine(8 + sysmenu_trx_selected_ursi_code_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE,
+	                        COLOR_RED);
 
 #if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
 	LCD_printKeyboard(SYSMENU_TRX_URSICode_keyboardHandler, false);
@@ -1675,14 +1718,6 @@ static void SYSMENU_HANDL_TRX_TRANSV_ENABLE(int8_t direction) {
 		TRX.Custom_Transverter_Enabled = true;
 	if (direction < 0)
 		TRX.Custom_Transverter_Enabled = false;
-}
-
-static void SYSMENU_HANDL_TRX_TRANSV_OFFSET(int8_t direction) {
-	TRX.Transverter_Offset_Mhz += direction;
-	if (TRX.Transverter_Offset_Mhz < 1)
-		TRX.Transverter_Offset_Mhz = 1;
-	if (TRX.Transverter_Offset_Mhz > 15000)
-		TRX.Transverter_Offset_Mhz = 15000;
 }
 
 static void SYSMENU_HANDL_TRX_TRANSV_70CM(int8_t direction) {
@@ -1859,8 +1894,14 @@ void SYSMENU_AUDIO_AGC_HOTKEY(void) {
 	LCD_redraw(false);
 }
 
-void SYSMEUN_CALLSIGN_INFO_HOTKEY(void)
-{
+void SYSMENU_AUDIO_NB_HOTKEY(void) {
+	SYSMENU_HANDL_AUDIOMENU(0);
+	uint16_t index = getIndexByName(sysmenu_handlers_selected, sysmenu_item_count, "NB Threshold");
+	setCurrentMenuIndex(index);
+	LCD_redraw(false);
+}
+
+void SYSMEUN_CALLSIGN_INFO_HOTKEY(void) {
 	SYSMENU_HANDL_CALLSIGN_INFO(0);
 	LCD_redraw(false);
 }
@@ -3453,8 +3494,8 @@ static void SYSMENU_WIFI_DrawAP1passwordMenu(bool full_redraw) {
 	}
 
 	LCDDriver_printText(WIFI.Password_1, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top,
-	                        RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
+	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE,
+	                        COLOR_RED);
 
 #if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
 	LCD_printKeyboard(SYSMENU_WIFI_AP1_Password_keyboardHandler, true);
@@ -3485,8 +3526,8 @@ static void SYSMENU_WIFI_DrawAP2passwordMenu(bool full_redraw) {
 	}
 
 	LCDDriver_printText(WIFI.Password_2, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top,
-	                        RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
+	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE,
+	                        COLOR_RED);
 
 #if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
 	LCD_printKeyboard(SYSMENU_WIFI_AP2_Password_keyboardHandler, true);
@@ -3517,8 +3558,8 @@ static void SYSMENU_WIFI_DrawAP3passwordMenu(bool full_redraw) {
 	}
 
 	LCDDriver_printText(WIFI.Password_3, 10, 37, COLOR_GREEN, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top,
-	                        RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, COLOR_RED);
+	LCDDriver_drawFastHLine(8 + sysmenu_wifi_selected_ap_password_char_index * RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE, interactive_menu_top, RASTR_FONT_W * LAYOUT->SYSMENU_FONT_SIZE,
+	                        COLOR_RED);
 
 #if (defined(HAS_TOUCHPAD) && defined(LAY_800x480))
 	LCD_printKeyboard(SYSMENU_WIFI_AP3_Password_keyboardHandler, true);
@@ -3532,11 +3573,9 @@ static void SYSMENU_WIFI_RotatePasswordChar1(int8_t dir) {
 	WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] += dir;
 
 	// do not show special characters
-	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 1 &&
-	    WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
+	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
 		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = 33;
-	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 1 &&
-	    WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
+	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
 		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = 0;
 	if (WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] >= 127)
 		WIFI.Password_1[sysmenu_wifi_selected_ap_password_char_index] = 0;
@@ -3556,11 +3595,9 @@ static void SYSMENU_WIFI_RotatePasswordChar2(int8_t dir) {
 	WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] += dir;
 
 	// do not show special characters
-	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 1 &&
-	    WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
+	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
 		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = 33;
-	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 1 &&
-	    WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
+	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
 		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = 0;
 	if (WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] >= 127)
 		WIFI.Password_2[sysmenu_wifi_selected_ap_password_char_index] = 0;
@@ -3580,11 +3617,9 @@ static void SYSMENU_WIFI_RotatePasswordChar3(int8_t dir) {
 	WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] += dir;
 
 	// do not show special characters
-	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 1 &&
-	    WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
+	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir > 0)
 		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = 33;
-	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 1 &&
-	    WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
+	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 1 && WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] <= 32 && dir < 0)
 		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = 0;
 	if (WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] >= 127)
 		WIFI.Password_3[sysmenu_wifi_selected_ap_password_char_index] = 0;
@@ -3839,26 +3874,25 @@ static void SYSMENU_HANDL_SETTIME(int8_t direction) {
 		if (LCD_busy)
 			return;
 		LCD_busy = true;
-#ifdef LCD_SMALL_INTERFACE
-#define x_pos_clk 50
-#define y_pos_clk 50
-#else
-#define x_pos_clk 76
-#define y_pos_clk 100
-#endif
+
+		uint16_t font_size = LAYOUT->SYSMENU_FONT_SIZE;
+		if (LCD_WIDTH > 700) {
+			font_size *= 2;
+		}
+		uint16_t x_pos_clk = LCD_WIDTH / 2 - 4 * RASTR_FONT_W * font_size;
+		uint16_t y_pos_clk = LCD_HEIGHT / 2 - RASTR_FONT_H * font_size / 2;
+
 		sprintf(ctmp, "%d", Hours);
 		addSymbols(ctmp, ctmp, 2, "0", false);
-		LCDDriver_printText(ctmp, x_pos_clk, y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 0 ? FG_COLOR : BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
-		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+		LCDDriver_printText(ctmp, x_pos_clk, y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 0 ? FG_COLOR : BG_COLOR, font_size);
+		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, font_size);
 		sprintf(ctmp, "%d", Minutes);
 		addSymbols(ctmp, ctmp, 2, "0", false);
-		LCDDriver_printText(ctmp, LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 1 ? FG_COLOR : BG_COLOR,
-		                    LAYOUT->SYSMENU_FONT_SIZE);
-		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, LAYOUT->SYSMENU_FONT_SIZE);
+		LCDDriver_printText(ctmp, LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 1 ? FG_COLOR : BG_COLOR, font_size);
+		LCDDriver_printText(":", LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, BG_COLOR, font_size);
 		sprintf(ctmp, "%d", Seconds);
 		addSymbols(ctmp, ctmp, 2, "0", false);
-		LCDDriver_printText(ctmp, LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 2 ? FG_COLOR : BG_COLOR,
-		                    LAYOUT->SYSMENU_FONT_SIZE);
+		LCDDriver_printText(ctmp, LCDDriver_GetCurrentXOffset(), y_pos_clk, COLOR->BUTTON_TEXT, TimeMenuSelection == 2 ? FG_COLOR : BG_COLOR, font_size);
 		LCD_busy = false;
 	}
 }
@@ -5177,6 +5211,94 @@ static void SYSMENU_HANDL_CALIB_ENABLE_marine_band(int8_t direction) {
 	BANDS[BANDID_Marine].selectable = CALIBRATE.ENABLE_marine_band;
 }
 
+static void SYSMENU_HANDL_CALIB_TRANSV_OFFSET_Custom(int8_t direction) {
+	CALIBRATE.Transverter_Custom_Offset_Mhz += direction;
+	if (CALIBRATE.Transverter_Custom_Offset_Mhz < 1)
+		CALIBRATE.Transverter_Custom_Offset_Mhz = 1;
+	if (CALIBRATE.Transverter_Custom_Offset_Mhz > 750)
+		CALIBRATE.Transverter_Custom_Offset_Mhz = 750;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_70cm(int8_t direction) {
+	CALIBRATE.Transverter_70cm_RF_Mhz += direction;
+	if (CALIBRATE.Transverter_70cm_RF_Mhz < 1)
+		CALIBRATE.Transverter_70cm_RF_Mhz = 1;
+	if (CALIBRATE.Transverter_70cm_RF_Mhz > 15000)
+		CALIBRATE.Transverter_70cm_RF_Mhz = 15000;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_70cm(int8_t direction) {
+	CALIBRATE.Transverter_70cm_IF_Mhz += direction;
+	if (CALIBRATE.Transverter_70cm_IF_Mhz < 1)
+		CALIBRATE.Transverter_70cm_IF_Mhz = 1;
+	if (CALIBRATE.Transverter_70cm_IF_Mhz > 750)
+		CALIBRATE.Transverter_70cm_IF_Mhz = 750;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_23cm(int8_t direction) {
+	CALIBRATE.Transverter_23cm_RF_Mhz += direction;
+	if (CALIBRATE.Transverter_23cm_RF_Mhz < 1)
+		CALIBRATE.Transverter_23cm_RF_Mhz = 1;
+	if (CALIBRATE.Transverter_23cm_RF_Mhz > 15000)
+		CALIBRATE.Transverter_23cm_RF_Mhz = 15000;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_23cm(int8_t direction) {
+	CALIBRATE.Transverter_23cm_IF_Mhz += direction;
+	if (CALIBRATE.Transverter_23cm_IF_Mhz < 1)
+		CALIBRATE.Transverter_23cm_IF_Mhz = 1;
+	if (CALIBRATE.Transverter_23cm_IF_Mhz > 750)
+		CALIBRATE.Transverter_23cm_IF_Mhz = 750;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_13cm(int8_t direction) {
+	CALIBRATE.Transverter_13cm_RF_Mhz += direction;
+	if (CALIBRATE.Transverter_13cm_RF_Mhz < 1)
+		CALIBRATE.Transverter_13cm_RF_Mhz = 1;
+	if (CALIBRATE.Transverter_13cm_RF_Mhz > 15000)
+		CALIBRATE.Transverter_13cm_RF_Mhz = 15000;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_13cm(int8_t direction) {
+	CALIBRATE.Transverter_13cm_IF_Mhz += direction;
+	if (CALIBRATE.Transverter_13cm_IF_Mhz < 1)
+		CALIBRATE.Transverter_13cm_IF_Mhz = 1;
+	if (CALIBRATE.Transverter_13cm_IF_Mhz > 750)
+		CALIBRATE.Transverter_13cm_IF_Mhz = 750;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_6cm(int8_t direction) {
+	CALIBRATE.Transverter_6cm_RF_Mhz += direction;
+	if (CALIBRATE.Transverter_6cm_RF_Mhz < 1)
+		CALIBRATE.Transverter_6cm_RF_Mhz = 1;
+	if (CALIBRATE.Transverter_6cm_RF_Mhz > 15000)
+		CALIBRATE.Transverter_6cm_RF_Mhz = 15000;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_6cm(int8_t direction) {
+	CALIBRATE.Transverter_6cm_IF_Mhz += direction;
+	if (CALIBRATE.Transverter_6cm_IF_Mhz < 1)
+		CALIBRATE.Transverter_6cm_IF_Mhz = 1;
+	if (CALIBRATE.Transverter_6cm_IF_Mhz > 750)
+		CALIBRATE.Transverter_6cm_IF_Mhz = 750;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_RF_3cm(int8_t direction) {
+	CALIBRATE.Transverter_3cm_RF_Mhz += direction;
+	if (CALIBRATE.Transverter_3cm_RF_Mhz < 1)
+		CALIBRATE.Transverter_3cm_RF_Mhz = 1;
+	if (CALIBRATE.Transverter_3cm_RF_Mhz > 15000)
+		CALIBRATE.Transverter_3cm_RF_Mhz = 15000;
+}
+
+static void SYSMENU_HANDL_CALIB_TRANSV_IF_3cm(int8_t direction) {
+	CALIBRATE.Transverter_3cm_IF_Mhz += direction;
+	if (CALIBRATE.Transverter_3cm_IF_Mhz < 1)
+		CALIBRATE.Transverter_3cm_IF_Mhz = 1;
+	if (CALIBRATE.Transverter_3cm_IF_Mhz > 750)
+		CALIBRATE.Transverter_3cm_IF_Mhz = 750;
+}
+
 static void SYSMENU_HANDL_CALIB_OTA_update(int8_t direction) {
 	if (direction > 0)
 		CALIBRATE.OTA_update = true;
@@ -5199,6 +5321,13 @@ static void SYSMENU_HANDL_CALIB_LCD_Rotate(int8_t direction) {
 
 	LCD_Init();
 	LCD_redraw(false);
+}
+
+static void SYSMENU_HANDL_CALIB_TOUCHPAD_horizontal_flip(int8_t direction) {
+	if (direction > 0)
+		CALIBRATE.TOUCHPAD_horizontal_flip = true;
+	if (direction < 0)
+		CALIBRATE.TOUCHPAD_horizontal_flip = false;
 }
 
 static void SYSMENU_HANDL_CALIB_LinearPowerControl(int8_t direction) {
@@ -6049,8 +6178,8 @@ void SYSMENU_eventSecEncoderClickSystemMenu(void) {
 		return;
 	}
 
-	if (sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_MENU || sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_RUN || sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_INFOLINE)
-	{
+	if (sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_MENU || sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_RUN ||
+	    sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_INFOLINE) {
 		sysmenu_item_selected_by_enc2 = false;
 		SYSMENU_eventRotateSystemMenu(1);
 	} else {
@@ -6215,7 +6344,11 @@ void SYSMENU_eventSecRotateSystemMenu(int8_t direction) {
 	// clear selection line
 	LCD_busy = true;
 	sysmenu_y = 5 + SYSTMENU_getVisibleIdFromReal(getCurrentMenuIndex()) * LAYOUT->SYSMENU_ITEM_HEIGHT;
+#if defined LAY_320x240
+	LCDDriver_drawFastHLine(0, sysmenu_y + LAYOUT->SYSMENU_ITEM_HEIGHT - 3, LAYOUT->SYSMENU_W, BG_COLOR);
+#else
 	LCDDriver_drawFastHLine(0, sysmenu_y + LAYOUT->SYSMENU_ITEM_HEIGHT - 1, LAYOUT->SYSMENU_W, BG_COLOR);
+#endif
 	LCD_busy = false;
 	// current page
 	uint8_t current_selected_page = SYSTMENU_getPageFromRealIndex(getCurrentMenuIndex());
@@ -6227,8 +6360,7 @@ void SYSMENU_eventSecRotateSystemMenu(int8_t direction) {
 			setCurrentMenuIndex(sysmenu_item_count - 1);
 
 		while (sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_INFOLINE ||
-		       (sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler != NULL &&
-		        !sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler())) {
+		       (sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler != NULL && !sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler())) {
 			if (getCurrentMenuIndex() == 0)
 				setCurrentMenuIndex(sysmenu_item_count - 1);
 			else
@@ -6240,8 +6372,7 @@ void SYSMENU_eventSecRotateSystemMenu(int8_t direction) {
 			setCurrentMenuIndex(0);
 
 		while (sysmenu_handlers_selected[getCurrentMenuIndex()].type == SYSMENU_INFOLINE ||
-		       (sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler != NULL &&
-		        !sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler())) {
+		       (sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler != NULL && !sysmenu_handlers_selected[getCurrentMenuIndex()].checkVisibleHandler())) {
 			if (getCurrentMenuIndex() >= sysmenu_item_count - 1)
 				setCurrentMenuIndex(0);
 			else
@@ -6367,10 +6498,17 @@ static void drawSystemMenuElement(const struct sysmenu_item_handler *menuElement
 	}
 
 	if (SYSTMENU_getVisibleIdFromReal(getCurrentMenuIndex()) == sysmenu_i) {
+#if defined LAY_320x240
+		if (sysmenu_item_selected_by_enc2)
+			LCDDriver_drawFastHLine(0, sysmenu_y + LAYOUT->SYSMENU_ITEM_HEIGHT - 3, LAYOUT->SYSMENU_W, COLOR->BUTTON_TEXT);
+		else
+			LCDDriver_drawFastHLine(0, sysmenu_y + LAYOUT->SYSMENU_ITEM_HEIGHT - 3, LAYOUT->SYSMENU_W, FG_COLOR);
+#else
 		if (sysmenu_item_selected_by_enc2)
 			LCDDriver_drawFastHLine(0, sysmenu_y + LAYOUT->SYSMENU_ITEM_HEIGHT - 1, LAYOUT->SYSMENU_W, COLOR->BUTTON_TEXT);
 		else
 			LCDDriver_drawFastHLine(0, sysmenu_y + LAYOUT->SYSMENU_ITEM_HEIGHT - 1, LAYOUT->SYSMENU_W, FG_COLOR);
+#endif
 	}
 	sysmenu_i++;
 	sysmenu_y += LAYOUT->SYSMENU_ITEM_HEIGHT;
