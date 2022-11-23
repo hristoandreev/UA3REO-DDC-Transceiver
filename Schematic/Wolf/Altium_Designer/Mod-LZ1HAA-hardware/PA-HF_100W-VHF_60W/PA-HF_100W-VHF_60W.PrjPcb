@@ -179,75 +179,55 @@ DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3F
 DItemRevisionGUID=
 
 [GeneratedDocument10]
-DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\dielectric_1\features
-DItemRevisionGUID=
-
-[GeneratedDocument11]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\drill_drawing_top-bottom\features
 DItemRevisionGUID=
 
-[GeneratedDocument12]
+[GeneratedDocument11]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\drill_guide_top-bottom\features
 DItemRevisionGUID=
 
-[GeneratedDocument13]
-DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\drill_non-plated_bottom-top\features
-DItemRevisionGUID=
-
-[GeneratedDocument14]
+[GeneratedDocument12]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\keep-out_layer\features
 DItemRevisionGUID=
 
-[GeneratedDocument15]
+[GeneratedDocument13]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\mechanical_1\features
 DItemRevisionGUID=
 
-[GeneratedDocument16]
-DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\rout\features
-DItemRevisionGUID=
-
-[GeneratedDocument17]
+[GeneratedDocument14]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\top_layer\features
 DItemRevisionGUID=
 
-[GeneratedDocument18]
+[GeneratedDocument15]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\top_overlay\features
 DItemRevisionGUID=
 
-[GeneratedDocument19]
+[GeneratedDocument16]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\top_paste\features
 DItemRevisionGUID=
 
-[GeneratedDocument20]
+[GeneratedDocument17]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\top_solder\features
 DItemRevisionGUID=
 
-[GeneratedDocument21]
+[GeneratedDocument18]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\matrix\matrix
 DItemRevisionGUID=
 
-[GeneratedDocument22]
+[GeneratedDocument19]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\netlists\cadnet\netlist
 DItemRevisionGUID=
 
-[GeneratedDocument23]
+[GeneratedDocument20]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\PA-HF_100W-VHF_60W.REP
 DItemRevisionGUID=
 
-[GeneratedDocument24]
+[GeneratedDocument21]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\profile
 DItemRevisionGUID=
 
-[GeneratedDocument25]
+[GeneratedDocument22]
 DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\stephdr
-DItemRevisionGUID=
-
-[GeneratedDocument26]
-DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\drill_non-plated_bottom-top\tools
-DItemRevisionGUID=
-
-[GeneratedDocument27]
-DocumentPath=C:\ProgramData\Altium\Altium Designer {F3C5CDF9-2CC5-4A6C-ABD0-3D3FC46F4703}\Extensions\EMIStream\Data\odb\steps\pcb\layers\rout\tools
 DItemRevisionGUID=
 
 [Configuration1]
