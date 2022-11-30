@@ -1,5 +1,5 @@
 # Transceiver "Wolf"
-![Screenshot](Wolf.JPG)
+![alt text](https://github.com/hristoandreev/UA3REO-DDC-Transceiver/blob/Mod_LZ1HAA_hardware_main/Wolf.JPEG)
 
 DDC-DUC SDR Tranceiver project https://ua3reo.ru/tag/transiver-ua3reo/
 
