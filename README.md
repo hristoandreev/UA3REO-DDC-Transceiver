@@ -1,4 +1,6 @@
 # Transceiver "Wolf"
+![Screenshot](Wolf.JPG)
+
 DDC-DUC SDR Tranceiver project https://ua3reo.ru/tag/transiver-ua3reo/
 
 * Community telegram channel: https://t.me/TRX_Wolf
