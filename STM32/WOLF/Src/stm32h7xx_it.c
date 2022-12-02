@@ -481,8 +481,8 @@ void TIM6_DAC_IRQHandler(void) {
 		EVENTS_do_EVERY_500ms();
 	}
 
-  if (ms10_counter == 101) // every 1 sec
-  {
+	if (ms10_counter == 101) // every 1 sec
+	{
 		EVENTS_do_EVERY_1000ms();
 		ms10_counter = 0;
 	}
