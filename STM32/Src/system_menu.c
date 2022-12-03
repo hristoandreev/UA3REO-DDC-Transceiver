@@ -4511,7 +4511,8 @@ static void SYSMENU_HANDL_CALIB_ENCODER_ACCELERATION(int8_t direction) {
 
 static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 	if (CALIBRATE.RF_unit_type > 0 || direction > 0) {
-		CALIBRATE.RF_unit_type += direction;
+        CALIBRATE.RF_unit_type += direction;
+    }
 	if (CALIBRATE.RF_unit_type > 5)
 		CALIBRATE.RF_unit_type = 5;
 
