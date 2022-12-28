@@ -1432,8 +1432,7 @@ void WIFI_checkFWUpdates(void) {
 		return;
 	}
 	char url[128];
-	sprintf(url, "/wolf/trx_services/check_fw_updates.php?dev=0&stm32=%s&fpga=%d.%d.%d", version_string, FPGA_FW_Version[2], FPGA_FW_Version[1],
-	        FPGA_FW_Version[0]);
+	sprintf(url, "/wolf/trx_services/check_fw_updates.php?dev=0&stm32=%s&fpga=%d.%d.%d&lcd=%s", version_string, FPGA_FW_Version[2], FPGA_FW_Version[1], FPGA_FW_Version[0], ota_config_lcd);
 	WIFI_getHTTPpage("lz1haa.eu", url, WIFI_checkFWUpdates_callback, false, false);
 }
 

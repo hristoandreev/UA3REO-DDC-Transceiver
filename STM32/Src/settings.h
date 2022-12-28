@@ -8,8 +8,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define SETT_VERSION 74         // Settings config version
-#define CALIB_VERSION 54        // Calibration config version
+#define SETT_VERSION 75         // Settings config version
+#define CALIB_VERSION 55        // Calibration config version
 #define WIFI_SETTINGS_VERSION 1 // WiFi config version
 
 #define TRX_SAMPLERATE 48000        // audio stream sampling rate during processing and TX (NOT RX!)
@@ -224,10 +224,14 @@ static char ota_config_lcd[] = "ILI9341";
 	#endif
 #endif
 #if defined(LCD_RA8875)
-#define OTA_CONFIG_LCD "RA8875"
-	#ifdef STM32H743xx
-		#define FT8_SUPPORT true
-	#endif
+#ifdef FRONTPANEL_WF_100D
+#define OTA_CONFIG_LCD "WF-100D";
+#else
+#define OTA_CONFIG_LCD "RA8875";
+#endif
+#ifdef STM32H743xx
+#define FT8_SUPPORT true
+#endif
 #endif
 #if defined(LCD_NONE)
 #define OTA_CONFIG_LCD "NONE"
@@ -386,6 +390,12 @@ typedef struct {
 	bool BEST_ATU_T;
 	TRX_IQ_SAMPLERATE_VALUE SAMPLERATE;
 } BAND_SAVED_SETTINGS_TYPE;
+
+// Save memory channels
+typedef struct {
+	uint64_t Freq;
+	uint8_t Mode;
+} CHANNEL_SAVED_SETTINGS_TYPE;
 
 extern struct TRX_SETTINGS {
 	uint8_t flash_id; // version check
@@ -669,6 +679,7 @@ extern struct TRX_CALIBRATE {
 	uint8_t rf_out_power_2200m;
 	uint8_t rf_out_power_160m;
 	uint8_t rf_out_power_80m;
+	uint8_t rf_out_power_60m;
 	uint8_t rf_out_power_40m;
 	uint8_t rf_out_power_30m;
 	uint8_t rf_out_power_20m;
@@ -680,6 +691,11 @@ extern struct TRX_CALIBRATE {
 	uint8_t rf_out_power_6m;
 	uint8_t rf_out_power_4m;
 	uint8_t rf_out_power_2m;
+	uint8_t rf_out_power_70cm;
+	uint8_t rf_out_power_23cm;
+	uint8_t rf_out_power_13cm;
+	uint8_t rf_out_power_6cm;
+	uint8_t rf_out_power_3cm;
 	uint8_t ENCODER_DEBOUNCE;
 	uint8_t ENCODER2_DEBOUNCE;
 	uint8_t ENCODER_SLOW_RATE;
@@ -761,7 +777,7 @@ extern struct TRX_CALIBRATE {
 	bool TOUCHPAD_horizontal_flip;
 	bool INA226_EN; // Tisho
 	bool LinearPowerControl;
-	BAND_SAVED_SETTINGS_TYPE MEMORY_CHANNELS[MEMORY_CHANNELS_COUNT];
+	CHANNEL_SAVED_SETTINGS_TYPE MEMORY_CHANNELS[MEMORY_CHANNELS_COUNT];
 	uint32_t BAND_MEMORIES[BANDS_COUNT][BANDS_MEMORIES_COUNT];
 
 	uint8_t csum;   // check sum

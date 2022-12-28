@@ -273,6 +273,7 @@ static void SYSMENU_HANDL_CALIB_DAC_driver_mode(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_2200M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_160M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_80M(int8_t direction);
+static void SYSMENU_HANDL_CALIB_RF_GAIN_60M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_40M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_30M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_20M(int8_t direction);
@@ -284,6 +285,11 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_10M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_6M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_4M(int8_t direction);
 static void SYSMENU_HANDL_CALIB_RF_GAIN_2M(int8_t direction);
+static void SYSMENU_HANDL_CALIB_RF_GAIN_70CM(int8_t direction);
+static void SYSMENU_HANDL_CALIB_RF_GAIN_23CM(int8_t direction);
+static void SYSMENU_HANDL_CALIB_RF_GAIN_13CM(int8_t direction);
+static void SYSMENU_HANDL_CALIB_RF_GAIN_6CM(int8_t direction);
+static void SYSMENU_HANDL_CALIB_RF_GAIN_3CM(int8_t direction);
 static void SYSMENU_HANDL_CALIB_S_METER_HF(int8_t direction);
 static void SYSMENU_HANDL_CALIB_S_METER_VHF(int8_t direction);
 static void SYSMENU_HANDL_CALIB_ADC_OFFSET(int8_t direction);
@@ -701,11 +707,11 @@ const static struct sysmenu_item_handler sysmenu_screen_handlers[] =
 		{"FFT Hold Peaks", SYSMENU_BOOLEAN, NULL, &TRX.FFT_HoldPeaks, SYSMENU_HANDL_SCREEN_FFT_HoldPeaks},
 		{"FFT 3D Mode", SYSMENU_ENUM, NULL, &TRX.FFT_3D, SYSMENU_HANDL_SCREEN_FFT_3D, {"NO", "Lines", "Dots"}},
 #endif
-		{"FFT Enabled", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Enabled, SYSMENU_HANDL_SCREEN_FFT_Enabled},
-		{"WTF Moving", SYSMENU_BOOLEAN, NULL, &TRX.WTF_Moving, SYSMENU_HANDL_SCREEN_WTF_Moving},
-		{"FFT Compressor", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Compressor, SYSMENU_HANDL_SCREEN_FFT_Compressor},
-		{"FFT Averaging", SYSMENU_UINT8, NULL, &TRX.FFT_Averaging, SYSMENU_HANDL_SCREEN_FFT_Averaging},
-		{"FFT Window", SYSMENU_ENUMR, NULL, &TRX.FFT_Window, SYSMENU_HANDL_SCREEN_FFT_Window, {"", "Dolph", "Blckman", "Nutall", "BlNutll", "Hann", "Hamming", "No"}},
+    {"FFT Enabled", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Enabled, SYSMENU_HANDL_SCREEN_FFT_Enabled},
+    {"WTF Moving", SYSMENU_BOOLEAN, NULL, &TRX.WTF_Moving, SYSMENU_HANDL_SCREEN_WTF_Moving},
+    {"FFT Compressor", SYSMENU_BOOLEAN, NULL, &TRX.FFT_Compressor, SYSMENU_HANDL_SCREEN_FFT_Compressor},
+    {"FFT Averaging", SYSMENU_UINT8, NULL, &TRX.FFT_Averaging, SYSMENU_HANDL_SCREEN_FFT_Averaging},
+    {"FFT Window", SYSMENU_ENUMR, NULL, &TRX.FFT_Window, SYSMENU_HANDL_SCREEN_FFT_Window, {"", "GNuttal", "Dolph", "Blckman", "Nuttall", "BlNuttl", "Hann", "Hamming", "No"}},
 #if HRDW_HAS_WIFI
 		{"FFT DXCluster", SYSMENU_BOOLEAN, NULL, &TRX.FFT_DXCluster, SYSMENU_HANDL_SCREEN_FFT_DXCluster},
 		{"FFT DXCluster Azimuth", SYSMENU_BOOLEAN, NULL, &TRX.FFT_DXCluster_Azimuth, SYSMENU_HANDL_SCREEN_FFT_DXCluster_Azimuth},
@@ -855,21 +861,27 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] =
 #if !defined(FRONTPANEL_LITE)
 		{"DAC Driver Mode", SYSMENU_UINT8, NULL, &CALIBRATE.DAC_driver_mode, SYSMENU_HANDL_CALIB_DAC_driver_mode},
 #endif
-		{"RF GAIN 2200m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_2200m, SYSMENU_HANDL_CALIB_RF_GAIN_2200M},
-		{"RF GAIN 160m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_160m, SYSMENU_HANDL_CALIB_RF_GAIN_160M},
-		{"RF GAIN 80m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_80m, SYSMENU_HANDL_CALIB_RF_GAIN_80M},
-		{"RF GAIN 40m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_40m, SYSMENU_HANDL_CALIB_RF_GAIN_40M},
-		{"RF GAIN 30m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_30m, SYSMENU_HANDL_CALIB_RF_GAIN_30M},
-		{"RF GAIN 20m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_20m, SYSMENU_HANDL_CALIB_RF_GAIN_20M},
-		{"RF GAIN 17m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_17m, SYSMENU_HANDL_CALIB_RF_GAIN_17M},
-		{"RF GAIN 15m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_15m, SYSMENU_HANDL_CALIB_RF_GAIN_15M},
-		{"RF GAIN 12m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_12m, SYSMENU_HANDL_CALIB_RF_GAIN_12M},
-		{"RF GAIN CB", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_cb, SYSMENU_HANDL_CALIB_RF_GAIN_CB},
-		{"RF GAIN 10m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_10m, SYSMENU_HANDL_CALIB_RF_GAIN_10M},
+    {"RF GAIN 2200m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_2200m, SYSMENU_HANDL_CALIB_RF_GAIN_2200M},
+    {"RF GAIN 160m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_160m, SYSMENU_HANDL_CALIB_RF_GAIN_160M},
+    {"RF GAIN 80m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_80m, SYSMENU_HANDL_CALIB_RF_GAIN_80M},
+    {"RF GAIN 60m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_60m, SYSMENU_HANDL_CALIB_RF_GAIN_60M},
+    {"RF GAIN 40m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_40m, SYSMENU_HANDL_CALIB_RF_GAIN_40M},
+    {"RF GAIN 30m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_30m, SYSMENU_HANDL_CALIB_RF_GAIN_30M},
+    {"RF GAIN 20m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_20m, SYSMENU_HANDL_CALIB_RF_GAIN_20M},
+    {"RF GAIN 17m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_17m, SYSMENU_HANDL_CALIB_RF_GAIN_17M},
+    {"RF GAIN 15m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_15m, SYSMENU_HANDL_CALIB_RF_GAIN_15M},
+    {"RF GAIN 12m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_12m, SYSMENU_HANDL_CALIB_RF_GAIN_12M},
+    {"RF GAIN CB", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_cb, SYSMENU_HANDL_CALIB_RF_GAIN_CB},
+    {"RF GAIN 10m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_10m, SYSMENU_HANDL_CALIB_RF_GAIN_10M},
 #if !defined(FRONTPANEL_LITE)
-		{"RF GAIN 6m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_6m, SYSMENU_HANDL_CALIB_RF_GAIN_6M},
-		{"RF GAIN 4m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_4m, SYSMENU_HANDL_CALIB_RF_GAIN_4M},
-		{"RF GAIN 2m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_2m, SYSMENU_HANDL_CALIB_RF_GAIN_2M},
+    {"RF GAIN 6m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_6m, SYSMENU_HANDL_CALIB_RF_GAIN_6M},
+    {"RF GAIN 4m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_4m, SYSMENU_HANDL_CALIB_RF_GAIN_4M},
+    {"RF GAIN 2m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_2m, SYSMENU_HANDL_CALIB_RF_GAIN_2M},
+    {"RF GAIN 70cm", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_70cm, SYSMENU_HANDL_CALIB_RF_GAIN_70CM},
+    {"RF GAIN 23cm", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_23cm, SYSMENU_HANDL_CALIB_RF_GAIN_23CM},
+    {"RF GAIN 13cm", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_13cm, SYSMENU_HANDL_CALIB_RF_GAIN_13CM},
+    {"RF GAIN 6cm", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_6cm, SYSMENU_HANDL_CALIB_RF_GAIN_6CM},
+    {"RF GAIN 3cm", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_3cm, SYSMENU_HANDL_CALIB_RF_GAIN_3CM},
 #endif
 		{"S METER HF", SYSMENU_INT16, NULL, &CALIBRATE.smeter_calibration_hf, SYSMENU_HANDL_CALIB_S_METER_HF},
 		{"S METER VHF", SYSMENU_INT16, NULL, &CALIBRATE.smeter_calibration_vhf, SYSMENU_HANDL_CALIB_S_METER_VHF},
@@ -1817,7 +1829,7 @@ static void SYSMENU_HANDL_TRX_TRANSV_23CM(int8_t direction) {
 		TRX.Transverter_23cm = false;
 	}
 
-	BANDS[BANDID_23cm].selectable = TRX.Transverter_23cm;
+	BAND_SELECTABLE[BANDID_23cm] = TRX.Transverter_23cm;
 }
 
 static void SYSMENU_HANDL_TRX_TRANSV_13CM(int8_t direction) {
@@ -1828,7 +1840,7 @@ static void SYSMENU_HANDL_TRX_TRANSV_13CM(int8_t direction) {
 		TRX.Transverter_13cm = false;
 	}
 
-	BANDS[BANDID_13cm].selectable = TRX.Transverter_13cm;
+	BAND_SELECTABLE[BANDID_13cm] = TRX.Transverter_13cm;
 }
 
 static void SYSMENU_HANDL_TRX_TRANSV_6CM(int8_t direction) {
@@ -1839,7 +1851,7 @@ static void SYSMENU_HANDL_TRX_TRANSV_6CM(int8_t direction) {
 		TRX.Transverter_6cm = false;
 	}
 
-	BANDS[BANDID_6cm].selectable = TRX.Transverter_6cm;
+	BAND_SELECTABLE[BANDID_6cm] = TRX.Transverter_6cm;
 }
 
 static void SYSMENU_HANDL_TRX_TRANSV_3CM(int8_t direction) {
@@ -1850,7 +1862,7 @@ static void SYSMENU_HANDL_TRX_TRANSV_3CM(int8_t direction) {
 		TRX.Transverter_3cm = false;
 	}
 
-	BANDS[BANDID_3cm].selectable = TRX.Transverter_3cm;
+	BAND_SELECTABLE[BANDID_3cm] = TRX.Transverter_3cm;
 }
 
 static void SYSMENU_HANDL_TRX_ATU_I(int8_t direction) {
@@ -2916,8 +2928,8 @@ static void SYSMENU_HANDL_SCREEN_FFT_Window(int8_t direction) {
 	if (TRX.FFT_Window < 1) {
 		TRX.FFT_Window = 1;
 	}
-	if (TRX.FFT_Window > 7) {
-		TRX.FFT_Window = 7;
+	if (TRX.FFT_Window > 8) {
+		TRX.FFT_Window = 8;
 	}
 	FFT_PreInit();
 	FFT_Init();
@@ -4520,6 +4532,7 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 		CALIBRATE.rf_out_power_2200m = 29;             // 2200m
 		CALIBRATE.rf_out_power_160m = 29;              // 160m
 		CALIBRATE.rf_out_power_80m = 27;               // 80m
+		CALIBRATE.rf_out_power_60m = 27;               // 60m
 		CALIBRATE.rf_out_power_40m = 26;               // 40m
 		CALIBRATE.rf_out_power_30m = 26;               // 30m
 		CALIBRATE.rf_out_power_20m = 24;               // 20m
@@ -4531,9 +4544,14 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 		CALIBRATE.rf_out_power_6m = 13;                // 6m
 		CALIBRATE.rf_out_power_4m = 13;                // 4m
 		CALIBRATE.rf_out_power_2m = 100;               // 2m
+		CALIBRATE.rf_out_power_70cm = 100;             // 70cm
+		CALIBRATE.rf_out_power_23cm = 100;             // 23cm
+		CALIBRATE.rf_out_power_13cm = 100;             // 13cm
+		CALIBRATE.rf_out_power_6cm = 100;              // 6cm
+		CALIBRATE.rf_out_power_3cm = 100;              // 3cm
 		CALIBRATE.RFU_LPF_END = 60000 * 1000;          // LPF
 		CALIBRATE.RFU_HPF_START = 60000 * 1000;        // HPF U14-RF1
-		CALIBRATE.RFU_BPF_0_START = 135 * 1000 * 1000; // 2m U14-RF3
+		CALIBRATE.RFU_BPF_0_START = 138 * 1000 * 1000; // 2m U14-RF3
 		CALIBRATE.RFU_BPF_0_END = 150 * 1000 * 1000;   // 2m
 		CALIBRATE.RFU_BPF_1_START = 1500 * 1000;       // 160m U16-RF2
 		CALIBRATE.RFU_BPF_1_END = 2400 * 1000;         // 160m
@@ -4564,6 +4582,7 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 		CALIBRATE.rf_out_power_2200m = 40;         // 2200m
 		CALIBRATE.rf_out_power_160m = 40;          // 160m
 		CALIBRATE.rf_out_power_80m = 40;           // 80m
+		CALIBRATE.rf_out_power_60m = 40;           // 60m
 		CALIBRATE.rf_out_power_40m = 40;           // 40m
 		CALIBRATE.rf_out_power_30m = 40;           // 30m
 		CALIBRATE.rf_out_power_20m = 40;           // 20m
@@ -4575,6 +4594,11 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 		CALIBRATE.rf_out_power_6m = 40;            // 6m
 		CALIBRATE.rf_out_power_4m = 40;            // 4m
 		CALIBRATE.rf_out_power_2m = 50;            // 2m
+		CALIBRATE.rf_out_power_70cm = 50;          // 70cm
+		CALIBRATE.rf_out_power_23cm = 50;          // 23cm
+		CALIBRATE.rf_out_power_13cm = 50;          // 13cm
+		CALIBRATE.rf_out_power_6cm = 50;           // 6cm
+		CALIBRATE.rf_out_power_3cm = 50;           // 3cm
 		CALIBRATE.RFU_LPF_END = 0;                 // disabled in BIG version
 		CALIBRATE.RFU_HPF_START = 0;               // disabled in BIG version
 		CALIBRATE.RFU_BPF_0_START = 0 * 1000;      // 2200m
@@ -4607,7 +4631,7 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 	if (CALIBRATE.RF_unit_type == RF_UNIT_RU4PN) {
 		CALIBRATE.RFU_LPF_END = 60000 * 1000;          // LPF
 		CALIBRATE.RFU_HPF_START = 60000 * 1000;        // HPF
-		CALIBRATE.RFU_BPF_0_START = 135 * 1000 * 1000; // 2m U14-RF3
+		CALIBRATE.RFU_BPF_0_START = 138 * 1000 * 1000; // 2m U14-RF3
 		CALIBRATE.RFU_BPF_0_END = 150 * 1000 * 1000;   // 2m
 		CALIBRATE.RFU_BPF_1_START = 1500 * 1000;       // 160m U16-RF2
 		CALIBRATE.RFU_BPF_1_END = 2400 * 1000;         // 160m
@@ -4630,6 +4654,7 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 		CALIBRATE.rf_out_power_2200m = 17;             // 2200m
 		CALIBRATE.rf_out_power_160m = 17;              // 160m
 		CALIBRATE.rf_out_power_80m = 20;               // 80m
+		CALIBRATE.rf_out_power_60m = 20;               // 80m
 		CALIBRATE.rf_out_power_40m = 22;               // 40m
 		CALIBRATE.rf_out_power_30m = 24;               // 30m
 		CALIBRATE.rf_out_power_20m = 25;               // 20m
@@ -4641,6 +4666,11 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 		CALIBRATE.rf_out_power_6m = 40;                // 6m
 		CALIBRATE.rf_out_power_4m = 40;                // 4m
 		CALIBRATE.rf_out_power_2m = 70;                // 2m
+		CALIBRATE.rf_out_power_70cm = 70;              // 70cm
+		CALIBRATE.rf_out_power_23cm = 70;              // 23cm
+		CALIBRATE.rf_out_power_13cm = 70;              // 13cm
+		CALIBRATE.rf_out_power_6cm = 70;               // 6cm
+		CALIBRATE.rf_out_power_3cm = 70;               // 3cm
 		CALIBRATE.RFU_LPF_END = 53 * 1000 * 1000;      // LPF
 		CALIBRATE.RFU_HPF_START = 60 * 1000 * 1000;    // HPF
 		CALIBRATE.RFU_BPF_0_START = 1600 * 1000;       // 1.6-2.5mH
@@ -4657,7 +4687,7 @@ static void SYSMENU_HANDL_CALIB_RF_unit_type(int8_t direction) {
 		CALIBRATE.RFU_BPF_5_END = 21500 * 1000;        //
 		CALIBRATE.RFU_BPF_6_START = 21500 * 1000;      // 21.5-30 mHz
 		CALIBRATE.RFU_BPF_6_END = 30000 * 1000;        //
-		CALIBRATE.RFU_BPF_7_START = 135 * 1000 * 1000; // 135-150mHz
+		CALIBRATE.RFU_BPF_7_START = 138 * 1000 * 1000; // 138-150mHz
 		CALIBRATE.RFU_BPF_7_END = 150 * 1000 * 1000;   //
 		CALIBRATE.RFU_BPF_8_START = 0;                 // disabled
 		CALIBRATE.RFU_BPF_8_END = 0;                   // disabled
@@ -4865,6 +4895,22 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_80M(int8_t direction) {
 	ATU_TunePowerStabilized = false;
 }
 
+static void SYSMENU_HANDL_CALIB_RF_GAIN_60M(int8_t direction) {
+	if (CALIBRATE.rf_out_power_60m > 0) {
+		CALIBRATE.rf_out_power_60m += direction;
+	}
+	if (CALIBRATE.rf_out_power_60m == 0 && direction > 0) {
+		CALIBRATE.rf_out_power_60m += direction;
+	}
+	if (CALIBRATE.rf_out_power_60m > 100) {
+		CALIBRATE.rf_out_power_60m = 100;
+	}
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
 static void SYSMENU_HANDL_CALIB_RF_GAIN_40M(int8_t direction) {
 	if (CALIBRATE.rf_out_power_40m > 0) {
 		CALIBRATE.rf_out_power_40m += direction;
@@ -5034,6 +5080,86 @@ static void SYSMENU_HANDL_CALIB_RF_GAIN_2M(int8_t direction) {
 	}
 	if (CALIBRATE.rf_out_power_2m > 100) {
 		CALIBRATE.rf_out_power_2m = 100;
+	}
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
+static void SYSMENU_HANDL_CALIB_RF_GAIN_70CM(int8_t direction) {
+	if (CALIBRATE.rf_out_power_70cm > 0) {
+		CALIBRATE.rf_out_power_70cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_70cm == 0 && direction > 0) {
+		CALIBRATE.rf_out_power_70cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_70cm > 100) {
+		CALIBRATE.rf_out_power_70cm = 100;
+	}
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
+static void SYSMENU_HANDL_CALIB_RF_GAIN_23CM(int8_t direction) {
+	if (CALIBRATE.rf_out_power_23cm > 0) {
+		CALIBRATE.rf_out_power_23cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_23cm == 0 && direction > 0) {
+		CALIBRATE.rf_out_power_23cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_23cm > 100) {
+		CALIBRATE.rf_out_power_23cm = 100;
+	}
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
+static void SYSMENU_HANDL_CALIB_RF_GAIN_13CM(int8_t direction) {
+	if (CALIBRATE.rf_out_power_13cm > 0) {
+		CALIBRATE.rf_out_power_13cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_13cm == 0 && direction > 0) {
+		CALIBRATE.rf_out_power_13cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_13cm > 100) {
+		CALIBRATE.rf_out_power_13cm = 100;
+	}
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
+static void SYSMENU_HANDL_CALIB_RF_GAIN_6CM(int8_t direction) {
+	if (CALIBRATE.rf_out_power_6cm > 0) {
+		CALIBRATE.rf_out_power_6cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_6cm == 0 && direction > 0) {
+		CALIBRATE.rf_out_power_6cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_6cm > 100) {
+		CALIBRATE.rf_out_power_6cm = 100;
+	}
+
+	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
+	APROC_TX_clip_gain = 1.0f;
+	ATU_TunePowerStabilized = false;
+}
+
+static void SYSMENU_HANDL_CALIB_RF_GAIN_3CM(int8_t direction) {
+	if (CALIBRATE.rf_out_power_3cm > 0) {
+		CALIBRATE.rf_out_power_3cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_3cm == 0 && direction > 0) {
+		CALIBRATE.rf_out_power_3cm += direction;
+	}
+	if (CALIBRATE.rf_out_power_3cm > 100) {
+		CALIBRATE.rf_out_power_3cm = 100;
 	}
 
 	TRX_MAX_TX_Amplitude = getMaxTXAmplitudeOnFreq(CurrentVFO->Freq);
@@ -5884,7 +6010,7 @@ static void SYSMENU_HANDL_CALIB_ENABLE_60m_band(int8_t direction) {
 		CALIBRATE.ENABLE_60m_band = false;
 	}
 
-	BANDS[BANDID_60m].selectable = CALIBRATE.ENABLE_60m_band;
+	BAND_SELECTABLE[BANDID_60m] = CALIBRATE.ENABLE_60m_band;
 }
 
 static void SYSMENU_HANDL_CALIB_ENABLE_4m_band(int8_t direction) {
@@ -5895,7 +6021,7 @@ static void SYSMENU_HANDL_CALIB_ENABLE_4m_band(int8_t direction) {
 		CALIBRATE.ENABLE_4m_band = false;
 	}
 
-	BANDS[BANDID_4m].selectable = CALIBRATE.ENABLE_4m_band;
+	BAND_SELECTABLE[BANDID_4m] = CALIBRATE.ENABLE_4m_band;
 }
 
 static void SYSMENU_HANDL_CALIB_ENABLE_AIR_band(int8_t direction) {
@@ -5906,7 +6032,7 @@ static void SYSMENU_HANDL_CALIB_ENABLE_AIR_band(int8_t direction) {
 		CALIBRATE.ENABLE_AIR_band = false;
 	}
 
-	BANDS[BANDID_AIR].selectable = CALIBRATE.ENABLE_AIR_band;
+	BAND_SELECTABLE[BANDID_AIR] = CALIBRATE.ENABLE_AIR_band;
 }
 
 static void SYSMENU_HANDL_CALIB_ENABLE_marine_band(int8_t direction) {
@@ -5917,7 +6043,7 @@ static void SYSMENU_HANDL_CALIB_ENABLE_marine_band(int8_t direction) {
 		CALIBRATE.ENABLE_marine_band = false;
 	}
 
-	BANDS[BANDID_Marine].selectable = CALIBRATE.ENABLE_marine_band;
+	BAND_SELECTABLE[BANDID_Marine] = CALIBRATE.ENABLE_marine_band;
 }
 
 static void SYSMENU_HANDL_CALIB_TRANSV_OFFSET_Custom(int8_t direction) {
