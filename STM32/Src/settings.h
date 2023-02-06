@@ -8,8 +8,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define SETT_VERSION 75         // Settings config version
-#define CALIB_VERSION 55        // Calibration config version
+#define SETT_VERSION 77         // Settings config version
+#define CALIB_VERSION 56        // Calibration config version
 #define WIFI_SETTINGS_VERSION 1 // WiFi config version
 
 #define TRX_SAMPLERATE 48000        // audio stream sampling rate during processing and TX (NOT RX!)
@@ -63,6 +63,7 @@
 
 #define MAX_WIFIPASS_LENGTH 32
 #define MAX_CALLSIGN_LENGTH 16
+#define MAX_CW_MACROS_LENGTH 48
 
 #define W25Q16_COMMAND_Write_Disable 0x04
 #define W25Q16_COMMAND_Write_Enable 0x06
@@ -120,52 +121,71 @@ extern const float32_t ATU_0x0_C_VALS[ATU_MAXLENGTH + 1];
 #endif
 
 #ifdef FRONTPANEL_LITE
-	#define HRDW_MCP3008_1 true
-	#define HRDW_HAS_FUNCBUTTONS true
-	#define MAX_VOLUME_VALUE 100.0f
-	#define FUNCBUTTONS_COUNT 30
-	#define FUNCBUTTONS_ON_PAGE 5
-	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
-	#define OTA_CONFIG_FRONT_PANEL "LITE"
+#define HRDW_MCP3008_1 true
+#define HRDW_HAS_FUNCBUTTONS true
+#define MAX_VOLUME_VALUE 100.0f
+#define FUNCBUTTONS_ON_PAGE 5
+#define FUNCBUTTONS_PAGES 7
+#define FUNCBUTTONS_COUNT (FUNCBUTTONS_PAGES * FUNCBUTTONS_ON_PAGE + 0)
+#define OTA_CONFIG_FRONT_PANEL "LITE"
 #endif
 
 #ifdef FRONTPANEL_BIG_V1
-	#define HRDW_MCP3008_1 true
-	#define HRDW_HAS_FUNCBUTTONS true
-	#define MAX_VOLUME_VALUE 1024.0f
-	#define FUNCBUTTONS_COUNT (32+5)
-	#define FUNCBUTTONS_ON_PAGE 8
-	#define FUNCBUTTONS_PAGES 4
-    #define OTA_CONFIG_FRONT_PANEL "BIG"
+#define HRDW_MCP3008_1 true
+#define HRDW_HAS_FUNCBUTTONS true
+#define MAX_VOLUME_VALUE 1024.0f
+#define FUNCBUTTONS_ON_PAGE 8
+#define FUNCBUTTONS_PAGES 5
+#define FUNCBUTTONS_COUNT (FUNCBUTTONS_PAGES * FUNCBUTTONS_ON_PAGE + 2)
+#define OTA_CONFIG_FRONT_PANEL "BIG"
 #endif
 
 #ifdef FRONTPANEL_WF_100D
-	#define HRDW_MCP3008_1 true
-	#define HRDW_HAS_FUNCBUTTONS true
-	#define MAX_VOLUME_VALUE 1024.0f
-	#define FUNCBUTTONS_COUNT (27 + 7)
-	#define FUNCBUTTONS_ON_PAGE 9
-	#define FUNCBUTTONS_PAGES 3
-	#define OTA_CONFIG_FRONT_PANEL "WF_100D"
+#define HRDW_MCP3008_1 true
+#define HRDW_HAS_FUNCBUTTONS true
+#define MAX_VOLUME_VALUE 1024.0f
+#define FUNCBUTTONS_ON_PAGE 9
+#define FUNCBUTTONS_PAGES 4
+#define FUNCBUTTONS_COUNT (FUNCBUTTONS_PAGES * FUNCBUTTONS_ON_PAGE + 3)
+#define OTA_CONFIG_FRONT_PANEL "WF_100D"
+#endif
+
+#ifdef FRONTPANEL_WOLF_2
+#define HRDW_MCP3008_1 true
+#define HRDW_HAS_FUNCBUTTONS true
+#define MAX_VOLUME_VALUE 1024.0f
+#define FUNCBUTTONS_ON_PAGE 9
+#define FUNCBUTTONS_PAGES 4
+#define FUNCBUTTONS_COUNT (FUNCBUTTONS_PAGES * FUNCBUTTONS_ON_PAGE + 3)
+#define OTA_CONFIG_FRONT_PANEL "WOLF-2";
 #endif
 
 #ifdef FRONTPANEL_X1
-	#define HRDW_MCP3008_1 true
-	#define HRDW_HAS_FUNCBUTTONS true
-	#define MAX_VOLUME_VALUE 100.0f
-	#define FUNCBUTTONS_COUNT 32
-	#define FUNCBUTTONS_ON_PAGE 4
-	#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
-	#define OTA_CONFIG_FRONT_PANEL "X1"
+#define HRDW_MCP3008_1 true
+#define HRDW_HAS_FUNCBUTTONS true
+#define MAX_VOLUME_VALUE 100.0f
+#define FUNCBUTTONS_ON_PAGE 4
+#define FUNCBUTTONS_PAGES 9
+#define FUNCBUTTONS_COUNT (FUNCBUTTONS_PAGES * FUNCBUTTONS_ON_PAGE + 0)
+#define OTA_CONFIG_FRONT_PANEL "X1"
 #endif
 
 #ifdef FRONTPANEL_MINI
 #define HRDW_HAS_FUNCBUTTONS true
 #define MAX_VOLUME_VALUE 100.0f
-#define FUNCBUTTONS_COUNT 32
 #define FUNCBUTTONS_ON_PAGE 4
-#define FUNCBUTTONS_PAGES (FUNCBUTTONS_COUNT / FUNCBUTTONS_ON_PAGE)
-static char ota_config_frontpanel[] = "Mini";
+#define FUNCBUTTONS_PAGES 9
+#define FUNCBUTTONS_COUNT (FUNCBUTTONS_PAGES * FUNCBUTTONS_ON_PAGE + 0)
+#define OTA_CONFIG_FRONT_PANEL = "Mini";
+#endif
+
+#ifdef FRONTPANEL_LITE_V2_MINI
+#define HRDW_HAS_FUNCBUTTONS true
+#define MAX_VOLUME_VALUE 100.0f
+#define FUNCBUTTONS_ON_PAGE 4
+#define FUNCBUTTONS_PAGES 9
+#define FUNCBUTTONS_COUNT (FUNCBUTTONS_PAGES * FUNCBUTTONS_ON_PAGE + 0)
+#define OTA_CONFIG_FRONT_PANEL = "LiteV2-Mini";
 #endif
 
 // LCDs
@@ -212,10 +232,16 @@ static char ota_config_frontpanel[] = "Mini";
 	#endif
 #endif
 #if defined(LCD_ILI9341)
-static char ota_config_lcd[] = "ILI9341";
-	#ifdef STM32H743xx
-		#define FT8_SUPPORT false
-	#endif
+#define OTA_CONFIG_LCD "ILI9341";
+#ifdef STM32H743xx
+#define FT8_SUPPORT false
+#endif
+#endif
+#if defined(LCD_ST7789)
+#define OTA_CONFIG_LCD "LCD_ST7789";
+#ifdef STM32H743xx
+#define FT8_SUPPORT true
+#endif
 #endif
 #if defined(LCD_ST7735S)
 #define OTA_CONFIG_LCD "ST7735S"
@@ -536,6 +562,11 @@ extern struct TRX_SETTINGS {
 	bool CW_GaussFilter;
 	bool CW_Iambic;
 	bool CW_Invert;
+	char CW_Macros_1[MAX_CW_MACROS_LENGTH];
+	char CW_Macros_2[MAX_CW_MACROS_LENGTH];
+	char CW_Macros_3[MAX_CW_MACROS_LENGTH];
+	char CW_Macros_4[MAX_CW_MACROS_LENGTH];
+	char CW_Macros_5[MAX_CW_MACROS_LENGTH];
 	// SCREEN
 	int16_t FFT_ManualBottom;
 	int16_t FFT_ManualTop;
