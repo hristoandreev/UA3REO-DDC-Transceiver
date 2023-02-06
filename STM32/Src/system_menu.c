@@ -944,7 +944,7 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] = {
 #endif
 #if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_LITE) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || \
     defined(FRONTPANEL_X1) || defined(FRONTPANEL_MINI)
-    {"RF-Unit Type", SYSMENU_ENUM, NULL, &CALIBRATE.RF_unit_type, SYSMENU_HANDL_CALIB_RF_unit_type, {"QRP", "BIG", "SPLIT", "RU4PN", "WF-100D"}},
+    {"RF-Unit Type", SYSMENU_ENUM, NULL, &CALIBRATE.RF_unit_type, SYSMENU_HANDL_CALIB_RF_unit_type, {"NONE", "QRP", "BIG", "SPLIT", "RU4PN", "LZ1HAA", "WF-100D"}},
 #endif
 #if defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2)
     {"Tangent Type", SYSMENU_ENUM, NULL, &CALIBRATE.TangentType, SYSMENU_HANDL_CALIB_TangentType, {"MH-36", "MH-48"}},
