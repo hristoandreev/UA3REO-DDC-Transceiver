@@ -849,9 +849,10 @@ const static struct sysmenu_item_handler sysmenu_decoders_handlers[] =
 
 const static struct sysmenu_item_handler sysmenu_adc_handlers[] = {
     {"ADC Driver", SYSMENU_BOOLEAN, NULL, &TRX.ADC_Driver, SYSMENU_HANDL_ADC_DRIVER},
-#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_LITE) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || \
-    defined(FRONTPANEL_X1) || defined(FRONTPANEL_MINI)
-    {"ADC Preamp", SYSMENU_BOOLEAN, NULL, &TRX.ADC_PGA, SYSMENU_HANDL_ADC_PGA},       {"ADC Dither", SYSMENU_BOOLEAN, NULL, (uint32_t *)&TRX.ADC_DITH, SYSMENU_HANDL_ADC_DITH},
+#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || defined(FRONTPANEL_X1) || \
+    defined(FRONTPANEL_MINI)
+    {"ADC Preamp", SYSMENU_BOOLEAN, NULL, &TRX.ADC_PGA, SYSMENU_HANDL_ADC_PGA},
+    {"ADC Dither", SYSMENU_BOOLEAN, NULL, &TRX.ADC_DITH, SYSMENU_HANDL_ADC_DITH},
     {"ADC Randomizer", SYSMENU_BOOLEAN, NULL, &TRX.ADC_RAND, SYSMENU_HANDL_ADC_RAND},
 #endif
     {"ADC Shutdown", SYSMENU_BOOLEAN, NULL, &TRX.ADC_SHDN, SYSMENU_HANDL_ADC_SHDN},
@@ -942,8 +943,8 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] = {
 #else
     {"Encoder acceleration", SYSMENU_UINT8, NULL, &CALIBRATE.ENCODER_ACCELERATION, SYSMENU_HANDL_CALIB_ENCODER_ACCELERATION},
 #endif
-#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_LITE) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || \
-    defined(FRONTPANEL_X1) || defined(FRONTPANEL_MINI)
+#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || defined(FRONTPANEL_X1) || \
+    defined(FRONTPANEL_MINI)
     {"RF-Unit Type", SYSMENU_ENUM, NULL, &CALIBRATE.RF_unit_type, SYSMENU_HANDL_CALIB_RF_unit_type, {"NONE", "QRP", "BIG", "SPLIT", "RU4PN", "LZ1HAA", "WF-100D"}},
 #endif
 #if defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2)
@@ -955,8 +956,8 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] = {
     {"CICCOMP 384K Shift", SYSMENU_UINT8, NULL, &CALIBRATE.CICFIR_GAINER_384K_val, SYSMENU_HANDL_CALIB_CICCOMP_384K_SHIFT},
     {"TX CICCOMP Shift", SYSMENU_UINT8, NULL, &CALIBRATE.TXCICFIR_GAINER_val, SYSMENU_HANDL_CALIB_TXCICCOMP_SHIFT},
     {"DAC Shift", SYSMENU_UINT8, NULL, &CALIBRATE.DAC_GAINER_val, SYSMENU_HANDL_CALIB_DAC_SHIFT},
-#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_LITE) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || \
-    defined(FRONTPANEL_X1) || defined(FRONTPANEL_MINI)
+#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || defined(FRONTPANEL_X1) || \
+    defined(FRONTPANEL_MINI)
     {"DAC Driver Mode", SYSMENU_UINT8, NULL, &CALIBRATE.DAC_driver_mode, SYSMENU_HANDL_CALIB_DAC_driver_mode},
 #endif
     {"RF GAIN 2200m", SYSMENU_UINT8, NULL, &CALIBRATE.rf_out_power_2200m, SYSMENU_HANDL_CALIB_RF_GAIN_2200M},
@@ -986,8 +987,8 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] = {
     {"S METER HF", SYSMENU_INT16, NULL, &CALIBRATE.smeter_calibration_hf, SYSMENU_HANDL_CALIB_S_METER_HF},
     {"S METER VHF", SYSMENU_INT16, NULL, &CALIBRATE.smeter_calibration_vhf, SYSMENU_HANDL_CALIB_S_METER_VHF},
     {"ADC OFFSET", SYSMENU_INT16, NULL, &CALIBRATE.adc_offset, SYSMENU_HANDL_CALIB_ADC_OFFSET},
-#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_LITE) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || \
-    defined(FRONTPANEL_X1) || defined(FRONTPANEL_MINI)
+#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || defined(FRONTPANEL_X1) || \
+    defined(FRONTPANEL_MINI)
     {"LPF END", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_LPF, &CALIBRATE.RFU_LPF_END, SYSMENU_HANDL_CALIB_LPF_END},
     {"HPF START", SYSMENU_UINT32, SYSMENU_HANDL_CHECK_HAS_LPF, &CALIBRATE.RFU_HPF_START, SYSMENU_HANDL_CALIB_HPF_START},
     {"BPF 0 START", SYSMENU_UINT32, NULL, &CALIBRATE.RFU_BPF_0_START, SYSMENU_HANDL_CALIB_BPF_0_START},
@@ -1033,8 +1034,8 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] = {
 		{"BW_AD8307_Slope (mv/dB)", SYSMENU_FLOAT32, NULL, &CALIBRATE.BW_AD8307_SLP, SYSMENU_HANDL_CALIB_BW_AD8307_SLP},
 		{"BW_AD8307_Offset (mV)", SYSMENU_FLOAT32, NULL, &CALIBRATE.BW_AD8307_OFFS, SYSMENU_HANDL_CALIB_BW_AD8307_OFFS},
 #endif
-#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_LITE) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || \
-    defined(FRONTPANEL_X1) || defined(FRONTPANEL_MINI)
+#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || defined(FRONTPANEL_X1) || \
+    defined(FRONTPANEL_MINI)
     {"FAN Medium start", SYSMENU_UINT8, NULL, &CALIBRATE.FAN_MEDIUM_START, SYSMENU_HANDL_CALIB_FAN_MEDIUM_START},
     {"FAN Medium stop", SYSMENU_UINT8, NULL, &CALIBRATE.FAN_MEDIUM_STOP, SYSMENU_HANDL_CALIB_FAN_MEDIUM_STOP},
     {"FAN Full start", SYSMENU_UINT8, NULL, &CALIBRATE.FAN_FULL_START, SYSMENU_HANDL_CALIB_FAN_FULL_START},
@@ -1144,8 +1145,8 @@ const static struct sysmenu_item_handler sysmenu_calibration_handlers[] = {
 #endif
     {"ATU Averaging", SYSMENU_UINT8, SYSMENU_HANDL_CHECK_HAS_ATU, (uint32_t *)&CALIBRATE.ATU_AVERAGING, SYSMENU_HANDL_CALIB_ATU_AVERAGING},
     {"CAT Type", SYSMENU_ENUM, NULL, &CALIBRATE.CAT_Type, SYSMENU_HANDL_CALIB_CAT_Type, {"FT-450", "TS2000"}},
-#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_LITE) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || \
-    defined(FRONTPANEL_X1) || defined(FRONTPANEL_MINI)
+#if defined(FRONTPANEL_NONE) || defined(FRONTPANEL_SMALL_V1) || defined(FRONTPANEL_BIG_V1) || defined(FRONTPANEL_WF_100D) || defined(FRONTPANEL_WOLF_2) || defined(FRONTPANEL_X1) || \
+    defined(FRONTPANEL_MINI)
     {"LNA Compensation", SYSMENU_INT8, NULL, &CALIBRATE.LNA_compensation, SYSMENU_HANDL_CALIB_LNA_compensation},
 #endif
     {"TSignal Balance", SYSMENU_UINT8, NULL, &CALIBRATE.TwoSignalTune_Balance, SYSMENU_HANDL_CALIB_TwoSignalTune_Balance},

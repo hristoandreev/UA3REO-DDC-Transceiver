@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const char version_string[19] = "6.8.0";
+const char version_string[19] = "6.8.2";
 
 const char ota_config_frontpanel[] = OTA_CONFIG_FRONT_PANEL;
 const char ota_config_lcd[] = OTA_CONFIG_LCD;
