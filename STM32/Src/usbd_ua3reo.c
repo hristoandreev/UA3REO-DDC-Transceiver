@@ -8,10 +8,6 @@
 #include "usbd_ctlreq.h"
 #include "usbd_iq_if.h"
 
-#ifndef MIN
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
 
 static uint8_t USBD_UA3REO_Init(USBD_HandleTypeDef *pdev);
 static uint8_t USBD_UA3REO_DeInit(USBD_HandleTypeDef *pdev);

@@ -29,10 +29,6 @@ EndBSPDependencies */
 #include "usbd_msc_scsi.h"
 #include "usbd_ua3reo.h"
 
-#ifndef MIN
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
 
 /** @addtogroup STM32_USB_DEVICE_LIBRARY
  * @{
